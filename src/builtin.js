@@ -6,10 +6,6 @@
  */
 
 Sk.builtin.range = function range (start, stop, step) {
-    var ret = [];
-    var lst;
-    var i;
-
     Sk.builtin.pyCheckArgsLen("range", arguments.length, 1, 3);
     Sk.builtin.pyCheckType("start", "integer", Sk.misceval.isIndex(start));
     start = Sk.misceval.asIndex(start);
@@ -34,46 +30,34 @@ Sk.builtin.range = function range (start, stop, step) {
         throw new Sk.builtin.ValueError("range() step argument must not be zero");
     }
 
-    if ((typeof start === "number")
-	&& (typeof stop === "number")
-	&& (typeof step === "number")) {
-        if (step > 0) {
-            for (i = start; i < stop; i += step) {
-                ret.push(new Sk.builtin.int_(i));
-            }
-        } else {
-            for (i = start; i > stop; i += step) {
-                ret.push(new Sk.builtin.int_(i));
-            }
-        }
-    } else {
-        // This is going to be slow, really needs to be a generator!
-        var startlng = new Sk.builtin.lng(start);
-        var stoplng = new Sk.builtin.lng(stop);
-        var steplng = new Sk.builtin.lng(step);
-
-        if (steplng.nb$ispositive()) {
-            i = startlng;
-            while (Sk.misceval.isTrue(i.ob$lt(stoplng))) {
-                ret.push(i);
-                i = i.nb$add(steplng);
-            }
-        } else {
-            i = startlng;
-            while (Sk.misceval.isTrue(i.ob$gt(stoplng))) {
-                ret.push(i);
-                i = i.nb$add(steplng);
-            }
-        }
-    }
-
-    lst = new Sk.builtin.list(ret);
-
     if (Sk.__future__.python3) {
-        return new Sk.builtin.range_(start, stop, step, lst);
+        return new Sk.builtin.range_(start, stop, step);
     }
 
-    return lst;
+
+    _range_gen = function ($gen) {
+            const start = $gen.gi$locals.start;
+            const step = $gen.gi$locals.step;
+            const stop = $gen.gi$locals.stop;
+            const compare = step.nb$ispositive() ? Sk.misceval.isTrue(start.ob$lt(stop)) : Sk.misceval.isTrue(start.ob$gt(stop));
+            if (compare) {
+                try {
+                    return [ /*resume*/ , /*ret*/ start];
+                } finally {
+                    $gen.gi$locals.start = start.nb$add(step);
+                }
+            }
+            return [ /*resume*/ , /*ret*/ ];
+    };
+    pystart = typeof start === "number" ? Sk.builtin.int_(start) : Sk.builtin.lng(start);
+    pystop = typeof stop === "number" ? Sk.builtin.int_(stop) : Sk.builtin.lng(stop);
+    pystep = typeof step === "number" ? Sk.builtin.int_(step) : Sk.builtin.lng(step);
+    
+    _range_gen.co_varnames = ["start", "stop", "step"];
+    _range_gen.co_name = new Sk.builtin.str("range");
+   
+
+    return new Sk.builtin.generator(_range_gen, undefined, [pystart, pystop, pystep]);
 };
 
 Sk.builtin.asnum$ = function (a) {
