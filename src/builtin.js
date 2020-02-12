@@ -7,33 +7,19 @@
 
 Sk.builtin.range = function range (start, stop, step) {
     Sk.builtin.pyCheckArgsLen("range", arguments.length, 1, 3);
-    Sk.builtin.pyCheckType("start", "integer", Sk.misceval.isIndex(start));
-    start = Sk.misceval.asIndex(start);
-    if (stop !== undefined) {
-        Sk.builtin.pyCheckType("stop", "integer", Sk.misceval.isIndex(stop));
-        stop = Sk.misceval.asIndex(stop);
+    const slice = Sk.builtin.slice(start, stop, step);
+    if (Sk.builtin.checkNone(slice.start)) {
+        slice.start = Sk.builtin.int_(0);
     }
-    if (step !== undefined) {
-        Sk.builtin.pyCheckType("step", "integer", Sk.misceval.isIndex(step));
-        step = Sk.misceval.asIndex(step);
+    if (Sk.builtin.checkNone(slice.step)) {
+        slice.step = Sk.builtin.int_(1);
     }
 
-    if ((stop === undefined) && (step === undefined)) {
-        stop = start;
-        start = 0;
-        step = 1;
-    } else if (step === undefined) {
-        step = 1;
-    }
-
-    if (step === 0) {
-        throw new Sk.builtin.ValueError("range() step argument must not be zero");
-    }
+    [start, stop, step] = [slice.start, slice.stop, slice.step];
 
     if (Sk.__future__.python3) {
         return new Sk.builtin.range_(start, stop, step);
     }
-
 
     _range_gen = function ($gen) {
             const start = $gen.gi$locals.start;
@@ -49,15 +35,11 @@ Sk.builtin.range = function range (start, stop, step) {
             }
             return [ /*resume*/ , /*ret*/ ];
     };
-    pystart = typeof start === "number" ? Sk.builtin.int_(start) : Sk.builtin.lng(start);
-    pystop = typeof stop === "number" ? Sk.builtin.int_(stop) : Sk.builtin.lng(stop);
-    pystep = typeof step === "number" ? Sk.builtin.int_(step) : Sk.builtin.lng(step);
-    
     _range_gen.co_varnames = ["start", "stop", "step"];
     _range_gen.co_name = new Sk.builtin.str("range");
    
 
-    return new Sk.builtin.generator(_range_gen, undefined, [pystart, pystop, pystep]);
+    return new Sk.builtin.generator(_range_gen, undefined, [start, stop, step]);
 };
 
 Sk.builtin.asnum$ = function (a) {

@@ -26,20 +26,18 @@ Sk.builtin.range_ = function (start, stop, step) {
     if (!(this instanceof Sk.builtin.range_)) {
         return new Sk.builtin.range_(start, stop, step);
     }
-    this.$pystart = typeof start === "number" ? Sk.builtin.int_(start) : Sk.builtin.lng(start);
-    this.$pystop = typeof stop === "number" ? Sk.builtin.int_(stop) : Sk.builtin.lng(stop);
-    this.$pystep = typeof step === "number" ? Sk.builtin.int_(step) : Sk.builtin.lng(step);
     debugger
-    // this.v = new Sk.builtin.generator(_range_gen, undefined, [pystart, pystop, pystep]);
+    this.$jstart = Sk.builtin.asnum$(start);
+    this.$jstop = Sk.builtin.asnum$(stop);
+    this.$jstep = Sk.builtin.asnum$(step);
     this.$start = start;
     this.$stop = stop;
     this.$step = step;
 
-
     this.$r = function () {
-        var name = "range(" + this.$start + ", " + this.$stop;
-        if (this.$step != 1) {
-            name += ", " + this.$step;
+        var name = "range(" + this.$jstart + ", " + this.$jstop;
+        if (this.$jstep != 1) {
+            name += ", " + this.$jstep;
         }
         name += ")";
         return new Sk.builtin.str(name);
@@ -53,54 +51,59 @@ Sk.builtin.range_.prototype.__class__ = Sk.builtin.range_;
 
 Sk.builtin.range_.prototype.mp$subscript = function (index) {
     let start, stop, step;
+    const compare = {too_lo: this.$step.nb$isnegative() ? "ob$gt" : "ob$lt",
+    too_hi: this.$step.nb$isnegative()? "ob$lt" : "ob$gt"}
     debugger;
+
     if (index instanceof Sk.builtin.slice) {
-        if (Sk.builtin.checkNone(index.start)) {
+        [start, stop, step] = [index.start, index.stop, index.step];
+
+        if (Sk.builtin.checkNone(start)) {
             start = this.$start;
-        } else if (index.start.v < this.$start) {
-            start = this.$start;
+        } else if (start.nb$isnegative()) {
+            start = this.$stop.nb$add(this.$step.nb$multiply(start));
+            if (start[compare.too_lo](this.$start).v) {
+                start = this.$start;
+            }
         } else {
-            start = this.$start + Sk.misceval.asIndex(index.start) * this.$step;
-            if (start > this.$stop) {
+            start = this.$start.nb$add(this.$step.nb$multiply(start));
+            if (start[compare.too_hi](this.$stop).v) {
                 start = this.$stop;
             }
         }
-        debugger;
-        if (Sk.builtin.checkNone(index.stop)) {
+
+        if (Sk.builtin.checkNone(stop)) {
             stop = this.$stop;
-        } else if (Sk.misceval.asIndex(index.stop) > this.$stop) {
-            stop = this.$stop;
+        } else if (stop.nb$isnegative()) {
+            stop = this.$stop.nb$add(this.$step.nb$multiply(stop));
+            if (stop[compare.too_lo](this.$start).v) {
+                stop = this.$start;
+            } 
         } else {
-            stop = this.$start + Sk.misceval.asIndex(index.stop) * this.$step;
-            if (stop < this.$start) {
-                start = this.$start;
+            stop = this.$start.nb$add(this.$step.nb$multiply(stop));
+            if (stop[compare.too_hi](this.$stop).v) {
+                stop = this.$stop;
             }
         }
 
-        if (Sk.builtin.checkNone(index.step)) {
+        if (Sk.builtin.checkNone(step)) {
             // Implied 1
-            step = 1;
-        } else {
-            step = Sk.misceval.asIndex(index.step);
+            step = Sk.builtin.int_(1);
         }
         // Scale by range's current step
-        step = step * this.$step;
-
-        pystart = typeof start === "number" ? Sk.builtin.int_(start) : Sk.builtin.lng(start);
-        pystop = typeof stop === "number" ? Sk.builtin.int_(stop) : Sk.builtin.lng(stop);
-        pystep = typeof step === "number" ? Sk.builtin.int_(step) : Sk.builtin.lng(step);
-
+        step = step.nb$multiply(this.$step);
         return new Sk.builtin.range_(start, stop, step);
-    }
-    const max = this.$step > 0 ? this.$stop : this.$start;
-    const min = this.$step > 0 ? this.$start : this.$stop;
-    index = Sk.misceval.asIndex(index);
-    if (index >= 0) {
-        val = this.$start + index * this.$step; 
+    };
+
+    debugger;
+    const max = this.$step.nb$ispositive() ? this.$stop : this.$start;
+    const min = this.$step.nb$ispositive() ? this.$start : this.$stop;
+    if (index.nb$isnegative()) {
+        val = this.$stop.nb$add(index.nb$multiply(this.$step)); 
     } else {
-        val = this.$stop + index * this.$step; 
+        val = this.$start.nb$add(index.nb$multiply(this.$step)); 
     }
-    if (val >= min && val <= max) {
+    if (val.ob$ge(min).v && val.ob$le(max).v) {
         return val;
     }
     else { throw new Sk.builtin.IndexError("range object index out of range")}
@@ -123,20 +126,19 @@ Sk.builtin.range_.prototype.sq$contains = function (item) {
 };
 
 Sk.builtin.range_.prototype.sq$length = function () {
-    const max = this.$step > 0 ? this.$stop : this.$start;
-    const min = this.$step > 0 ? this.$start : this.$stop;
+    const max = this.$step.nb$ispositive() ? this.$stop : this.$start;
+    const min = this.$step.nb$ispositive() ? this.$start : this.$stop;
     debugger;
-    if (typeof max === "number" && typeof min === "number") {
-        let len = max - min;
-    if (len <= 0) {
+    let len = max.nb$subtract(min);
+
+    if (len.nb$isnegative() || len.v === 0) {
         return new Sk.builtin.int_(0);
     }
-    len = Math.ceil(len / Math.abs(this.$step))
-    return new Sk.builtin.int_(len)
-    }
-    else {
-        throw new Sk.builtin.OverflowError("too large for now")
-    }
+    const abs_step = this.$step.nb$isnegative() ? this.$step.nb$negative() : this.$step;
+    const remainder =  len.nb$remainder(abs_step);
+    len = len.nb$floor_divide(abs_step);
+    len = remainder.nb$nonzero() ? len.nb$add(Sk.builtin.int_(1)) : len;
+    return len;
     
 };
 
@@ -156,7 +158,7 @@ Sk.builtin.range_.prototype.sq$length = function () {
 Sk.builtin.range_.prototype.tp$iter = function () {
     // Hijack the generator iterator - must create a new instance of a genearator here
     debugger
-    let iter = new Sk.builtin.generator(_range_gen, undefined, [this.$pystart,this.$pystop,this.$pystep]).tp$iter();
+    let iter = new Sk.builtin.generator(_range_gen, undefined, [this.$start,this.$stop,this.$step]).tp$iter();
     iter.$r = function () {
         return new Sk.builtin.str("<rangeiterator>");
     };

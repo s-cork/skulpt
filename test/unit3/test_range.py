@@ -377,25 +377,25 @@ class RangeTest(unittest.TestCase):
 #     #         test_id = "reversed(range({}, {}, {}))".format(start, end, step)
 #     #         self.assert_iterators_equal(iter1, iter2, test_id, limit=100)
 
-#    def test_slice1(self):
-#         def check(start, stop, step=None):
-#             i = slice(start, stop, step)
-#             self.assertEqual(list(r[i]), list(r)[i])
-#             self.assertEqual(len(r[i]), len(list(r)[i]))
-#         for r in [range(10),
-#                   range(0),
-#                   range(1, 9, 3),
-#                   range(8, 0, -3),
-#                 #   range(sys.maxsize+1, sys.maxsize+10),
-#                   ]:
-#             check(0, 2)
-#             check(0, 20)
-#             check(1, 2)
-#             check(20, 30)
-#             check(-30, -20)
-#             check(-1, 100, 2)
-#             check(0, -1)
-#             check(-1, -3, -1)
+    def test_slice1(self):
+        def check(start, stop, step=None):
+            i = slice(start, stop, step)
+            self.assertEqual(list(r[i]), list(r)[i])
+            self.assertEqual(len(r[i]), len(list(r)[i]))
+        for r in [range(10),
+                range(0),
+                range(1, 9, 3),
+                range(8, 0, -3),
+                #   range(sys.maxsize+1, sys.maxsize+10),
+                ]:
+            check(0, 2)
+            check(0, 20)
+            check(1, 2)
+            check(20, 30)
+            check(-30, -20)
+            check(-1, 100, 2)
+            check(0, -1)
+            check(-1, -3, -1)
 
 #     def test_slice2(self):
 #         self.assertEqual(slice(1), slice(None, 1, None))
