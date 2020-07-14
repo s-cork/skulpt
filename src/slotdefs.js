@@ -147,16 +147,25 @@ function slotFuncOneArg(dunderFunc) {
 }
 
 function slotFuncGetAttribute(pyName, canSuspend) {
-    const func = Sk.abstr.lookupSpecial(this, Sk.builtin.str.$getattribute);
-    let res;
-    if (func instanceof Sk.builtin.wrapper_descriptor) {
-        return func.d$wrapped.call(this, pyName, canSuspend);
-    } else if (canSuspend) {
-        res = Sk.misceval.callsimOrSuspendArray(func, [this, pyName]);
-    } else {
-        res = Sk.misceval.callsimArray(func, [this, pyName]);
-    }
-    return res;
+    const getattributeFn = Sk.abstr.lookupSpecial(this, Sk.builtin.str.$getattribute);
+    const self = this;
+    const r = Sk.misceval.tryCatch(
+        () => {
+            if (getattributeFn instanceof Sk.builtin.wrapper_descriptor) {
+                return getattributeFn.d$wrapped.call(self, pyName, canSuspend);
+            } else {
+                return Sk.misceval.callsimOrSuspendArray(getattributeFn, [self, pyName]);
+            }
+        },
+        function (e) {
+            if (e instanceof Sk.builtin.AttributeError) {
+                return undefined;
+            } else {
+                throw e;
+            }
+        }
+    );
+    return canSuspend ? r : Sk.misceval.retryOptionalSuspensionOrThrow(r);
 }
 
 function slotFuncFastCall(dunderFunc) {
@@ -387,21 +396,19 @@ slots.__getattribute__ = {
         return function tp$getattr(pyName, canSuspend) {
             const getattrFn = Sk.abstr.lookupSpecial(this, Sk.builtin.str.$getattr);
             if (getattrFn === undefined) {
-                // we don't support dynamically created __getattr__ but hey...
+                // we don't fully support dynamically created __getattr__ but hey...
                 this.constructor.prototype.tp$getattr = slotFuncGetAttribute;
                 return slotFuncGetAttribute.call(this, pyName, canSuspend);
             }
-            const getattributeFn = Sk.abstr.lookupSpecial(this, Sk.builtin.str.$getattribute);
             const self = this;
-
-            let r = Sk.misceval.chain(
+            const v = slotFuncGetAttribute.call(this, pyName, canSuspend);
+            const r = Sk.misceval.chain(v, (val) =>
                 Sk.misceval.tryCatch(
                     () => {
-                        if (getattributeFn instanceof Sk.builtin.wrapper_descriptor) {
-                            return getattributeFn.d$wrapped.call(self, pyName, canSuspend);
-                        } else {
-                            return Sk.misceval.callsimOrSuspendArray(getattributeFn, [self, pyName]);
+                        if (val !== undefined) {
+                            return val;
                         }
+                        return Sk.misceval.callsimOrSuspendArray(getattrFn, [self, pyName]);
                     },
                     function (e) {
                         if (e instanceof Sk.builtin.AttributeError) {
@@ -410,23 +417,7 @@ slots.__getattribute__ = {
                             throw e;
                         }
                     }
-                ),
-                (val) =>
-                    Sk.misceval.tryCatch(
-                        () => {
-                            if (val !== undefined) {
-                                return val;
-                            }
-                            return Sk.misceval.callsimOrSuspendArray(getattrFn, [self, pyName]);
-                        },
-                        function (e) {
-                            if (e instanceof Sk.builtin.AttributeError) {
-                                return undefined;
-                            } else {
-                                throw e;
-                            }
-                        }
-                    )
+                )
             );
             return canSuspend ? r : Sk.misceval.retryOptionalSuspensionOrThrow(r);
         };
