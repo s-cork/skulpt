@@ -60,7 +60,7 @@ import "./sorted.js";
 import "./typeobject.js";
 import "./builtindict.js";
 import "./constants.js";
-// require("./internalpython.js");
+import "./internalpython.js";
 
 /* jshint ignore:end */
 

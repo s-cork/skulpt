@@ -1,8 +1,8 @@
 import { assert, fail } from "assert";
-
+import { OpMap } from "../gen/parse_tables.js";
+import { ParseTables } from "../gen/parse_tables";
 // low level parser to a concrete syntax tree, derived from cpython's lib2to3
-import {OpMap} from "../gen/parse_tables.js";
-import {ParseTables} from "../gen/parse_tables";
+
 /**
  *
  * @constructor

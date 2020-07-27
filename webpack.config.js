@@ -69,7 +69,7 @@ module.exports = (env, argv) => {
             path: path.resolve(__dirname, "dist"),
             filename: outfile,
             // library: "Sk",
-            libraryTarget: "umd",
+            // libraryTarget: "umd",
         },
         devtool: "source-map",
         plugins: [

@@ -24,7 +24,7 @@ import { isArrayLike } from "./util.js";
  * Any variables that aren't set will be left alone.
  */
 
-Sk.bool_check = function(variable, name) {
+function bool_check(variable, name) {
     if (variable === undefined || variable === null || typeof variable !== "boolean") {
         throw new Error("must specify " + name + " and it must be a boolean");
     }
@@ -75,6 +75,8 @@ Sk.python3 = {
     silent_octal_literal: false
 };
 
+Sk.__future__ = Sk.python2;
+
 Sk.configure = function (options) {
     "use strict";
     Sk.output = options["output"] || Sk.output;
@@ -105,22 +107,22 @@ Sk.configure = function (options) {
     Sk.sysargv = options["sysargv"] || Sk.sysargv;
     assert(isArrayLike(Sk.sysargv));
 
-    Sk.__future__ = options["__future__"] || Sk.python2;
+    Sk.__future__ = options["__future__"] || Sk.__future__;
 
-    Sk.bool_check(Sk.__future__.print_function, "Sk.__future__.print_function");
-    Sk.bool_check(Sk.__future__.division, "Sk.__future__.division");
-    Sk.bool_check(Sk.__future__.unicode_literals, "Sk.__future__.unicode_literals");
-    Sk.bool_check(Sk.__future__.class_repr, "Sk.__future__.class_repr");
-    Sk.bool_check(Sk.__future__.inherit_from_object, "Sk.__future__.inherit_from_object");
-    Sk.bool_check(Sk.__future__.super_args, "Sk.__future__.super_args");
-    Sk.bool_check(Sk.__future__.octal_number_literal, "Sk.__future__.octal_number_literal");
-    Sk.bool_check(Sk.__future__.bankers_rounding, "Sk.__future__.bankers_rounding");
-    Sk.bool_check(Sk.__future__.python_version, "Sk.__future__.python_version");
-    Sk.bool_check(Sk.__future__.dunder_round, "Sk.__future__.dunder_round");
-    Sk.bool_check(Sk.__future__.exceptions, "Sk.__future__.exceptions");
-    Sk.bool_check(Sk.__future__.no_long_type, "Sk.__future__.no_long_type");
-    Sk.bool_check(Sk.__future__.ceil_floor_int, "Sk.__future__.ceil_floor_int");
-    Sk.bool_check(Sk.__future__.silent_octal_literal, "Sk.__future__.silent_octal_literal");
+    bool_check(Sk.__future__.print_function, "Sk.__future__.print_function");
+    bool_check(Sk.__future__.division, "Sk.__future__.division");
+    bool_check(Sk.__future__.unicode_literals, "Sk.__future__.unicode_literals");
+    bool_check(Sk.__future__.class_repr, "Sk.__future__.class_repr");
+    bool_check(Sk.__future__.inherit_from_object, "Sk.__future__.inherit_from_object");
+    bool_check(Sk.__future__.super_args, "Sk.__future__.super_args");
+    bool_check(Sk.__future__.octal_number_literal, "Sk.__future__.octal_number_literal");
+    bool_check(Sk.__future__.bankers_rounding, "Sk.__future__.bankers_rounding");
+    bool_check(Sk.__future__.python_version, "Sk.__future__.python_version");
+    bool_check(Sk.__future__.dunder_round, "Sk.__future__.dunder_round");
+    bool_check(Sk.__future__.exceptions, "Sk.__future__.exceptions");
+    bool_check(Sk.__future__.no_long_type, "Sk.__future__.no_long_type");
+    bool_check(Sk.__future__.ceil_floor_int, "Sk.__future__.ceil_floor_int");
+    bool_check(Sk.__future__.silent_octal_literal, "Sk.__future__.silent_octal_literal");
 
     // in __future__ add checks for absolute_import
 
@@ -201,11 +203,11 @@ Sk.configure = function (options) {
 
     Sk.misceval.softspace_ = false;
 
-    Sk.switch_version("round$", Sk.__future__.dunder_round);
-    Sk.switch_version("next$", Sk.__future__.python3);
-    Sk.switch_version("haskey$", Sk.__future__.python3);
-    Sk.switch_version("clear$", Sk.__future__.python3);
-    Sk.switch_version("copy$", Sk.__future__.python3);
+    switch_version("round$", Sk.__future__.dunder_round);
+    switch_version("next$", Sk.__future__.python3);
+    switch_version("haskey$", Sk.__future__.python3);
+    switch_version("clear$", Sk.__future__.python3);
+    switch_version("copy$", Sk.__future__.python3);
 
     Sk.builtin.lng.tp$name = Sk.__future__.no_long_type ? "int" : "long";
 
@@ -328,7 +330,7 @@ Sk.inputfun = function (args) {
 //   },
 //   ...
 
-Sk.setup_method_mappings = function () {
+function setup_method_mappings() {
     return {
         "round$": {
             "classes": [Sk.builtin.float_,
@@ -371,10 +373,10 @@ Sk.setup_method_mappings = function () {
     };
 };
 
-Sk.switch_version = function (method_to_map, python3) {
+function switch_version(method_to_map, python3) {
     var mapping, klass, classes, idx, len, newmeth, oldmeth, mappings;
 
-    mappings = Sk.setup_method_mappings();
+    mappings = setup_method_mappings();
 
     mapping = mappings[method_to_map];
 
@@ -398,6 +400,3 @@ Sk.switch_version = function (method_to_map, python3) {
         }
     }
 };
-
-Sk.exportSymbol("Sk.__future__", Sk.__future__);
-Sk.exportSymbol("Sk.inputfun", Sk.inputfun);
