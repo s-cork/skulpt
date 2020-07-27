@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * Sk.builtin.numtype
@@ -670,3 +671,4 @@ Sk.builtin.numtype.prototype.nb$isnegative = function () {
 Sk.builtin.numtype.prototype.nb$ispositive = function () {
     return Sk.builtin.NotImplemented.NotImplemented$;
 };
+export default Sk;

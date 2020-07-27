@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 var deprecatedError = new Sk.builtin.ExternalError("Sk.builtin.nmber is deprecated.");
 
 /**
@@ -308,3 +309,4 @@ Sk.builtin.nmber.prototype.str$ = function (base, sign) {
 };
 
 Sk.exportSymbol("Sk.builtin.nmber", Sk.builtin.nmber);
+export default Sk;

@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 //"""Token constants (from somewhere)."""
 
 var __all__ = ["tok_name", "ISTERMINAL", "ISNONTERMINAL", "ISEOF"];
@@ -166,3 +167,4 @@ Sk.exportSymbol("Sk.token.EXACT_TOKEN_TYPES");
 Sk.exportSymbol("Sk.token.ISTERMINAL", Sk.token.ISTERMINAL);
 Sk.exportSymbol("Sk.token.ISNONTERMINAL", Sk.token.ISNONTERMINAL);
 Sk.exportSymbol("Sk.token.ISEOF", Sk.token.ISEOF);
+export default Sk;

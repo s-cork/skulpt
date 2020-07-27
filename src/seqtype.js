@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * Sk.builtin.seqtype
@@ -131,3 +132,4 @@ Sk.builtin.seqtype.prototype["__rmul__"] = new Sk.builtin.func(function (self, n
     return self.sq$repeat(n);    
 
 });
+export default Sk;

@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * @param {Object} iterable
@@ -65,3 +66,4 @@ Sk.builtin.filter_.prototype["$r"] = function () {
 };
 
 Sk.exportSymbol("Sk.builtin.filter_", Sk.builtin.filter_);
+export default Sk;

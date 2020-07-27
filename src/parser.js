@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 // low level parser to a concrete syntax tree, derived from cpython's lib2to3
 
 /**
@@ -373,7 +374,8 @@ Sk.parseTreeDump = function parseTreeDump (n, indent) {
     return ret;
 };
 
-
+Sk.Parser = Parser;
 Sk.exportSymbol("Sk.Parser", Parser);
 Sk.exportSymbol("Sk.parse", Sk.parse);
 Sk.exportSymbol("Sk.parseTreeDump", Sk.parseTreeDump);
+export default Sk;

@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * Sk.builtin.object
@@ -530,3 +531,4 @@ Sk.builtin.NotImplemented.NotImplemented$ = new Sk.builtin.NotImplemented();
 
 Sk.exportSymbol("Sk.builtin.none", Sk.builtin.none);
 Sk.exportSymbol("Sk.builtin.NotImplemented", Sk.builtin.NotImplemented);
+export default Sk;

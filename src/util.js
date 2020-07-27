@@ -15,6 +15,8 @@ Sk.global =
     typeof window !== "undefined" ? window : // jshint ignore:line
     {};
 
+Sk.global["Sk"] = Sk;
+
 /**
  * Export "object" to global namespace as "name".
  *
@@ -22,24 +24,24 @@ Sk.global =
  * @param {*} object object to export
  */
 Sk.exportSymbol = function (name, object) {
-    var parts = name.split(".");
-    var curobj = Sk.global;
-    var part, idx;
+    // var parts = name.split(".");
+    // var curobj = Sk.global;
+    // var part, idx;
 
-    for (idx = 0; idx < (parts.length - 1); idx++) {
-        part = parts[idx];
+    // for (idx = 0; idx < (parts.length - 1); idx++) {
+    //     part = parts[idx];
 
-        if (curobj.hasOwnProperty(part)) {
-            curobj = curobj[part];
-        } else {
-            curobj = curobj[part] = {};
-        }
-    }
+    //     if (curobj.hasOwnProperty(part)) {
+    //         curobj = curobj[part];
+    //     } else {
+    //         curobj = curobj[part] = {};
+    //     }
+    // }
 
-    if (typeof object !== "undefined") {
-        part = parts[idx];
-        curobj[part] = object;
-    }
+    // if (typeof object !== "undefined") {
+    //     part = parts[idx];
+    //     curobj[part] = object;
+    // }
 };
 
 Sk.isArrayLike = function (object) {
@@ -59,3 +61,5 @@ Sk.exportSymbol("Sk.build", Sk.build);
 Sk.exportSymbol("Sk.exportSymbol", Sk.exportSymbol);
 Sk.exportSymbol("Sk.isArrayLike", Sk.isArrayLike);
 Sk.exportSymbol("Sk.js_beautify", Sk.js_beautify);
+
+export default Sk;

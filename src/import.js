@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @namespace Sk
  *
@@ -123,15 +124,15 @@ Sk.doOneTimeInitialization = function (canSuspend) {
     }
 
 
-    for (var file in Sk.internalPy.files) {
-        var fileWithoutExtension = file.split(".")[0].split("/")[1];
-        var mod = Sk.importBuiltinWithBody(fileWithoutExtension, false, Sk.internalPy.files[file], true);
-        mod = Sk.misceval.retryOptionalSuspensionOrThrow(mod);
-        Sk.asserts.assert(mod["$d"][fileWithoutExtension] !== undefined, "Should have imported name " + fileWithoutExtension);
-        Sk.builtins[fileWithoutExtension] = mod["$d"][fileWithoutExtension];
-        delete Sk.builtins[fileWithoutExtension].__module__;
-        delete Sk.globals[fileWithoutExtension];
-    }
+    // for (var file in Sk.internalPy.files) {
+    //     var fileWithoutExtension = file.split(".")[0].split("/")[1];
+    //     var mod = Sk.importBuiltinWithBody(fileWithoutExtension, false, Sk.internalPy.files[file], true);
+    //     mod = Sk.misceval.retryOptionalSuspensionOrThrow(mod);
+    //     Sk.asserts.assert(mod["$d"][fileWithoutExtension] !== undefined, "Should have imported name " + fileWithoutExtension);
+    //     Sk.builtins[fileWithoutExtension] = mod["$d"][fileWithoutExtension];
+    //     delete Sk.builtins[fileWithoutExtension].__module__;
+    //     delete Sk.globals[fileWithoutExtension];
+    // }
 };
 
 /**
@@ -604,3 +605,4 @@ Sk.exportSymbol("Sk.importMainWithBody", Sk.importMainWithBody);
 Sk.exportSymbol("Sk.importBuiltinWithBody", Sk.importBuiltinWithBody);
 Sk.exportSymbol("Sk.builtin.__import__", Sk.builtin.__import__);
 Sk.exportSymbol("Sk.importStar", Sk.importStar);
+export default Sk;

@@ -1,3 +1,5 @@
+import Sk from "./util.js";
+
 if(Sk.builtin === undefined) {
     Sk.builtin = {};
 }
@@ -738,3 +740,4 @@ Sk.builtin.type.$allocateSlot = function (klass, dunder) {
         };
     }
 };
+export default Sk;

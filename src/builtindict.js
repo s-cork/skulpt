@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 // Note: the hacky names on int, long, float have to correspond with the
 // uniquization that the compiler does for words that are reserved in
 // Javascript. This is a bit hokey.
@@ -131,3 +132,4 @@ Sk.setupObjects = function (py3) {
 };
 Sk.exportSymbol("Sk.setupObjects", Sk.setupObjects);
 Sk.exportSymbol("Sk.builtins", Sk.builtins);
+export default Sk;

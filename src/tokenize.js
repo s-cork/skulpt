@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 var tokens = Sk.token.tokens
 
 const TokenError = Sk.builtin.SyntaxError;
@@ -472,3 +473,4 @@ function _tokenize(filename, readline, encoding, yield_) {
 Sk._tokenize = _tokenize;
 
 Sk.exportSymbol("Sk._tokenize", Sk._tokenize);
+export default Sk;

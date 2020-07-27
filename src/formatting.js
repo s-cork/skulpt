@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 // Implement the default "format specification mini-language"
 // for numbers and strings
 // https://docs.python.org/3.7/library/string.html#formatspec
@@ -369,3 +370,4 @@ var format = function (kwa) {
 format["co_kwargs"] = true;
 Sk.builtin.str.prototype["format"] = new Sk.builtin.func(format);
 Sk.builtin.str.prototype["__format__"] = new Sk.builtin.func(formatString);
+export default Sk;

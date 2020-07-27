@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /** @param {...*} x */
 var out;
 
@@ -2890,3 +2891,4 @@ Sk.exportSymbol("Sk.unfixReserved", Sk.unfixReserved);
 
 Sk.mangleName = mangleName;
 Sk.exportSymbol("Sk.mangleName", Sk.mangleName);
+export default Sk;

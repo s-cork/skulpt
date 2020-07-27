@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * @param {Object} iterable
@@ -61,3 +62,4 @@ Sk.builtin.zip_.prototype["$r"] = function () {
 };
 
 Sk.exportSymbol("Sk.builtin.zip_", Sk.builtin.zip_);
+export default Sk;

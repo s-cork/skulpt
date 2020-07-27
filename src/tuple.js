@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * @param {Array.<Object>|Object} L
@@ -307,3 +308,4 @@ Sk.builtin.tuple_iter_.prototype.next$ = function (self) {
     }
     return ret;
 };
+export default Sk;

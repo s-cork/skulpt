@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * Sk.builtin.bool
@@ -50,3 +51,4 @@ Sk.builtin.bool.prototype.__format__ = new Sk.builtin.func(function(self) {
 });
 
 Sk.exportSymbol("Sk.builtin.bool", Sk.builtin.bool);
+export default Sk;

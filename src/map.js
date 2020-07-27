@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * @param {Object} iterable
@@ -83,3 +84,4 @@ Sk.builtin.map_.prototype["$r"] = function () {
 };
 
 Sk.exportSymbol("Sk.builtin.map_", Sk.builtin.map_);
+export default Sk;

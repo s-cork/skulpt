@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /*
  * The filename, line number, and column number of exceptions are
  * stored within the exception object.  Note that not all exceptions
@@ -549,3 +550,4 @@ Sk.builtin.getExcInfo = function(e) {
 };
 // NOT exported
 
+export default Sk;

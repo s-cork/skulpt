@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * @param {Array.<Object>} S
@@ -477,3 +478,4 @@ Sk.builtin.set_iter_.prototype.next$ = function (self) {
     }
     return ret;
 };
+export default Sk;

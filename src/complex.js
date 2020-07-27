@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * hypot is a ESCMA6 function and maybe not available across all browsers
  */
@@ -1235,3 +1236,4 @@ Sk.builtin.complex.PyOS_double_to_string.Py_DTSF_ALT = 0x04; // "alternate" form
 Sk.builtin.complex.PyOS_double_to_string.Py_DTST_FINITE = 0;
 Sk.builtin.complex.PyOS_double_to_string.Py_DTST_INFINITE = 1;
 Sk.builtin.complex.PyOS_double_to_string.Py_DTST_NAN = 2;
+export default Sk;

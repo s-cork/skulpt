@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 //
 // This is pretty much a straight port of ast.c from CPython 3.7.3
 // (with a few leftovers from 2.6.5).
@@ -3365,3 +3366,4 @@ Sk.astDump = function (node) {
 
 Sk.exportSymbol("Sk.astFromParse", Sk.astFromParse);
 Sk.exportSymbol("Sk.astDump", Sk.astDump);
+export default Sk;

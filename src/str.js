@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 Sk.builtin.interned = Object.create(null);
 
 function getInterned (x) {
@@ -1327,3 +1328,4 @@ Sk.builtin.str_iter_.prototype.next$ = function (self) {
     }
     return ret;
 };
+export default Sk;

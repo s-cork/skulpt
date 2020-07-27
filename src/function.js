@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @namespace Sk.builtin
  */
@@ -494,3 +495,4 @@ Sk.builtin.func.prototype["$r"] = function () {
         return new Sk.builtin.str("<function " + name + ">");
     }
 };
+export default Sk;

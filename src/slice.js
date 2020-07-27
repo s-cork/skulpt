@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * @param {Object} start
@@ -184,3 +185,4 @@ Sk.builtin.slice.prototype.sssiter$ = function (wrt, f) {
 Sk.builtin.slice$start = new Sk.builtin.str("start");
 Sk.builtin.slice$stop = new Sk.builtin.str("stop");
 Sk.builtin.slice$step = new Sk.builtin.str("step");
+export default Sk;

@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /**
  * @constructor
  * @param {Object} iterable
@@ -64,3 +65,4 @@ Sk.builtin.enumerate.co_name = new Sk.builtin.str("enumerate");
 Sk.builtin.enumerate.prototype["$r"] = function () {
     return new Sk.builtin.str("<enumerate object>");
 };
+export default Sk;

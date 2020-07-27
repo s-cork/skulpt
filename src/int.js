@@ -1,3 +1,4 @@
+import Sk from "./util.js";
 /* jslint nomen: true, bitwise: true */
 /* global Sk: true */
 
@@ -1176,3 +1177,4 @@ Sk.str2number = function (s, base, parser, negater, fname) {
 };
 
 Sk.exportSymbol("Sk.builtin.int_", Sk.builtin.int_);
+export default Sk;
