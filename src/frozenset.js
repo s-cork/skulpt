@@ -368,7 +368,7 @@ Sk.builtin.frozenset.prototype["copy"] = new Sk.builtin.func(function (self) {
     return new Sk.builtin.frozenset(self);
 });
 
-Sk.exportSymbol("Sk.builtin.frozenset", Sk.builtin.frozenset);
+
 
 /**
  * @constructor

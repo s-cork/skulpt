@@ -1175,4 +1175,4 @@ Sk.str2number = function (s, base, parser, negater, fname) {
     return val;
 };
 
-Sk.exportSymbol("Sk.builtin.int_", Sk.builtin.int_);
+

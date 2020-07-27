@@ -377,6 +377,6 @@ Sk.parseTreeDump = function parseTreeDump (n, indent) {
 };
 
 Sk.Parser = Parser;
-Sk.exportSymbol("Sk.Parser", Parser);
-Sk.exportSymbol("Sk.parse", Sk.parse);
-Sk.exportSymbol("Sk.parseTreeDump", Sk.parseTreeDump);
+
+
+

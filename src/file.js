@@ -259,4 +259,4 @@ Sk.builtin.file.prototype["write"] = new Sk.builtin.func(function write(self, st
 });
 
 
-Sk.exportSymbol("Sk.builtin.file", Sk.builtin.file);
+

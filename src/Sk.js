@@ -15,5 +15,5 @@ Sk.abstr = {};
 Sk.misceval = {};
 Sk.ffi = {};
 
-Sk.exportSymbol = () => {};
+
 Sk.js_beautify = (x) => x;

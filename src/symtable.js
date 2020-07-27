@@ -90,7 +90,7 @@ var SYMTAB_CONSTS = {
     ClassBlock: ClassBlock
 };
 Sk.SYMTAB_CONSTS = SYMTAB_CONSTS;
-Sk.exportSymbol("Sk.SYMTAB_CONSTS", SYMTAB_CONSTS);
+
 
 /**
  * @constructor
@@ -1123,5 +1123,5 @@ Sk.dumpSymtab = function (st) {
     return getIdents(st.top, "");
 };
 
-Sk.exportSymbol("Sk.symboltable", Sk.symboltable);
-Sk.exportSymbol("Sk.dumpSymtab", Sk.dumpSymtab);
+
+

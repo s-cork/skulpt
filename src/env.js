@@ -102,7 +102,7 @@ Sk.configure = function (options) {
 
     Sk.timeoutMsg = options["timeoutMsg"] || Sk.timeoutMsg;
     assert(typeof Sk.timeoutMsg === "function");
-    Sk.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
+
 
     Sk.sysargv = options["sysargv"] || Sk.sysargv;
     assert(isArrayLike(Sk.sysargv));
@@ -219,7 +219,7 @@ Sk.configure = function (options) {
     Sk.setupObjects(Sk.__future__.python3);
 };
 
-Sk.exportSymbol("Sk.configure", Sk.configure);
+
 
 /*
 * Replaceable handler for uncaught exceptions
@@ -234,7 +234,7 @@ Sk.uncaughtException = function(err) {
 Sk.uncaughtException = function(err) {
     throw err;
 };
-Sk.exportSymbol("Sk.uncaughtException", Sk.uncaughtException);
+
 
 /*
  *      Replaceable message for message timeouts
@@ -242,7 +242,7 @@ Sk.exportSymbol("Sk.uncaughtException", Sk.uncaughtException);
 Sk.timeoutMsg = function () {
     return "Program exceeded run time limit.";
 };
-Sk.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
+
 
 /*
  *  Hard execution timeout, throws an error. Set to null to disable
@@ -277,7 +277,7 @@ Sk.sysargv = [];
 Sk.getSysArgv = function () {
     return Sk.sysargv;
 };
-Sk.exportSymbol("Sk.getSysArgv", Sk.getSysArgv);
+
 
 
 /**

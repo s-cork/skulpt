@@ -2871,25 +2871,25 @@ Sk.compile = function (source, filename, mode, canSuspend) {
     };
 };
 
-Sk.exportSymbol("Sk.compile", Sk.compile);
+
 
 Sk.resetCompiler = function () {
     Sk.gensymcount = 0;
 };
 
-Sk.exportSymbol("Sk.resetCompiler", Sk.resetCompiler);
+
 
 Sk.fixReservedWords = fixReservedWords;
-Sk.exportSymbol("Sk.fixReservedWords", Sk.fixReservedWords);
+
 
 Sk.fixReservedNames = fixReservedNames;
-Sk.exportSymbol("Sk.fixReservedNames", Sk.fixReservedNames);
+
 
 Sk.fixReserved = fixReserved;
-Sk.exportSymbol("Sk.fixReserved", Sk.fixReserved);
+
 
 Sk.unfixReserved = unfixReserved;
-Sk.exportSymbol("Sk.unfixReserved", Sk.unfixReserved);
+
 
 Sk.mangleName = mangleName;
-Sk.exportSymbol("Sk.mangleName", Sk.mangleName);
+

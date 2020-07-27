@@ -76,7 +76,7 @@ Sk.builtin.str = function (x) {
     return this;
 
 };
-Sk.exportSymbol("Sk.builtin.str", Sk.builtin.str);
+
 
 Sk.abstr.setUpInheritance("str", Sk.builtin.str, Sk.builtin.seqtype);
 
