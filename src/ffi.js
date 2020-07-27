@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @namespace Sk.ffi
  *
@@ -177,4 +177,3 @@ Sk.ffi.unwrapn = function (obj) {
     return obj["v"];
 };
 Sk.exportSymbol("Sk.ffi.unwrapn", Sk.ffi.unwrapn);
-export default Sk;

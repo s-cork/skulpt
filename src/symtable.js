@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /* Flags for def-use information */
 
 var DEF_GLOBAL = 1;
@@ -1123,4 +1123,3 @@ Sk.dumpSymtab = function (st) {
 
 Sk.exportSymbol("Sk.symboltable", Sk.symboltable);
 Sk.exportSymbol("Sk.dumpSymtab", Sk.dumpSymtab);
-export default Sk;

@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * builtins are supposed to come from the __builtin__ module, but we don't do
  * that yet.
@@ -1523,4 +1523,3 @@ Sk.builtin.intern = function intern () {
  };
  Sk.builtinFiles = undefined;
  */
-export default Sk;

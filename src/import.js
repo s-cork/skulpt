@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @namespace Sk
  *
@@ -605,4 +605,3 @@ Sk.exportSymbol("Sk.importMainWithBody", Sk.importMainWithBody);
 Sk.exportSymbol("Sk.importBuiltinWithBody", Sk.importBuiltinWithBody);
 Sk.exportSymbol("Sk.builtin.__import__", Sk.builtin.__import__);
 Sk.exportSymbol("Sk.importStar", Sk.importStar);
-export default Sk;

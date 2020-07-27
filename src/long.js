@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /* global Sk: true, goog:true */
 
 // long aka "bignumber" implementation
@@ -825,4 +825,3 @@ Sk.builtin.lng.prototype.str$ = function (base, sign) {
     //    Another base... convert...
     return work.toString(base);
 };
-export default Sk;

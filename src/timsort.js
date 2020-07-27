@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @constructor
  * @param {Sk.builtin.list=} list
@@ -732,4 +732,3 @@ Sk.builtin.listSlice.prototype.reverse = function () {
 
 Sk.exportSymbol("Sk.builtin.listSlice", Sk.builtin.listSlice);
 Sk.exportSymbol("Sk.builtin.timSort", Sk.builtin.timSort);
-export default Sk;

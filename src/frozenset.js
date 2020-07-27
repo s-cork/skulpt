@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @constructor
  * @param {Array.<Object>} S
@@ -430,4 +430,3 @@ Sk.builtin.frozenset.prototype.__contains__ = new Sk.builtin.func(function(self,
     Sk.builtin.pyCheckArgsLen("__contains__", arguments.length, 2, 2);
     return new Sk.builtin.bool(self.sq$contains(item));
 });
-export default Sk;

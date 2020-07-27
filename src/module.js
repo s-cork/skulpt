@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @constructor
  */
@@ -18,4 +18,4 @@ Sk.builtin.module.prototype.$r = function() {
     };
     return new Sk.builtin.str("<module " + get("__name__") + " from " + get("__file__") + ">");
 };
-export default Sk;
+

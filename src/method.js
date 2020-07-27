@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @constructor
  *
@@ -136,4 +136,3 @@ Sk.builtin.method.prototype["$r"] = function () {
     var owner = this.im_class !== Sk.builtin.none.none$ ? Sk.abstr.typeName(this.im_class) : "?";
     return new Sk.builtin.str("<bound method " + owner  + "." + this.tp$name + " of " + Sk.ffi.remapToJs(Sk.misceval.objectRepr(this.im_self)) + ">");
 };
-export default Sk;

@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @namespace Sk.builtin
  */
@@ -920,4 +920,3 @@ Sk.builtin.float_.prototype.str$ = function (base, sign) {
 
     return tmp;
 };
-export default Sk;

@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 Sk.builtin.str.$emptystr = new Sk.builtin.str("");
 
 /**
@@ -134,4 +134,3 @@ var builtinNames = [
 for (var i = 0; i < builtinNames.length; i++) {
     Sk.builtin[builtinNames[i]].co_name = new Sk.builtin.str(builtinNames[i]);
 }
-export default Sk;

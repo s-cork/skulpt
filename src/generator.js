@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @constructor
  * @param {Function} code javascript code object for the function
@@ -129,4 +129,3 @@ Sk.builtin.makeGenerator = function (next, data) {
     return gen;
 };
 Sk.exportSymbol("Sk.builtin.makeGenerator", Sk.builtin.makeGenerator);
-export default Sk;

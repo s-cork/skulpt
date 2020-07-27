@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @namespace Sk.abstr
  *
@@ -1037,4 +1037,3 @@ Sk.abstr.superConstructor = function (thisClass, self, args) {
     var argumentsForConstructor = Array.prototype.slice.call(arguments, 2);
     thisClass.prototype.tp$base.apply(self, argumentsForConstructor);
 };
-export default Sk;

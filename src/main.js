@@ -5,7 +5,8 @@
 // It should be kept in sync with ../skulpt.py.
 // Order is important!
 
-import Sk from "./util.js";
+// import {Sk} from "./util.js";
+import "./util.js";
 
 // Global support functions
 Sk.global["strftime"] = require("strftime");
@@ -71,4 +72,4 @@ import "./constants.js";
 
 /* jshint ignore:end */
 
-export {Sk};
+// export {Sk};

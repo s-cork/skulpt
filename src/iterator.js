@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
   * Builds an iterator that outputs the items from the inputted object
   * @constructor
@@ -101,4 +101,3 @@ Sk.builtin.iterator.prototype.next$ = function (self) {
 };
 
 Sk.exportSymbol("Sk.builtin.iterator", Sk.builtin.iterator);
-export default Sk;

@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * Base namespace for Skulpt. This is the only symbol that Skulpt adds to the
  * global namespace. Other user accessible symbols are noted and described
@@ -399,4 +399,3 @@ Sk.switch_version = function (method_to_map, python3) {
 
 Sk.exportSymbol("Sk.__future__", Sk.__future__);
 Sk.exportSymbol("Sk.inputfun", Sk.inputfun);
-export default Sk;

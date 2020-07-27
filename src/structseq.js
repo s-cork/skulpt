@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 Sk.builtin.structseq_types = {};
 
 Sk.builtin.make_structseq = function (module, name, fields, doc) {
@@ -97,4 +97,3 @@ Sk.builtin.make_structseq = function (module, name, fields, doc) {
     return cons;
 };
 Sk.exportSymbol("Sk.builtin.make_structseq", Sk.builtin.make_structseq);
-export default Sk;

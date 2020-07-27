@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 
 Sk.asserts = {ENABLE_ASSERTS: true};
 
@@ -35,4 +35,3 @@ Sk.asserts.fail = function (message) {
     }
 };
 Sk.exportSymbol("Sk.asserts.fail", Sk.asserts.fail);
-export default Sk;

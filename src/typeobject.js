@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 Sk.builtin.type_is_subtype_base_chain = function type_is_subtype_base_chain(a, b) {
     do {
         if (a == b) {
@@ -140,4 +140,3 @@ Sk.builtin.super_.__doc__ = new Sk.builtin.str(
     "    def meth(self, arg):\n" +
     "        super(C, self).meth(arg)");
 
-export default Sk;

@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 Sk.builtin.sorted = function sorted (iterable, cmp, key, reverse) {
     var arr;
     var next;
@@ -67,4 +67,3 @@ Sk.builtin.sorted = function sorted (iterable, cmp, key, reverse) {
 };
 
 /* NOTE: See constants used for kwargs in constants.js */
-export default Sk;

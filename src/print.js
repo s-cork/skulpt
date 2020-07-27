@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /*
 	Implementation of the Python3 print version. Due to Python2 grammar we have
 	to mimic the named keywords after *args as kwargs. Though this does not change
@@ -85,4 +85,3 @@ print_f.co_kwargs = true;
 Sk.builtin.print = new Sk.builtin.func(print_f);
 
 Sk.builtin.print.__doc__ = new Sk.builtin.str("print(value, ..., sep=' ', end='\\n', file=sys.stdout, flush=False)\n\nPrints the values to a stream, or to sys.stdout by default.\nOptional keyword arguments:\nfile:  a file-like object (stream); defaults to the current sys.stdout.\nsep:   string inserted between values, default a space.\nend:   string appended after the last value, default a newline.\nflush: whether to forcibly flush the stream.");
-export default Sk;

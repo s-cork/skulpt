@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @constructor
  * @param {number} start
@@ -115,4 +115,3 @@ Sk.builtin.range_.prototype["count"] = new Sk.builtin.func(function (self, item)
     Sk.builtin.pyCheckArgsLen("count", arguments.length, 2, 2);
     return Sk.misceval.callsimArray(self.v.count, [self.v, item]);
 });
-export default Sk;

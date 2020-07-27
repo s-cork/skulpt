@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @fileoverview
  * @suppress {checkTypes}
@@ -1854,4 +1854,3 @@ Sk.builtin.biginteger.prototype.isProbablePrime = Sk.builtin.biginteger.prototyp
 //static Sk.builtin.biginteger valueOf(long val)
 
 //module.exports = Sk.builtin.biginteger;
-export default Sk;

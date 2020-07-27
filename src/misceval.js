@@ -1,4 +1,4 @@
-import Sk from "./util.js";
+
 /**
  * @namespace Sk.misceval
  *
@@ -1332,4 +1332,3 @@ Sk.misceval.buildClass = function (globals, func, name, bases, cell) {
     return klass;
 };
 Sk.exportSymbol("Sk.misceval.buildClass", Sk.misceval.buildClass);
-export default Sk;
