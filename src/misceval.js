@@ -1,3 +1,4 @@
+import { assert, fail } from "assert";
 
 /**
  * @namespace Sk.misceval
@@ -111,7 +112,7 @@ Sk.misceval.asIndex = function (o) {
         }
         return Sk.builtin.asnum$(ret);
     }
-    Sk.asserts.fail("todo asIndex;");
+    fail("todo asIndex;");
 };
 
 /**
@@ -258,8 +259,8 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
         w_type,
         v_type;
 
-    Sk.asserts.assert((v !== null) && (v !== undefined), "passed null or undefined parameter to Sk.misceval.richCompareBool");
-    Sk.asserts.assert((w !== null) && (w !== undefined), "passed null or undefined parameter to Sk.misceval.richCompareBool");
+    assert((v !== null) && (v !== undefined), "passed null or undefined parameter to Sk.misceval.richCompareBool");
+    assert((w !== null) && (w !== undefined), "passed null or undefined parameter to Sk.misceval.richCompareBool");
 
     v_type = v.ob$type;
     w_type = w.ob$type;
@@ -570,7 +571,7 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
 Sk.exportSymbol("Sk.misceval.richCompareBool", Sk.misceval.richCompareBool);
 
 Sk.misceval.objectRepr = function (v) {
-    Sk.asserts.assert(v !== undefined, "trying to repr undefined");
+    assert(v !== undefined, "trying to repr undefined");
     if ((v === null) || (v instanceof Sk.builtin.none)) {
         return new Sk.builtin.str("None");
     } else if (v === true) {

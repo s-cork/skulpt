@@ -29,7 +29,7 @@ module.exports = (env, argv) => {
         minimize: false
     };
     var outfile = 'skulpt.js';
-    var assertfile = './assert-dev.js';
+    var assertfile = path.resolve(__dirname, 'src/assert-dev.js');
     var mod = {};
 
     if (argv.mode === 'production') {
@@ -50,7 +50,7 @@ module.exports = (env, argv) => {
             ]
         };
         outfile = 'skulpt.min.js';
-        assertfile = './assert-prod.js';
+        assertfile = path.resolve(__dirname, 'src/assert-prod.js');
         mod = {
             rules: [
                 {

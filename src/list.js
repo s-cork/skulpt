@@ -1,3 +1,4 @@
+import { fail } from "assert";
 
 /**
  * @constructor
@@ -204,7 +205,7 @@ Sk.builtin.list.prototype.tp$richcompare = function (w, op) {
             case "GtE":
                 return vl >= wl;
             default:
-                Sk.asserts.fail();
+                fail();
         }
     }
 

@@ -1,3 +1,4 @@
+import { assert } from "assert";
 
 /**
  * @constructor
@@ -84,7 +85,7 @@ Sk.builtin.generator.prototype.tp$iternext = function (canSuspend, yielded) {
         }
         //print("ret", JSON.stringify(ret));
         self["gi$running"] = false;
-        Sk.asserts.assert(ret !== undefined);
+        assert(ret !== undefined);
         if (ret !== Sk.builtin.none.none$) {
             // returns a pair: resume target and yielded value
             self["gi$resumeat"] = ret[0];

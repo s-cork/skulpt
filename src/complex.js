@@ -1,3 +1,4 @@
+import { assert } from "assert";
 
 /**
  * hypot is a ESCMA6 function and maybe not available across all browsers
@@ -494,7 +495,7 @@ Sk.builtin.complex.prototype.nb$divide = function (other) {
         // divide tops and bottom by b.imag
         ratio = breal / bimag;
         denom = breal * ratio + bimag;
-        Sk.asserts.assert(bimag !== 0.0);
+        assert(bimag !== 0.0);
         real = (areal * ratio + aimag) / denom;
         imag = (aimag * ratio - areal) / denom;
     } else {

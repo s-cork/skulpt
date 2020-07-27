@@ -1,3 +1,4 @@
+import { fail } from "assert";
 
 /**
  * @namespace Sk.ffi
@@ -65,7 +66,7 @@ Sk.ffi.remapToPy = function (obj) {
         return new Sk.builtin.func(obj);
     }
 
-    Sk.asserts.fail("unhandled remap type " + typeof(obj));
+    fail("unhandled remap type " + typeof(obj));
 };
 Sk.exportSymbol("Sk.ffi.remapToPy", Sk.ffi.remapToPy);
 
@@ -158,7 +159,7 @@ Sk.ffi.basicwrap = function (obj) {
     if (typeof obj === "string") {
         return new Sk.builtin.str(obj);
     }
-    Sk.asserts.fail("unexpected type for basicwrap");
+    fail("unexpected type for basicwrap");
 };
 Sk.exportSymbol("Sk.ffi.basicwrap", Sk.ffi.basicwrap);
 

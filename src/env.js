@@ -1,4 +1,5 @@
-import {isArrayLike} from "./util.js";
+import { assert } from "assert";
+import { isArrayLike } from "./util.js";
 
 /**
  * Base namespace for Skulpt. This is the only symbol that Skulpt adds to the
@@ -77,32 +78,32 @@ Sk.python3 = {
 Sk.configure = function (options) {
     "use strict";
     Sk.output = options["output"] || Sk.output;
-    Sk.asserts.assert(typeof Sk.output === "function");
+    assert(typeof Sk.output === "function");
 
     Sk.debugout = options["debugout"] || Sk.debugout;
-    Sk.asserts.assert(typeof Sk.debugout === "function");
+    assert(typeof Sk.debugout === "function");
 
     Sk.uncaughtException = options["uncaughtException"] || Sk.uncaughtException;
-    Sk.asserts.assert(typeof Sk.uncaughtException === "function");
+    assert(typeof Sk.uncaughtException === "function");
 
     Sk.read = options["read"] || Sk.read;
-    Sk.asserts.assert(typeof Sk.read === "function");
+    assert(typeof Sk.read === "function");
 
     Sk.nonreadopen = options["nonreadopen"] || false;
-    Sk.asserts.assert(typeof Sk.nonreadopen === "boolean");
+    assert(typeof Sk.nonreadopen === "boolean");
 
     Sk.fileopen = options["fileopen"] || undefined;
-    Sk.asserts.assert(typeof Sk.fileopen === "function" || typeof Sk.fileopen === "undefined");
+    assert(typeof Sk.fileopen === "function" || typeof Sk.fileopen === "undefined");
 
     Sk.filewrite = options["filewrite"] || undefined;
-    Sk.asserts.assert(typeof Sk.filewrite === "function" || typeof Sk.filewrite === "undefined");
+    assert(typeof Sk.filewrite === "function" || typeof Sk.filewrite === "undefined");
 
     Sk.timeoutMsg = options["timeoutMsg"] || Sk.timeoutMsg;
-    Sk.asserts.assert(typeof Sk.timeoutMsg === "function");
+    assert(typeof Sk.timeoutMsg === "function");
     Sk.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
 
     Sk.sysargv = options["sysargv"] || Sk.sysargv;
-    Sk.asserts.assert(isArrayLike(Sk.sysargv));
+    assert(isArrayLike(Sk.sysargv));
 
     Sk.__future__ = options["__future__"] || Sk.python2;
 
@@ -124,25 +125,25 @@ Sk.configure = function (options) {
     // in __future__ add checks for absolute_import
 
     Sk.imageProxy = options["imageProxy"] || "http://localhost:8080/320x";
-    Sk.asserts.assert(typeof Sk.imageProxy === "string" || typeof Sk.imageProxy === "function");
+    assert(typeof Sk.imageProxy === "string" || typeof Sk.imageProxy === "function");
 
     Sk.inputfun = options["inputfun"] || Sk.inputfun;
-    Sk.asserts.assert(typeof Sk.inputfun === "function");
+    assert(typeof Sk.inputfun === "function");
 
     Sk.inputfunTakesPrompt = options["inputfunTakesPrompt"] || false;
-    Sk.asserts.assert(typeof Sk.inputfunTakesPrompt === "boolean");
+    assert(typeof Sk.inputfunTakesPrompt === "boolean");
 
     Sk.retainGlobals = options["retainglobals"] || false;
-    Sk.asserts.assert(typeof Sk.retainGlobals === "boolean");
+    assert(typeof Sk.retainGlobals === "boolean");
 
     Sk.debugging = options["debugging"] || false;
-    Sk.asserts.assert(typeof Sk.debugging === "boolean");
+    assert(typeof Sk.debugging === "boolean");
 
     Sk.killableWhile = options["killableWhile"] || false;
-    Sk.asserts.assert(typeof Sk.killableWhile === "boolean");
+    assert(typeof Sk.killableWhile === "boolean");
 
     Sk.killableFor = options["killableFor"] || false;
-    Sk.asserts.assert(typeof Sk.killableFor === "boolean");
+    assert(typeof Sk.killableFor === "boolean");
 
     Sk.signals = typeof options["signals"] !== undefined ? options["signals"] : null;
     if (Sk.signals === true) {
@@ -166,10 +167,10 @@ Sk.configure = function (options) {
     } else {
         Sk.signals = null;
     }
-    Sk.asserts.assert(typeof Sk.signals === "object");
+    assert(typeof Sk.signals === "object");
 
     Sk.breakpoints = options["breakpoints"] || function() { return true; };
-    Sk.asserts.assert(typeof Sk.breakpoints === "function");
+    assert(typeof Sk.breakpoints === "function");
 
     Sk.setTimeout = options["setTimeout"];
     if (Sk.setTimeout === undefined) {
@@ -179,7 +180,7 @@ Sk.configure = function (options) {
             Sk.setTimeout = function(func, delay) { func(); };
         }
     }
-    Sk.asserts.assert(typeof Sk.setTimeout === "function");
+    assert(typeof Sk.setTimeout === "function");
 
     if ("execLimit" in options) {
         Sk.execLimit = options["execLimit"];
@@ -191,7 +192,7 @@ Sk.configure = function (options) {
 
     if (options["syspath"]) {
         Sk.syspath = options["syspath"];
-        Sk.asserts.assert(isArrayLike(Sk.syspath));
+        assert(isArrayLike(Sk.syspath));
         // assume that if we're changing syspath we want to force reimports.
         // not sure how valid this is, perhaps a separate api for that.
         Sk.realsyspath = undefined;

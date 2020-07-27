@@ -1,3 +1,4 @@
+import { assert } from "assert";
 
 /**
  * @constructor
@@ -66,7 +67,7 @@ Sk.builtin.method.prototype.tp$hash = function () {
 };
 
 Sk.builtin.method.prototype.tp$call = function (args, kw) {
-    // Sk.asserts.assert(this.im_func instanceof Sk.builtin.func);
+    // assert(this.im_func instanceof Sk.builtin.func);
 
     // 'args' and 'kw' get mucked around with heavily in applyOrSuspend();
     // changing it here is OK.
@@ -98,7 +99,7 @@ Sk.builtin.method.prototype.tp$call = function (args, kw) {
 };
 
 Sk.builtin.method.prototype.tp$descr_get = function (obj, objtype) {
-    Sk.asserts.assert(obj !== undefined && objtype !== undefined);
+    assert(obj !== undefined && objtype !== undefined);
     return new Sk.builtin.method(this, obj, objtype, this.im_builtin);
 };
 

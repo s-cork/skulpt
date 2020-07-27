@@ -1,6 +1,4 @@
-import Sk from "./util.js";
-
-Sk.asserts = {ENABLE_ASSERTS: true};
+const ENABLE_ASSERTS = true;
 
 /**
  * Cause assertion failure when condition is false.
@@ -8,8 +6,8 @@ Sk.asserts = {ENABLE_ASSERTS: true};
  * @param {*} condition condition to check
  * @param {string=} message error message
  */
-Sk.asserts.assert = function (condition, message) {
-    if (Sk.asserts.ENABLE_ASSERTS && !condition) {
+export function assert (condition, message) {
+    if (ENABLE_ASSERTS && !condition) {
         var msg = "Assertion failure";
         if (message) {
             msg = msg + ": " + message;
@@ -18,15 +16,15 @@ Sk.asserts.assert = function (condition, message) {
     }
     return condition;
 };
-Sk.exportSymbol("Sk.asserts.assert", Sk.asserts.assert);
+
 
 /**
  * Cause assertion failure.
  * 
  * @param {string=} message error message
  */
-Sk.asserts.fail = function (message) {
-    if (Sk.asserts.ENABLE_ASSERTS) {
+export function fail(message) {
+    if (ENABLE_ASSERTS) {
         var msg = "Assertion failure";
         if (message) {
             msg = msg + ": " + message;
@@ -34,4 +32,4 @@ Sk.asserts.fail = function (message) {
         throw new Error(msg);
     }
 };
-Sk.exportSymbol("Sk.asserts.fail", Sk.asserts.fail);
+

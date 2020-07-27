@@ -1,4 +1,4 @@
-
+import {fail} from "assert";
 /**
  * @constructor
  * @param {Array.<Object>|Object} L
@@ -192,7 +192,7 @@ Sk.builtin.tuple.prototype.tp$richcompare = function (w, op) {
             case "GtE":
                 return vl >= wl;
             default:
-                Sk.asserts.fail();
+                fail();
         }
     }
 

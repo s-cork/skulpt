@@ -277,7 +277,9 @@ var $builtinmodule = function(name)
     
     mod.cross = new Sk.builtin.func(function(v1, v2)
             {
-                Sk.asserts.assert(v1 instanceof mod.Vec3 && v2 instanceof mod.Vec3);
+                if (v1 instanceof mod.Vec3 && v2 instanceof mod.Vec3) {
+                    throw new Sk.builtin.TypeError("expected vectors");
+                }
                 return Sk.misceval.callsimArray(mod.Vec3, [
                     v1.y * v2.z - v1.z * v2.y,
                     v1.z * v2.x - v1.x * v2.z,

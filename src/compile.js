@@ -1,3 +1,4 @@
+import { assert, fail } from "assert";
 
 /** @param {...*} x */
 import {astnodes} from "../gen/astnodes.js";
@@ -95,7 +96,7 @@ CompilerUnit.prototype.activateScope = function () {
 };
 
 Compiler.prototype.getSourceLine = function (lineno) {
-    Sk.asserts.assert(this.source);
+    assert(this.source);
     return this.source[lineno - 1];
 };
 
@@ -112,7 +113,7 @@ Compiler.prototype.annotateSource = function (ast) {
         }
         out("^\n//\n");
 
-        Sk.asserts.assert(ast.lineno !== undefined && ast.col_offset !== undefined);
+        assert(ast.lineno !== undefined && ast.col_offset !== undefined);
         out("$currLineNo = ", lineno, ";\n$currColNo = ", col_offset, ";\n\n");
     }
 };
@@ -429,7 +430,7 @@ Compiler.prototype.ctuplelistorset = function(e, data, tuporlist) {
     var items;
     var item;
     var allconsts;
-    Sk.asserts.assert(tuporlist === "tuple" || tuporlist === "list" || tuporlist === "set");
+    assert(tuporlist === "tuple" || tuporlist === "list" || tuporlist === "set");
 
     let hasStars = false;
     for (let elt of e.elts) {
@@ -495,7 +496,7 @@ Compiler.prototype.cdict = function (e) {
     var items;
     items = [];
     if (e.keys !== null) {
-        Sk.asserts.assert(e.values.length === e.keys.length);
+        assert(e.values.length === e.keys.length);
         for (i = 0; i < e.values.length; ++i) {
             v = this.vexpr(e.values[i]); // "backwards" to match order in cpy
             items.push(this.vexpr(e.keys[i]));
@@ -506,19 +507,19 @@ Compiler.prototype.cdict = function (e) {
 };
 
 Compiler.prototype.clistcomp = function(e) {
-    Sk.asserts.assert(e instanceof astnodes.ListComp);
+    assert(e instanceof astnodes.ListComp);
     var tmp = this._gr("_compr", "new Sk.builtins['list']([])"); // note: _ is impt. for hack in name mangling (same as cpy)
     return this.ccompgen("list", tmp, e.generators, 0, e.elt, null, e);
 };
 
 Compiler.prototype.cdictcomp = function(e) {
-    Sk.asserts.assert(e instanceof astnodes.DictComp);
+    assert(e instanceof astnodes.DictComp);
     var tmp = this._gr("_dcompr", "new Sk.builtins.dict([])");
     return this.ccompgen("dict", tmp, e.generators, 0, e.value, e.key, e);
 };
 
 Compiler.prototype.csetcomp = function(e) {
-    Sk.asserts.assert(e instanceof astnodes.SetComp);
+    assert(e instanceof astnodes.SetComp);
     var tmp = this._gr("_setcompr", "new Sk.builtins.set([])");
     return this.ccompgen("set", tmp, e.generators, 0, e.elt, null, e);
 };
@@ -609,7 +610,7 @@ Compiler.prototype.ccompare = function (e) {
     var done;
     var n;
     var cur;
-    Sk.asserts.assert(e.ops.length === e.comparators.length);
+    assert(e.ops.length === e.comparators.length);
     cur = this.vexpr(e.left);
     n = e.ops.length;
     done = this.newBlock("done");
@@ -685,7 +686,7 @@ Compiler.prototype.cslice = function (s) {
     var step;
     var high;
     var low;
-    Sk.asserts.assert(s instanceof astnodes.Slice);
+    assert(s instanceof astnodes.Slice);
     if (Sk.__future__.python3) {
         low = s.lower ? this.vexpr(s.lower) : "Sk.builtin.none.none$";
         high = s.upper ? this.vexpr(s.upper) : "Sk.builtin.none.none$";
@@ -704,7 +705,7 @@ Compiler.prototype.cslice = function (s) {
 Compiler.prototype.eslice = function (dims) {
     var i;
     var dimSubs, subs;
-    Sk.asserts.assert(dims instanceof Array);
+    assert(dims instanceof Array);
     dimSubs = [];
     for (i = 0; i < dims.length; i++) {
         dimSubs.push(this.vslicesub(dims[i]));
@@ -722,13 +723,13 @@ Compiler.prototype.vslicesub = function (s) {
             subs = this.cslice(s);
             break;
         case astnodes.Ellipsis:
-            Sk.asserts.fail("todo compile.js Ellipsis;");
+            fail("todo compile.js Ellipsis;");
             break;
         case astnodes.ExtSlice:
             subs = this.eslice(s.dims);
             break;
         default:
-            Sk.asserts.fail("invalid subscript kind");
+            fail("invalid subscript kind");
     }
     return subs;
 };
@@ -752,7 +753,7 @@ Compiler.prototype.chandlesubscr = function (ctx, obj, subs, data) {
         out("Sk.abstr.objectDelItem(", obj, ",", subs, ");");
     }
     else {
-        Sk.asserts.fail("handlesubscr fail");
+        fail("handlesubscr fail");
     }
 };
 
@@ -765,7 +766,7 @@ Compiler.prototype.cboolop = function (e) {
     var end;
     var ifFailed;
     var jtype;
-    Sk.asserts.assert(e instanceof astnodes.BoolOp);
+    assert(e instanceof astnodes.BoolOp);
     if (e.op === astnodes.And) {
         jtype = this._jumpfalse;
     }
@@ -791,7 +792,7 @@ Compiler.prototype.cboolop = function (e) {
 
 Compiler.prototype.cjoinedstr = function (e) {
     let ret;
-    Sk.asserts.assert(e instanceof astnodes.JoinedStr);
+    assert(e instanceof astnodes.JoinedStr);
 
     for (let s of e.values) {
         let v = this.vexpr(s);
@@ -902,7 +903,7 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
                 var imag_val = e.n.imag.v === 0 && 1/e.n.imag.v === -Infinity ? "-0" : e.n.imag.v;
                 return this.makeConstant("new Sk.builtin.complex(new Sk.builtin.float_(" + real_val + "), new Sk.builtin.float_(" + imag_val + "))");
             }
-            Sk.asserts.fail("unhandled Num type");
+            fail("unhandled Num type");
         case astnodes.Str:
             return this.makeConstant("new Sk.builtin.str(", e.s["$r"]().v, ")");
         case astnodes.Attribute:
@@ -938,11 +939,11 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
                     this._checkSuspension(e);
                     break;
                 case astnodes.Del:
-                    Sk.asserts.fail("todo Del;");
+                    fail("todo Del;");
                     break;
                 case astnodes.Param:
                 default:
-                    Sk.asserts.fail("invalid attribute expression");
+                    fail("invalid attribute expression");
             }
             break;
         case astnodes.Subscript:
@@ -968,7 +969,7 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
                     break;
                 case astnodes.Param:
                 default:
-                    Sk.asserts.fail("invalid subscript expression");
+                    fail("invalid subscript expression");
             }
             break;
         case astnodes.Name:
@@ -986,7 +987,7 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
                 case Sk.builtin.bool.false$:
                     return "Sk.builtin.bool.false$";
                 default:
-                    Sk.asserts.fail("invalid named constant")
+                    fail("invalid named constant")
             }
             break;
         case astnodes.List:
@@ -1002,7 +1003,7 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
         case astnodes.FormattedValue:
             return this.cformattedvalue(e);
         default:
-            Sk.asserts.fail("unhandled case " + e.constructor.name + " vexpr");
+            fail("unhandled case " + e.constructor.name + " vexpr");
     }
 };
 
@@ -1013,7 +1014,7 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
 Compiler.prototype.vseqexpr = function (exprs, data) {
     var i;
     var ret;
-    Sk.asserts.assert(data === undefined || exprs.length === data.length);
+    assert(data === undefined || exprs.length === data.length);
     ret = [];
 
     // if (exprs.length === 1 && exprs[0].constructor === astnodes.Starred) {
@@ -1034,7 +1035,7 @@ Compiler.prototype.caugassign = function (s) {
     var aug;
     var auge;
     var e;
-    Sk.asserts.assert(s instanceof astnodes.AugAssign);
+    assert(s instanceof astnodes.AugAssign);
     e = s.target;
     switch (e.constructor) {
         case astnodes.Attribute:
@@ -1061,7 +1062,7 @@ Compiler.prototype.caugassign = function (s) {
             res = this._gr("inplbinop", "Sk.abstr.numberInplaceBinOp(", to, ",", val, ",'", s.op.prototype._astname, "')");
             return this.nameop(e.id, astnodes.Store, res);
         default:
-            Sk.asserts.fail("unhandled case in augassign");
+            fail("unhandled case in augassign");
     }
 };
 
@@ -1089,12 +1090,12 @@ Compiler.prototype.newBlock = function (name) {
     return ret;
 };
 Compiler.prototype.setBlock = function (n) {
-    Sk.asserts.assert(n >= 0 && n < this.u.blocknum);
+    assert(n >= 0 && n < this.u.blocknum);
     this.u.curblock = n;
 };
 
 Compiler.prototype.pushBreakBlock = function (n) {
-    Sk.asserts.assert(n >= 0 && n < this.u.blocknum);
+    assert(n >= 0 && n < this.u.blocknum);
     this.u.breakBlocks.push(n);
 };
 Compiler.prototype.popBreakBlock = function () {
@@ -1102,7 +1103,7 @@ Compiler.prototype.popBreakBlock = function () {
 };
 
 Compiler.prototype.pushContinueBlock = function (n) {
-    Sk.asserts.assert(n >= 0 && n < this.u.blocknum);
+    assert(n >= 0 && n < this.u.blocknum);
     this.u.continueBlocks.push(n);
 };
 Compiler.prototype.popContinueBlock = function () {
@@ -1110,7 +1111,7 @@ Compiler.prototype.popContinueBlock = function () {
 };
 
 Compiler.prototype.pushExceptBlock = function (n) {
-    Sk.asserts.assert(n >= 0 && n < this.u.blocknum);
+    assert(n >= 0 && n < this.u.blocknum);
     this.u.exceptBlocks.push(n);
 };
 Compiler.prototype.popExceptBlock = function () {
@@ -1118,8 +1119,8 @@ Compiler.prototype.popExceptBlock = function () {
 };
 
 Compiler.prototype.pushFinallyBlock = function (n) {
-    Sk.asserts.assert(n >= 0 && n < this.u.blocknum);
-    Sk.asserts.assert(this.u.breakBlocks.length === this.u.continueBlocks.length);
+    assert(n >= 0 && n < this.u.blocknum);
+    assert(this.u.breakBlocks.length === this.u.continueBlocks.length);
     this.u.finallyBlocks.push({blk: n, breakDepth: this.u.breakBlocks.length});
 };
 Compiler.prototype.popFinallyBlock = function () {
@@ -1264,7 +1265,7 @@ Compiler.prototype.cif = function (s) {
     var next;
     var end;
     var constant;
-    Sk.asserts.assert(s instanceof astnodes.If);
+    assert(s instanceof astnodes.If);
     constant = this.exprConstant(s.test);
     if (constant === 0) {
         if (s.orelse && s.orelse.length > 0) {
@@ -1706,7 +1707,7 @@ Compiler.prototype.cassert = function (s) {
     var end = this.newBlock("end");
     this._jumptrue(test, end);
     // todo; exception handling
-    // maybe replace with Sk.asserts.fail?? or just an alert?
+    // maybe replace with fail?? or just an alert?
     out("throw new Sk.builtin.AssertionError(", s.msg ? this.vexpr(s.msg) : "", ");");
     this.setBlock(end);
 };
@@ -1791,7 +1792,7 @@ Compiler.prototype.cfromimport = function (s) {
         alias = s.names[i];
         aliasOut = "'" + fixReservedWords(alias.name.v) + "'";
         if (i === 0 && alias.name.v === "*") {
-            Sk.asserts.assert(n === 1);
+            assert(n === 1);
             out("Sk.importStar(", mod, ",$loc, $gbl);");
             return;
         }
@@ -2195,7 +2196,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
 
 Compiler.prototype.cfunction = function (s, class_for_super) {
     var funcorgen;
-    Sk.asserts.assert(s instanceof astnodes.FunctionDef);
+    assert(s instanceof astnodes.FunctionDef);
     funcorgen = this.buildcodeobj(s, s.name, s.decorator_list, s.args, function (scopename) {
         this.vseqstmt(s.body);
         out("return Sk.builtin.none.none$;"); // if we fall off the bottom, we want the ret to be None
@@ -2205,7 +2206,7 @@ Compiler.prototype.cfunction = function (s, class_for_super) {
 
 Compiler.prototype.clambda = function (e) {
     var func;
-    Sk.asserts.assert(e instanceof astnodes.Lambda);
+    assert(e instanceof astnodes.Lambda);
     func = this.buildcodeobj(e, new Sk.builtin.str("<lambda>"), null, e.args, function (scopename) {
         var val = this.vexpr(e.body);
         out("return ", val, ";");
@@ -2325,7 +2326,7 @@ Compiler.prototype.cclass = function (s) {
     var scopename;
     var bases;
     var decos;
-    Sk.asserts.assert(s instanceof astnodes.ClassDef);
+    assert(s instanceof astnodes.ClassDef);
 
     decos = this.vseqexpr(s.decorator_list);
 
@@ -2381,7 +2382,7 @@ Compiler.prototype.ccontinue = function (s) {
     }
     // todo; continue out of exception blocks
     gotoBlock = this.u.continueBlocks[this.u.continueBlocks.length - 1];
-    Sk.asserts.assert(this.u.breakBlocks.length === this.u.continueBlocks.length);
+    assert(this.u.breakBlocks.length === this.u.continueBlocks.length);
     if (nextFinally && nextFinally.breakDepth == this.u.continueBlocks.length) {
         out("$postfinally={isBreak:true,gotoBlock:",gotoBlock,"};");
     } else {
@@ -2506,7 +2507,7 @@ Compiler.prototype.vstmt = function (s, class_for_super) {
             out("debugger;");
             break;
         default:
-            Sk.asserts.fail("unhandled case in vstmt: " + JSON.stringify(s));
+            fail("unhandled case in vstmt: " + JSON.stringify(s));
     }
 };
 
@@ -2549,7 +2550,7 @@ Compiler.prototype.nameop = function (name, ctx, dataToStore) {
     if ((ctx === astnodes.Store || ctx === astnodes.AugStore || ctx === astnodes.Del) && name.v === "__debug__") {
         throw new Sk.builtin.SyntaxError("can not assign to __debug__", this.filename, this.u.lineno);
     }
-    Sk.asserts.assert(name.v !== "None");
+    assert(name.v !== "None");
 
     if (name.v === "NotImplemented") {
         return "Sk.builtin.NotImplemented.NotImplemented$";
@@ -2593,7 +2594,7 @@ Compiler.prototype.nameop = function (name, ctx, dataToStore) {
 
     //print("mangled", mangled);
     // TODO TODO TODO todo; import * at global scope failing here
-    Sk.asserts.assert(scope || name.v.charAt(1) === "_");
+    assert(scope || name.v.charAt(1) === "_");
 
     // in generator or at module scope, we need to store to $loc, rather that
     // to actual JS stack variables.
@@ -2620,7 +2621,7 @@ Compiler.prototype.nameop = function (name, ctx, dataToStore) {
                     out("delete ", mangled, ";");
                     break;
                 default:
-                    Sk.asserts.fail("unhandled");
+                    fail("unhandled");
             }
             break;
         case OP_NAME:
@@ -2637,7 +2638,7 @@ Compiler.prototype.nameop = function (name, ctx, dataToStore) {
                 case astnodes.Param:
                     return mangled;
                 default:
-                    Sk.asserts.fail("unhandled");
+                    fail("unhandled");
             }
             break;
         case OP_GLOBAL:
@@ -2651,7 +2652,7 @@ Compiler.prototype.nameop = function (name, ctx, dataToStore) {
                     out("delete $gbl.", mangledNoPre);
                     break;
                 default:
-                    Sk.asserts.fail("unhandled case in name op_global");
+                    fail("unhandled case in name op_global");
             }
             break;
         case OP_DEREF:
@@ -2664,11 +2665,11 @@ Compiler.prototype.nameop = function (name, ctx, dataToStore) {
                 case astnodes.Param:
                     return mangledNoPre;
                 default:
-                    Sk.asserts.fail("unhandled case in name op_deref");
+                    fail("unhandled case in name op_deref");
             }
             break;
         default:
-            Sk.asserts.fail("unhandled case");
+            fail("unhandled case");
     }
 };
 
@@ -2745,7 +2746,7 @@ Compiler.prototype.cprint = function (s) {
     var i;
     var n;
     var dest;
-    Sk.asserts.assert(s instanceof astnodes.Print);
+    assert(s instanceof astnodes.Print);
     dest = "null";
     if (s.dest) {
         dest = this.vexpr(s.dest);
@@ -2826,7 +2827,7 @@ Compiler.prototype.cmod = function (mod) {
             out("return $loc;");
             break;
         default:
-            Sk.asserts.fail("todo; unhandled case in compilerMod");
+            fail("todo; unhandled case in compilerMod");
     }
     this.exitScope();
 

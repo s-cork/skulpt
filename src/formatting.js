@@ -1,4 +1,4 @@
-
+import { assert } from "assert";
 // Implement the default "format specification mini-language"
 // for numbers and strings
 // https://docs.python.org/3.7/library/string.html#formatspec
@@ -20,7 +20,7 @@ Sk.formatting = {};
 
 let handleWidth = function (m, r, prefix, isNumber) {
     // print(prefix);
-    Sk.asserts.assert(typeof(r) === "string");
+    assert(typeof(r) === "string");
 
     if (m[FMT.FIELD_WIDTH]) {
         let fieldWidth = parseInt(m[FMT.FIELD_WIDTH], 10);
@@ -62,7 +62,7 @@ let handleInteger = function(m, n, base){
     // TODO: Do we need to tolerate float inputs for integer conversions?
     // Python doesn't, but I'm guessing this is something to do with JS's
     // int/float ambiguity
-    Sk.asserts.assert(n instanceof Sk.builtin.int_ || n instanceof Sk.builtin.lng);
+    assert(n instanceof Sk.builtin.int_ || n instanceof Sk.builtin.lng);
 
     if (m[FMT.PRECISION]) {
         throw new Sk.builtin.ValueError("Precision not allowed in integer format");

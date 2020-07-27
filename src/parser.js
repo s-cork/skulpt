@@ -1,3 +1,4 @@
+import { assert, fail } from "assert";
 
 // low level parser to a concrete syntax tree, derived from cpython's lib2to3
 import {OpMap} from "../gen/parse_tables.js";
@@ -104,7 +105,7 @@ Parser.prototype.addtoken = function (type, value, context) {
             v = this.grammar.labels[i][1];
             if (ilabel === i) {
                 // look it up in the list of labels
-                Sk.asserts.assert(t < 256);
+                assert(t < 256);
                 // shift a token; we're done with it
                 this.shift(type, value, newstate, context);
                 // pop while we are in an accept-only state
@@ -281,7 +282,7 @@ function makeParser (filename, style) {
     if (style === "file_input") {
         p.setup(ParseTables.sym.file_input);
     } else {
-        Sk.asserts.fail("todo;");
+        fail("todo;");
     }
     return p;
 }
