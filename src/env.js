@@ -1,3 +1,4 @@
+import {isArrayLike} from "./util.js";
 
 /**
  * Base namespace for Skulpt. This is the only symbol that Skulpt adds to the
@@ -101,7 +102,7 @@ Sk.configure = function (options) {
     Sk.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
 
     Sk.sysargv = options["sysargv"] || Sk.sysargv;
-    Sk.asserts.assert(Sk.isArrayLike(Sk.sysargv));
+    Sk.asserts.assert(isArrayLike(Sk.sysargv));
 
     Sk.__future__ = options["__future__"] || Sk.python2;
 
@@ -190,7 +191,7 @@ Sk.configure = function (options) {
 
     if (options["syspath"]) {
         Sk.syspath = options["syspath"];
-        Sk.asserts.assert(Sk.isArrayLike(Sk.syspath));
+        Sk.asserts.assert(isArrayLike(Sk.syspath));
         // assume that if we're changing syspath we want to force reimports.
         // not sure how valid this is, perhaps a separate api for that.
         Sk.realsyspath = undefined;

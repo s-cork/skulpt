@@ -1,4 +1,4 @@
-
+import Sk from "./util.js";
 
 Sk.asserts = {ENABLE_ASSERTS: true};
 

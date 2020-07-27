@@ -1,6 +1,7 @@
 
 // low level parser to a concrete syntax tree, derived from cpython's lib2to3
-
+import {OpMap} from "../gen/parse_tables.js";
+import {ParseTables} from "../gen/parse_tables";
 /**
  *
  * @constructor
@@ -275,10 +276,10 @@ function makeParser (filename, style) {
     if (style === undefined) {
         style = "file_input";
     }
-    var p = new Parser(filename, Sk.ParseTables);
+    var p = new Parser(filename, ParseTables);
     // for closure's benefit
     if (style === "file_input") {
-        p.setup(Sk.ParseTables.sym.file_input);
+        p.setup(ParseTables.sym.file_input);
     } else {
         Sk.asserts.fail("todo;");
     }
@@ -335,7 +336,7 @@ Sk.parse = function parse (filename, input) {
             }
         } else {
             if (tokenInfo.type === T_OP) {
-                type = Sk.OpMap[tokenInfo.string];
+                type = OpMap[tokenInfo.string];
             }
 
             parser.addtoken(type || tokenInfo.type, tokenInfo.string, [tokenInfo.start, tokenInfo.end, tokenInfo.line]);
@@ -364,7 +365,7 @@ Sk.parseTreeDump = function parseTreeDump (n, indent) {
     ret = "";
     ret += indent;
     if (n.type >= 256) { // non-term
-        ret += Sk.ParseTables.number2symbol[n.type] + "\n";
+        ret += ParseTables.number2symbol[n.type] + "\n";
         for (i = 0; i < n.children.length; ++i) {
             ret += Sk.parseTreeDump(n.children[i], indent + "  ");
         }

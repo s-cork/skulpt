@@ -1,12 +1,5 @@
-/* jshint ignore:start */
+import "./Sk.js";
 
-
-// This file list is only used for testing.
-// It should be kept in sync with ../skulpt.py.
-// Order is important!
-
-// import {Sk} from "./util.js";
-import "./util.js";
 
 // Global support functions
 Sk.global["strftime"] = require("strftime");
@@ -14,7 +7,6 @@ Sk.global["strptime"] = require("../support/time-helpers/strptime.js");
 require("setimmediate");
 
 // Skulpt
-import "assert";
 import "./env.js";
 import "./type.js";
 import "./abstract.js";
