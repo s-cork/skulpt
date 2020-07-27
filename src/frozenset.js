@@ -1,4 +1,3 @@
-
 /**
  * @constructor
  * @param {Array.<Object>} S

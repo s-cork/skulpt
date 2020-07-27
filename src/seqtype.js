@@ -1,4 +1,3 @@
-
 /**
  * @constructor
  * Sk.builtin.seqtype

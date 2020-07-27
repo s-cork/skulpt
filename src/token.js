@@ -1,4 +1,3 @@
-
 //"""Token constants (from somewhere)."""
 
 var __all__ = ["tok_name", "ISTERMINAL", "ISNONTERMINAL", "ISEOF"];

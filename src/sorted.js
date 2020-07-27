@@ -1,4 +1,3 @@
-
 Sk.builtin.sorted = function sorted (iterable, cmp, key, reverse) {
     var arr;
     var next;

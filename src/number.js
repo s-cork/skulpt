@@ -1,4 +1,3 @@
-
 var deprecatedError = new Sk.builtin.ExternalError("Sk.builtin.nmber is deprecated.");
 
 /**

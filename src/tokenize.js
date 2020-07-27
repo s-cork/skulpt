@@ -1,4 +1,3 @@
-
 var tokens = Sk.token.tokens
 
 const TokenError = Sk.builtin.SyntaxError;

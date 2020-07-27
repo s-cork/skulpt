@@ -1,4 +1,3 @@
-
 Sk.builtin.structseq_types = {};
 
 Sk.builtin.make_structseq = function (module, name, fields, doc) {

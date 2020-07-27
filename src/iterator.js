@@ -1,4 +1,3 @@
-
 /**
   * Builds an iterator that outputs the items from the inputted object
   * @constructor

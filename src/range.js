@@ -1,4 +1,3 @@
-
 /**
  * @constructor
  * @param {number} start

@@ -1,4 +1,3 @@
-
 Sk.builtin.str.$emptystr = new Sk.builtin.str("");
 
 /**

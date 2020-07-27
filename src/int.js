@@ -1,4 +1,3 @@
-
 /* jslint nomen: true, bitwise: true */
 /* global Sk: true */
 

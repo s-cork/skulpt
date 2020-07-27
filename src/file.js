@@ -1,4 +1,3 @@
-
 import { fail } from "assert";
 /**
  * @constructor

@@ -1,4 +1,3 @@
-
 /**
  * @constructor
  */
@@ -18,4 +17,3 @@ Sk.builtin.module.prototype.$r = function() {
     };
     return new Sk.builtin.str("<module " + get("__name__") + " from " + get("__file__") + ">");
 };
-
