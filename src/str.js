@@ -1,3 +1,5 @@
+import { assert, fail } from "assert";
+
 Sk.builtin.interned = Object.create(null);
 
 function getInterned (x) {
@@ -74,7 +76,7 @@ Sk.builtin.str = function (x) {
     return this;
 
 };
-Sk.exportSymbol("Sk.builtin.str", Sk.builtin.str);
+
 
 Sk.abstr.setUpInheritance("str", Sk.builtin.str, Sk.builtin.seqtype);
 
@@ -137,7 +139,7 @@ Sk.builtin.str.prototype.sq$repeat = function (n) {
 Sk.builtin.str.prototype.nb$multiply = Sk.builtin.str.prototype.sq$repeat;
 Sk.builtin.str.prototype.nb$inplace_multiply = Sk.builtin.str.prototype.sq$repeat;
 Sk.builtin.str.prototype.sq$item = function () {
-    Sk.asserts.fail();
+    fail();
 };
 Sk.builtin.str.prototype.sq$slice = function (i1, i2) {
     i1 = Sk.builtin.asnum$(i1);
@@ -187,7 +189,7 @@ Sk.builtin.str.prototype.tp$richcompare = function (other, op) {
         case "GtE":
             return this.v >= other.v;
         default:
-            Sk.asserts.fail();
+            fail();
     }
 };
 
@@ -1110,7 +1112,7 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
                 neg = n.nb$isnegative();
             }
 
-            Sk.asserts.assert(r !== undefined, "unhandled number format");
+            assert(r !== undefined, "unhandled number format");
 
             precZeroPadded = false;
 

@@ -1,3 +1,4 @@
+import {fail} from "assert";
 /**
  * @constructor
  * @param {Array.<Object>|Object} L
@@ -191,7 +192,7 @@ Sk.builtin.tuple.prototype.tp$richcompare = function (w, op) {
             case "GtE":
                 return vl >= wl;
             default:
-                Sk.asserts.fail();
+                fail();
         }
     }
 
@@ -266,7 +267,7 @@ Sk.builtin.tuple.prototype["count"] = new Sk.builtin.func(function (self, item) 
     return  new Sk.builtin.int_(count);
 });
 
-Sk.exportSymbol("Sk.builtin.tuple", Sk.builtin.tuple);
+
 
 /**
  * @constructor

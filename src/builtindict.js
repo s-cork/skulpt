@@ -129,5 +129,4 @@ Sk.setupObjects = function (py3) {
         Sk.builtins["unicode"] = Sk.builtin.str;
     }
 };
-Sk.exportSymbol("Sk.setupObjects", Sk.setupObjects);
-Sk.exportSymbol("Sk.builtins", Sk.builtins);
+

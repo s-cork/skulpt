@@ -1,3 +1,6 @@
+import { assert, fail } from "assert";
+import { OpMap } from "../gen/parse_tables.js";
+import { ParseTables } from "../gen/parse_tables";
 // low level parser to a concrete syntax tree, derived from cpython's lib2to3
 
 /**
@@ -102,7 +105,7 @@ Parser.prototype.addtoken = function (type, value, context) {
             v = this.grammar.labels[i][1];
             if (ilabel === i) {
                 // look it up in the list of labels
-                Sk.asserts.assert(t < 256);
+                assert(t < 256);
                 // shift a token; we're done with it
                 this.shift(type, value, newstate, context);
                 // pop while we are in an accept-only state
@@ -274,12 +277,12 @@ function makeParser (filename, style) {
     if (style === undefined) {
         style = "file_input";
     }
-    var p = new Parser(filename, Sk.ParseTables);
+    var p = new Parser(filename, ParseTables);
     // for closure's benefit
     if (style === "file_input") {
-        p.setup(Sk.ParseTables.sym.file_input);
+        p.setup(ParseTables.sym.file_input);
     } else {
-        Sk.asserts.fail("todo;");
+        fail("todo;");
     }
     return p;
 }
@@ -334,7 +337,7 @@ Sk.parse = function parse (filename, input) {
             }
         } else {
             if (tokenInfo.type === T_OP) {
-                type = Sk.OpMap[tokenInfo.string];
+                type = OpMap[tokenInfo.string];
             }
 
             parser.addtoken(type || tokenInfo.type, tokenInfo.string, [tokenInfo.start, tokenInfo.end, tokenInfo.line]);
@@ -363,7 +366,7 @@ Sk.parseTreeDump = function parseTreeDump (n, indent) {
     ret = "";
     ret += indent;
     if (n.type >= 256) { // non-term
-        ret += Sk.ParseTables.number2symbol[n.type] + "\n";
+        ret += ParseTables.number2symbol[n.type] + "\n";
         for (i = 0; i < n.children.length; ++i) {
             ret += Sk.parseTreeDump(n.children[i], indent + "  ");
         }
@@ -373,7 +376,7 @@ Sk.parseTreeDump = function parseTreeDump (n, indent) {
     return ret;
 };
 
+Sk.Parser = Parser;
 
-Sk.exportSymbol("Sk.Parser", Parser);
-Sk.exportSymbol("Sk.parse", Sk.parse);
-Sk.exportSymbol("Sk.parseTreeDump", Sk.parseTreeDump);
+
+

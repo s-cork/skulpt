@@ -49,4 +49,4 @@ Sk.builtin.bool.prototype.__format__ = new Sk.builtin.func(function(self) {
     return self.$r();
 });
 
-Sk.exportSymbol("Sk.builtin.bool", Sk.builtin.bool);
+

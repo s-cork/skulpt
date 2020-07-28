@@ -1,3 +1,6 @@
+import { assert } from "assert";
+import { isArrayLike } from "./util.js";
+
 /**
  * Base namespace for Skulpt. This is the only symbol that Skulpt adds to the
  * global namespace. Other user accessible symbols are noted and described
@@ -21,7 +24,7 @@
  * Any variables that aren't set will be left alone.
  */
 
-Sk.bool_check = function(variable, name) {
+function bool_check(variable, name) {
     if (variable === undefined || variable === null || typeof variable !== "boolean") {
         throw new Error("must specify " + name + " and it must be a boolean");
     }
@@ -72,75 +75,77 @@ Sk.python3 = {
     silent_octal_literal: false
 };
 
+Sk.__future__ = Sk.python2;
+
 Sk.configure = function (options) {
     "use strict";
     Sk.output = options["output"] || Sk.output;
-    Sk.asserts.assert(typeof Sk.output === "function");
+    assert(typeof Sk.output === "function");
 
     Sk.debugout = options["debugout"] || Sk.debugout;
-    Sk.asserts.assert(typeof Sk.debugout === "function");
+    assert(typeof Sk.debugout === "function");
 
     Sk.uncaughtException = options["uncaughtException"] || Sk.uncaughtException;
-    Sk.asserts.assert(typeof Sk.uncaughtException === "function");
+    assert(typeof Sk.uncaughtException === "function");
 
     Sk.read = options["read"] || Sk.read;
-    Sk.asserts.assert(typeof Sk.read === "function");
+    assert(typeof Sk.read === "function");
 
     Sk.nonreadopen = options["nonreadopen"] || false;
-    Sk.asserts.assert(typeof Sk.nonreadopen === "boolean");
+    assert(typeof Sk.nonreadopen === "boolean");
 
     Sk.fileopen = options["fileopen"] || undefined;
-    Sk.asserts.assert(typeof Sk.fileopen === "function" || typeof Sk.fileopen === "undefined");
+    assert(typeof Sk.fileopen === "function" || typeof Sk.fileopen === "undefined");
 
     Sk.filewrite = options["filewrite"] || undefined;
-    Sk.asserts.assert(typeof Sk.filewrite === "function" || typeof Sk.filewrite === "undefined");
+    assert(typeof Sk.filewrite === "function" || typeof Sk.filewrite === "undefined");
 
     Sk.timeoutMsg = options["timeoutMsg"] || Sk.timeoutMsg;
-    Sk.asserts.assert(typeof Sk.timeoutMsg === "function");
-    Sk.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
+    assert(typeof Sk.timeoutMsg === "function");
+
 
     Sk.sysargv = options["sysargv"] || Sk.sysargv;
-    Sk.asserts.assert(Sk.isArrayLike(Sk.sysargv));
+    assert(isArrayLike(Sk.sysargv));
 
-    Sk.__future__ = options["__future__"] || Sk.python2;
+    Sk.__future__ = options["__future__"] || Sk.__future__;
 
-    Sk.bool_check(Sk.__future__.print_function, "Sk.__future__.print_function");
-    Sk.bool_check(Sk.__future__.division, "Sk.__future__.division");
-    Sk.bool_check(Sk.__future__.unicode_literals, "Sk.__future__.unicode_literals");
-    Sk.bool_check(Sk.__future__.class_repr, "Sk.__future__.class_repr");
-    Sk.bool_check(Sk.__future__.inherit_from_object, "Sk.__future__.inherit_from_object");
-    Sk.bool_check(Sk.__future__.super_args, "Sk.__future__.super_args");
-    Sk.bool_check(Sk.__future__.octal_number_literal, "Sk.__future__.octal_number_literal");
-    Sk.bool_check(Sk.__future__.bankers_rounding, "Sk.__future__.bankers_rounding");
-    Sk.bool_check(Sk.__future__.python_version, "Sk.__future__.python_version");
-    Sk.bool_check(Sk.__future__.dunder_round, "Sk.__future__.dunder_round");
-    Sk.bool_check(Sk.__future__.exceptions, "Sk.__future__.exceptions");
-    Sk.bool_check(Sk.__future__.no_long_type, "Sk.__future__.no_long_type");
-    Sk.bool_check(Sk.__future__.ceil_floor_int, "Sk.__future__.ceil_floor_int");
-    Sk.bool_check(Sk.__future__.silent_octal_literal, "Sk.__future__.silent_octal_literal");
+    bool_check(Sk.__future__.print_function, "Sk.__future__.print_function");
+    bool_check(Sk.__future__.division, "Sk.__future__.division");
+    bool_check(Sk.__future__.unicode_literals, "Sk.__future__.unicode_literals");
+    bool_check(Sk.__future__.class_repr, "Sk.__future__.class_repr");
+    bool_check(Sk.__future__.inherit_from_object, "Sk.__future__.inherit_from_object");
+    bool_check(Sk.__future__.super_args, "Sk.__future__.super_args");
+    bool_check(Sk.__future__.octal_number_literal, "Sk.__future__.octal_number_literal");
+    bool_check(Sk.__future__.bankers_rounding, "Sk.__future__.bankers_rounding");
+    bool_check(Sk.__future__.python_version, "Sk.__future__.python_version");
+    bool_check(Sk.__future__.dunder_round, "Sk.__future__.dunder_round");
+    bool_check(Sk.__future__.exceptions, "Sk.__future__.exceptions");
+    bool_check(Sk.__future__.no_long_type, "Sk.__future__.no_long_type");
+    bool_check(Sk.__future__.ceil_floor_int, "Sk.__future__.ceil_floor_int");
+    bool_check(Sk.__future__.silent_octal_literal, "Sk.__future__.silent_octal_literal");
 
     // in __future__ add checks for absolute_import
 
     Sk.imageProxy = options["imageProxy"] || "http://localhost:8080/320x";
-    Sk.asserts.assert(typeof Sk.imageProxy === "string" || typeof Sk.imageProxy === "function");
+    assert(typeof Sk.imageProxy === "string" || typeof Sk.imageProxy === "function");
 
     Sk.inputfun = options["inputfun"] || Sk.inputfun;
-    Sk.asserts.assert(typeof Sk.inputfun === "function");
+    assert(typeof Sk.inputfun === "function");
 
     Sk.inputfunTakesPrompt = options["inputfunTakesPrompt"] || false;
-    Sk.asserts.assert(typeof Sk.inputfunTakesPrompt === "boolean");
+    assert(typeof Sk.inputfunTakesPrompt === "boolean");
 
     Sk.retainGlobals = options["retainglobals"] || false;
-    Sk.asserts.assert(typeof Sk.retainGlobals === "boolean");
+    assert(typeof Sk.retainGlobals === "boolean");
 
     Sk.debugging = options["debugging"] || false;
-    Sk.asserts.assert(typeof Sk.debugging === "boolean");
+    assert(typeof Sk.debugging === "boolean");
 
     Sk.killableWhile = options["killableWhile"] || false;
-    Sk.asserts.assert(typeof Sk.killableWhile === "boolean");
+    assert(typeof Sk.killableWhile === "boolean");
 
     Sk.killableFor = options["killableFor"] || false;
-    Sk.asserts.assert(typeof Sk.killableFor === "boolean");
+    assert(typeof Sk.killableFor === "boolean");
 
     Sk.signals = typeof options["signals"] !== undefined ? options["signals"] : null;
     if (Sk.signals === true) {
@@ -164,10 +169,10 @@ Sk.configure = function (options) {
     } else {
         Sk.signals = null;
     }
-    Sk.asserts.assert(typeof Sk.signals === "object");
+    assert(typeof Sk.signals === "object");
 
     Sk.breakpoints = options["breakpoints"] || function() { return true; };
-    Sk.asserts.assert(typeof Sk.breakpoints === "function");
+    assert(typeof Sk.breakpoints === "function");
 
     Sk.setTimeout = options["setTimeout"];
     if (Sk.setTimeout === undefined) {
@@ -177,7 +182,7 @@ Sk.configure = function (options) {
             Sk.setTimeout = function(func, delay) { func(); };
         }
     }
-    Sk.asserts.assert(typeof Sk.setTimeout === "function");
+    assert(typeof Sk.setTimeout === "function");
 
     if ("execLimit" in options) {
         Sk.execLimit = options["execLimit"];
@@ -189,7 +194,7 @@ Sk.configure = function (options) {
 
     if (options["syspath"]) {
         Sk.syspath = options["syspath"];
-        Sk.asserts.assert(Sk.isArrayLike(Sk.syspath));
+        assert(isArrayLike(Sk.syspath));
         // assume that if we're changing syspath we want to force reimports.
         // not sure how valid this is, perhaps a separate api for that.
         Sk.realsyspath = undefined;
@@ -198,11 +203,11 @@ Sk.configure = function (options) {
 
     Sk.misceval.softspace_ = false;
 
-    Sk.switch_version("round$", Sk.__future__.dunder_round);
-    Sk.switch_version("next$", Sk.__future__.python3);
-    Sk.switch_version("haskey$", Sk.__future__.python3);
-    Sk.switch_version("clear$", Sk.__future__.python3);
-    Sk.switch_version("copy$", Sk.__future__.python3);
+    switch_version("round$", Sk.__future__.dunder_round);
+    switch_version("next$", Sk.__future__.python3);
+    switch_version("haskey$", Sk.__future__.python3);
+    switch_version("clear$", Sk.__future__.python3);
+    switch_version("copy$", Sk.__future__.python3);
 
     Sk.builtin.lng.tp$name = Sk.__future__.no_long_type ? "int" : "long";
 
@@ -214,7 +219,7 @@ Sk.configure = function (options) {
     Sk.setupObjects(Sk.__future__.python3);
 };
 
-Sk.exportSymbol("Sk.configure", Sk.configure);
+
 
 /*
 * Replaceable handler for uncaught exceptions
@@ -229,7 +234,7 @@ Sk.uncaughtException = function(err) {
 Sk.uncaughtException = function(err) {
     throw err;
 };
-Sk.exportSymbol("Sk.uncaughtException", Sk.uncaughtException);
+
 
 /*
  *      Replaceable message for message timeouts
@@ -237,7 +242,7 @@ Sk.exportSymbol("Sk.uncaughtException", Sk.uncaughtException);
 Sk.timeoutMsg = function () {
     return "Program exceeded run time limit.";
 };
-Sk.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
+
 
 /*
  *  Hard execution timeout, throws an error. Set to null to disable
@@ -272,7 +277,7 @@ Sk.sysargv = [];
 Sk.getSysArgv = function () {
     return Sk.sysargv;
 };
-Sk.exportSymbol("Sk.getSysArgv", Sk.getSysArgv);
+
 
 
 /**
@@ -325,7 +330,7 @@ Sk.inputfun = function (args) {
 //   },
 //   ...
 
-Sk.setup_method_mappings = function () {
+function setup_method_mappings() {
     return {
         "round$": {
             "classes": [Sk.builtin.float_,
@@ -368,10 +373,10 @@ Sk.setup_method_mappings = function () {
     };
 };
 
-Sk.switch_version = function (method_to_map, python3) {
+function switch_version(method_to_map, python3) {
     var mapping, klass, classes, idx, len, newmeth, oldmeth, mappings;
 
-    mappings = Sk.setup_method_mappings();
+    mappings = setup_method_mappings();
 
     mapping = mappings[method_to_map];
 
@@ -395,6 +400,3 @@ Sk.switch_version = function (method_to_map, python3) {
         }
     }
 };
-
-Sk.exportSymbol("Sk.__future__", Sk.__future__);
-Sk.exportSymbol("Sk.inputfun", Sk.inputfun);

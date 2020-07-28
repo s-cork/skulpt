@@ -1051,8 +1051,6 @@ var $builtinmodule = function (name) {
                         return vl > wl;
                     case "GtE":
                         return vl >= wl;
-                    default:
-                        Sk.asserts.fail();
                 }
             }
 

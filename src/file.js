@@ -1,3 +1,4 @@
+import { fail } from "assert";
 /**
  * @constructor
  * @param {Sk.builtin.str} name
@@ -228,7 +229,7 @@ Sk.builtin.file.prototype["tell"] = new Sk.builtin.func(function tell(self) {
 });
 
 Sk.builtin.file.prototype["truncate"] = new Sk.builtin.func(function truncate(self, size) {
-    Sk.asserts.fail();
+    fail();
 });
 
 Sk.builtin.file.prototype["write"] = new Sk.builtin.func(function write(self, str) {
@@ -248,7 +249,7 @@ Sk.builtin.file.prototype["write"] = new Sk.builtin.func(function write(self, st
             if (self.fileno === 1) {
                 Sk.output(Sk.ffi.remapToJs(str));
             } else {
-                Sk.asserts.fail();
+                fail();
             }
         }
     } else {
@@ -258,4 +259,4 @@ Sk.builtin.file.prototype["write"] = new Sk.builtin.func(function write(self, st
 });
 
 
-Sk.exportSymbol("Sk.builtin.file", Sk.builtin.file);
+

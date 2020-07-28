@@ -29,7 +29,7 @@ module.exports = (env, argv) => {
         minimize: false
     };
     var outfile = 'skulpt.js';
-    var assertfile = './assert-dev.js';
+    var assertfile = path.resolve(__dirname, 'src/assert-dev.js');
     var mod = {};
 
     if (argv.mode === 'production') {
@@ -43,12 +43,14 @@ module.exports = (env, argv) => {
                                    'unknownDefines', 'visibility'],
                     jscomp_off: ['fileoverviewTags', 'deprecated'],
                     languageOut: (env && env.languageOut) ? env.languageOut : 'ECMASCRIPT_2015',
+                    // debug: true,
+                    // formatting: "PRETTY_PRINT",
                     externs: 'support/externs/sk.js'
                 })
             ]
         };
         outfile = 'skulpt.min.js';
-        assertfile = './assert-prod.js';
+        assertfile = path.resolve(__dirname, 'src/assert-prod.js');
         mod = {
             rules: [
                 {
@@ -62,35 +64,35 @@ module.exports = (env, argv) => {
     }
 
     var config = {
-        entry: './src/main.js',
+        entry: "./src/main.js",
         output: {
-            path: path.resolve(__dirname, 'dist'),
-            filename: outfile
+            path: path.resolve(__dirname, "dist"),
+            filename: outfile,
+            // library: "Sk",
+            // libraryTarget: "umd",
         },
-        devtool: 'source-map',
+        devtool: "source-map",
         plugins: [
             new CleanWebpackPlugin(),
-            new CopyWebpackPlugin([
-                { from: 'debugger/debugger.js', to: 'debugger.js' }
-            ]),
+            new CopyWebpackPlugin([{ from: "debugger/debugger.js", to: "debugger.js" }]),
             new webpack.DefinePlugin({
                 GITVERSION: JSON.stringify(git.version()),
                 GITHASH: JSON.stringify(git.commithash()),
                 GITBRANCH: JSON.stringify(git.branch()),
-                BUILDDATE: JSON.stringify(new Date())
+                BUILDDATE: JSON.stringify(new Date()),
             }),
             new CompressionWebpackPlugin({
                 include: /^skulpt\.min\.js$/,
-                algorithm: 'gzip'
-            })
+                algorithm: "gzip",
+            }),
         ],
         optimization: opt,
         resolve: {
             alias: {
-                'assert': assertfile
-            }
+                assert: assertfile,
+            },
         },
-        module: mod
+        module: mod,
     };
 
     return config;

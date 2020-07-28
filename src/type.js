@@ -1,3 +1,6 @@
+import { assert } from "assert";
+
+
 if(Sk.builtin === undefined) {
     Sk.builtin = {};
 }
@@ -75,7 +78,7 @@ Sk.setupDunderMethods = function (py3) {
     }
 };
 
-Sk.exportSymbol("Sk.setupDunderMethods", Sk.setupDunderMethods);
+
 /**
  *
  * @constructor
@@ -430,8 +433,8 @@ Sk.builtin.type.makeTypeObj = function (name, newedInstanceOfType) {
 };
 
 Sk.builtin.type.makeIntoTypeObj = function (name, t) {
-    Sk.asserts.assert(name !== undefined);
-    Sk.asserts.assert(t !== undefined);
+    assert(name !== undefined);
+    assert(t !== undefined);
     t.ob$type = Sk.builtin.type;
     t.tp$name = name;
     t["$r"] = function () {

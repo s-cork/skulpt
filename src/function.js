@@ -1,3 +1,5 @@
+import { assert } from "assert";
+
 /**
  * @namespace Sk.builtin
  */
@@ -42,7 +44,7 @@ Sk.builtin.pyCheckArgs = function (name, args, minargs, maxargs, kwargs, free) {
         throw new Sk.builtin.TypeError(msg);
     }
 };
-Sk.exportSymbol("Sk.builtin.pyCheckArgs", Sk.builtin.pyCheckArgs);
+
 
 /**
  * Check arguments to Python functions to ensure the correct number of
@@ -95,12 +97,12 @@ Sk.builtin.pyCheckType = function (name, exptype, check) {
         throw new Sk.builtin.TypeError(name + " must be a " + exptype);
     }
 };
-Sk.exportSymbol("Sk.builtin.pyCheckType", Sk.builtin.pyCheckType);
+
 
 Sk.builtin.checkSequence = function (arg) {
     return (arg !== null && arg.mp$subscript !== undefined);
 };
-Sk.exportSymbol("Sk.builtin.checkSequence", Sk.builtin.checkSequence);
+
 
 /**
  * Use this to test whether or not a Python object is iterable.  You should **not** rely
@@ -130,7 +132,7 @@ Sk.builtin.checkIterable = function (arg) {
     }
     return ret;
 };
-Sk.exportSymbol("Sk.builtin.checkIterable", Sk.builtin.checkIterable);
+
 
 Sk.builtin.checkCallable = function (obj) {
     // takes care of builtin functions and methods, builtins
@@ -158,7 +160,7 @@ Sk.builtin.checkNumber = function (arg) {
         arg instanceof Sk.builtin.float_ ||
         arg instanceof Sk.builtin.lng));
 };
-Sk.exportSymbol("Sk.builtin.checkNumber", Sk.builtin.checkNumber);
+
 
 /**
  * Checks for complex type, delegates to internal method
@@ -167,42 +169,42 @@ Sk.exportSymbol("Sk.builtin.checkNumber", Sk.builtin.checkNumber);
 Sk.builtin.checkComplex = function (arg) {
     return Sk.builtin.complex._complex_check(arg);
 };
-Sk.exportSymbol("Sk.builtin.checkComplex", Sk.builtin.checkComplex);
+
 
 Sk.builtin.checkInt = function (arg) {
     return arg instanceof Sk.builtin.int_ || arg instanceof Sk.builtin.lng || (typeof arg === "number" && Number.isInteger(arg));
 };
-Sk.exportSymbol("Sk.builtin.checkInt", Sk.builtin.checkInt);
+
 
 Sk.builtin.checkFloat = function (arg) {
     return (arg !== null) && (arg instanceof Sk.builtin.float_);
 };
-Sk.exportSymbol("Sk.builtin.checkFloat", Sk.builtin.checkFloat);
+
 
 Sk.builtin.checkString = function (arg) {
     return (arg !== null && arg.__class__ == Sk.builtin.str);
 };
-Sk.exportSymbol("Sk.builtin.checkString", Sk.builtin.checkString);
+
 
 Sk.builtin.checkClass = function (arg) {
     return (arg !== null && arg.sk$type);
 };
-Sk.exportSymbol("Sk.builtin.checkClass", Sk.builtin.checkClass);
+
 
 Sk.builtin.checkBool = function (arg) {
     return (arg instanceof Sk.builtin.bool);
 };
-Sk.exportSymbol("Sk.builtin.checkBool", Sk.builtin.checkBool);
+
 
 Sk.builtin.checkNone = function (arg) {
     return (arg instanceof Sk.builtin.none);
 };
-Sk.exportSymbol("Sk.builtin.checkNone", Sk.builtin.checkNone);
+
 
 Sk.builtin.checkFunction = function (arg) {
     return (arg !== null && arg.tp$call !== undefined);
 };
-Sk.exportSymbol("Sk.builtin.checkFunction", Sk.builtin.checkFunction);
+
 
 /**
  * @constructor
@@ -271,7 +273,7 @@ Sk.builtin.func = function (code, globals, closure, closure2) {
 
 Sk.abstr.setUpInheritance("function", Sk.builtin.func, Sk.builtin.object);
 
-Sk.exportSymbol("Sk.builtin.func", Sk.builtin.func);
+
 
 Sk.builtin.func.prototype.tp$name = "function";
 
@@ -289,7 +291,7 @@ Sk.builtin.func.prototype.$memoiseFlags = function() {
 };
 
 Sk.builtin.func.prototype.tp$descr_get = function (obj, objtype) {
-    Sk.asserts.assert(!(obj === undefined && objtype === undefined));
+    assert(!(obj === undefined && objtype === undefined));
     if (objtype && objtype.tp$name in Sk.builtin && Sk.builtin[objtype.tp$name] === objtype) {
         // it's a builtin
         return new Sk.builtin.method(this, obj, objtype, true);
