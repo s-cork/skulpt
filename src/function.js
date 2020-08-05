@@ -253,7 +253,7 @@ Sk.builtin.func = function (code, globals, closure, closure2) {
         "__class__": Sk.builtin.func
     };
     this.func_closure = closure;
-    this.tp$name = (this.func_code && this.func_code["co_name"] && this.func_code["co_name"].v) || this.func_code.name || "<native JS>";
+    this.$name = (this.func_code && this.func_code["co_name"] && this.func_code["co_name"].v) || this.func_code.name || "<native JS>";
 
     // Because our external API allows you to set these flags
     // *after* constructing the function (grr), we can only
@@ -308,7 +308,7 @@ Sk.builtin.func.prototype.__get__ = function __get__(self, instance, owner) {
     return self.tp$descr_get(instance, owner);
 };
 
-Sk.builtin.func.prototype.tp$getname = function () {
+Sk.builtin.func.prototype.get$name = function () {
     return (this.func_code && this.func_code["co_name"] && this.func_code["co_name"].v) || this.func_code.name || "<native JS>";
 };
 
@@ -359,13 +359,13 @@ Sk.builtin.func.prototype.$resolveArgs = function (posargs, kw) {
         let vararg = (posargs.length > args.length) ? posargs.slice(args.length) : [];
         args[totalArgs] = new Sk.builtin.tuple(vararg);
     } else if (nposargs > co_argcount) {
-        throw new Sk.builtin.TypeError(this.tp$getname() + "() takes " + co_argcount + " positional argument" + (co_argcount == 1 ? "" : "s") + " but " + nposargs + (nposargs == 1 ? " was " : " were ") + " given");
+        throw new Sk.builtin.TypeError(this.get$name() + "() takes " + co_argcount + " positional argument" + (co_argcount == 1 ? "" : "s") + " but " + nposargs + (nposargs == 1 ? " was " : " were ") + " given");
     }
 
     /* Handle keyword arguments */
     if (kw) {
         if (this.func_code["no_kw"]) {
-            throw new Sk.builtin.TypeError(this.tp$getname() + "() takes no keyword arguments");
+            throw new Sk.builtin.TypeError(this.get$name() + "() takes no keyword arguments");
         }
 
         for (let i = 0; i < kw.length; i += 2) {
@@ -375,13 +375,13 @@ Sk.builtin.func.prototype.$resolveArgs = function (posargs, kw) {
 
             if (idx >= 0) {
                 if (args[idx] !== undefined) {
-                    throw new Sk.builtin.TypeError(this.tp$getname() + "() got multiple values for argument '" + name + "'");
+                    throw new Sk.builtin.TypeError(this.get$name() + "() got multiple values for argument '" + name + "'");
                 }
                 args[idx] = value;
             } else if (kwargs) {
                 kwargs.push(new Sk.builtin.str(name), value);
             } else {
-                throw new Sk.builtin.TypeError(this.tp$getname() + "() got an unexpected keyword argument '" + name + "'");
+                throw new Sk.builtin.TypeError(this.get$name() + "() got an unexpected keyword argument '" + name + "'");
             }
         }
     }
@@ -405,7 +405,7 @@ Sk.builtin.func.prototype.$resolveArgs = function (posargs, kw) {
             }
         }
         if (missing.length != 0 && (this.co_argcount || this.co_varnames)) {
-            throw new Sk.builtin.TypeError(this.tp$getname() + "() missing " + missing.length + " required argument" + (missing.length==1?"":"s") + (missingUnnamed ? "" : (": " + missing.join(", "))));
+            throw new Sk.builtin.TypeError(this.get$name() + "() missing " + missing.length + " required argument" + (missing.length==1?"":"s") + (missingUnnamed ? "" : (": " + missing.join(", "))));
         }
         for (; i < co_argcount; i++) {
             if (args[i] === undefined) {
@@ -430,7 +430,7 @@ Sk.builtin.func.prototype.$resolveArgs = function (posargs, kw) {
             }
         }
         if (missing.length !== 0) {
-            throw new Sk.builtin.TypeError(this.tp$getname() + "() missing " + missing.length + " required keyword argument" + (missing.length==1?"":"s") + ": " + missing.join(", "));
+            throw new Sk.builtin.TypeError(this.get$name() + "() missing " + missing.length + " required keyword argument" + (missing.length==1?"":"s") + ": " + missing.join(", "));
         }
     }
 
@@ -452,7 +452,7 @@ Sk.builtin.func.prototype.$resolveArgs = function (posargs, kw) {
 };
 
 Sk.builtin.func.prototype.tp$call = function (posargs, kw) {
-    //console.log("Legacy tp$call for", this.tp$getname());
+    //console.log("Legacy tp$call for", this.get$name());
 
     // Property reads from func_code are slooow, but
     // the existing external API allows setup first, so as a
@@ -470,7 +470,7 @@ Sk.builtin.func.prototype.tp$call = function (posargs, kw) {
         // It's a JS function with no type info, don't hang around
         // resolving anything.
         if (kw && kw.length !== 0) {
-            throw new Sk.builtin.TypeError(this.tp$getname() + "() takes no keyword arguments");
+            throw new Sk.builtin.TypeError(this.get$name() + "() takes no keyword arguments");
         }
         return this.func_code.apply(this.func_globals, posargs);
     }
@@ -487,7 +487,7 @@ Sk.builtin.func.prototype.tp$call = function (posargs, kw) {
 
 
 Sk.builtin.func.prototype["$r"] = function () {
-    var name = this.tp$getname();
+    var name = this.get$name();
     if (name in Sk.builtins && this === Sk.builtins[name]) {
         return new Sk.builtin.str("<built-in function " + name + ">");
     } else {
