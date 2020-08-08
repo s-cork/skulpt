@@ -182,15 +182,17 @@ Sk.builtin.bytes.prototype.$jsstr = function () {
 };
 
 Sk.builtin.bytes.prototype["$r"] = function () {
-    var ret;
-    var i;
-    var num;
-    ret = "";
-    for (i = 0; i < this.v.byteLength; i++) {
+    let num;
+    let quote = "'";
+    if (this.v.indexOf(39) !== -1 && this.v.indexOf(34) === -1) {
+        quote = '"';
+    }
+    let ret = "b" + quote;
+    for (let i = 0; i < this.v.byteLength; i++) {
         num = this.v[i];
         if ((num < 9) || (num > 10 && num < 13) || (num > 13 && num < 32) || (num > 126)) {
             ret += makehexform(num);
-        } else if (num === 9 || num === 10 || num === 13 || num === 39 || num === 92) {
+        } else if (num === 9 || num === 10 || num === 13 || num === 92) {
             switch (num) {
                 case 9:
                     ret += "\\t";
@@ -201,18 +203,16 @@ Sk.builtin.bytes.prototype["$r"] = function () {
                 case 13:
                     ret += "\\r";
                     break;
-                case 39:
-                    ret += "\\'";
-                    break;
                 case 92:
                     ret += "\\\\";
                     break;
             }
         } else {
-            ret += String.fromCharCode(num);
+            const c = String.fromCharCode(num);
+            ret += c === quote ? "\\" + c : c;
         }
     }
-    ret = "b'" + ret + "'";
+    ret += quote;
     return new Sk.builtin.str(ret);
 };
 
