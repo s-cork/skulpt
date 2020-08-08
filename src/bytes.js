@@ -497,7 +497,7 @@ Sk.builtin.bytes.prototype["hex"] = new Sk.builtin.func(function (self) {
 });
 
 function indices (self, start, end) {
-    if (start === undefined) {
+    if (start === undefined || start === Sk.builtin.none.none$) {
         start = 0;
     } else if (!Sk.misceval.isIndex(start)) {
         throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
@@ -510,7 +510,7 @@ function indices (self, start, end) {
             start += self.v.byteLength;
         }
     }
-    if (end === undefined) {
+    if (end === undefined || end === Sk.builtin.none.none$) {
         end = self.v.byteLength;
     } else if (!Sk.misceval.isIndex(end)) {
         throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
