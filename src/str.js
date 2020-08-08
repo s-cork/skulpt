@@ -85,7 +85,15 @@ Sk.abstr.setUpInheritance("bytes", Sk.builtin.bytes, Sk.builtin.seqtype);
 
 
 
-Sk.builtin.interned = {};
+Sk.builtin.interned = Object.create(null);
+
+function getInterned (x) {
+    return Sk.builtin.interned[x];
+}
+
+function setInterned (x, pyStr) {
+    Sk.builtin.interned[x] = pyStr;
+}
 
 /**
  * @constructor
@@ -157,8 +165,8 @@ Sk.builtin.str = function (x, encoding) {
     this.__class__ = Sk.builtin.str;
     this.v = ret;
     this["v"] = this.v;
-    Sk.builtin.interned["1" + ret] = this;
-
+    setInterned(ret, this);
+    this.$mangled = fixReserved(ret);
     return this;
 
 };
@@ -862,17 +870,130 @@ Sk.builtin.str.prototype["rindex"] = Sk.builtin.bytes.prototype["rindex"] = new 
     return idx;
 });
 
-Sk.builtin.str.prototype["startswith"] = Sk.builtin.bytes.prototype["startswith"] = new Sk.builtin.func(function (self, tgt) {
-    Sk.builtin.pyCheckArgsLen("startswith", arguments.length, 2, 2);
-    Sk.builtin.pyCheckType("tgt", self.__class__.$englishname, checkStringish(self, tgt));
-    return new Sk.builtin.bool( self.v.indexOf(tgt.v) === 0);
+Sk.builtin.str.prototype["startswith"] = new Sk.builtin.func(function (self, prefix, start, end) {
+    Sk.builtin.pyCheckArgsLen("startswith", arguments.length -1 , 1, 3);
+
+    if(Sk.abstr.typeName(prefix) != "str" && Sk.abstr.typeName(prefix) != "tuple"){
+        throw new Sk.builtin.TypeError("startswith first arg must be str or a tuple of str, not " + Sk.abstr.typeName(prefix));
+    }
+
+    if ((start !== undefined) && !Sk.misceval.isIndex(start) && !Sk.builtin.checkNone(start)) {
+        throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
+    }
+    if ((end !== undefined) && !Sk.misceval.isIndex(end) && !Sk.builtin.checkNone(end)) {
+        throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
+    }
+
+    if (start === undefined || Sk.builtin.checkNone(start)) {
+        start = 0;
+    } else {
+        start = Sk.misceval.asIndex(start);
+        start = start >= 0 ? start : self.v.length + start;
+    }
+
+    if (end === undefined || Sk.builtin.checkNone(end)) {
+        end = self.v.length;
+    } else {
+        end = Sk.misceval.asIndex(end);
+        end = end >= 0 ? end : self.v.length + end;
+    }
+
+    if(start > self.v.length){
+        return Sk.builtin.bool.false$;
+    }
+
+    var substr = self.v.slice(start, end);
+
+    
+    if(Sk.abstr.typeName(prefix) == "tuple"){
+        var tmpBool = false, resultBool = false;
+        if(start > end){
+            tmpBool = start <= 0;
+        }
+        if(tmpBool){
+            return Sk.builtin.bool.true$;
+        }
+        var it, i;
+        for (it = Sk.abstr.iter(prefix), i = it.tp$iternext(); i !== undefined; i = it.tp$iternext()) {
+            if(!tmpBool){
+                tmpBool = substr.indexOf(i.v) === 0;    
+            }
+            resultBool = resultBool || tmpBool;
+            if(resultBool){
+                break;
+            }
+        }
+        return resultBool?Sk.builtin.bool.true$ : Sk.builtin.bool.false$;
+    }
+
+    if(prefix.v == "" && start > end && end >= 0){
+        return Sk.builtin.bool.false$;
+    }
+
+    return new Sk.builtin.bool(substr.indexOf(prefix.v) === 0);
 });
 
 // http://stackoverflow.com/questions/280634/endswith-in-javascript
-Sk.builtin.str.prototype["endswith"] = Sk.builtin.bytes.prototype["endswith"] = new Sk.builtin.func(function (self, tgt) {
-    Sk.builtin.pyCheckArgsLen("endswith", arguments.length, 2, 2);
-    Sk.builtin.pyCheckType("tgt", self.__class__.$englishname, checkStringish(self, tgt));
-    return new Sk.builtin.bool( self.v.indexOf(tgt.v, self.v.length - tgt.v.length) !== -1);
+Sk.builtin.str.prototype["endswith"] = new Sk.builtin.func(function (self, suffix, start, end) {
+    Sk.builtin.pyCheckArgsLen("endswith", arguments.length - 1, 1, 3);
+
+    if(Sk.abstr.typeName(suffix) != "str" && Sk.abstr.typeName(suffix) != "tuple"){
+        throw new Sk.builtin.TypeError("endswith first arg must be str or a tuple of str, not " + Sk.abstr.typeName(suffix));
+    }
+
+    if ((start !== undefined) && !Sk.misceval.isIndex(start) && !Sk.builtin.checkNone(start)) {
+        throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
+    }
+    if ((end !== undefined) && !Sk.misceval.isIndex(end) && !Sk.builtin.checkNone(end)) {
+        throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
+    }
+
+    if (start === undefined || Sk.builtin.checkNone(start)) {
+        start = 0;
+    } else {
+        start = Sk.misceval.asIndex(start);
+        start = start >= 0 ? start : self.v.length + start;
+    }
+
+    if (end === undefined || Sk.builtin.checkNone(end)) {
+        end = self.v.length;
+    } else {
+        end = Sk.misceval.asIndex(end);
+        end = end >= 0 ? end : self.v.length + end;
+    }
+
+    if(start > self.v.length){
+        return Sk.builtin.bool.false$;
+    }
+
+    //take out the substring
+    var substr = self.v.slice(start, end);
+
+    if(Sk.abstr.typeName(suffix) == "tuple"){
+        var tmpBool = false, resultBool = false;
+        if(start > end){
+            tmpBool = start <= 0;
+        }
+        if(tmpBool){
+            return Sk.builtin.bool.true$;
+        }
+        var it, i;
+        for (it = Sk.abstr.iter(suffix), i = it.tp$iternext(); i !== undefined; i = it.tp$iternext()) {
+            if(!tmpBool){     
+                tmpBool = substr.indexOf(i.v, substr.length - i.v.length) !== -1;    
+            }
+            resultBool = resultBool || tmpBool;
+            if(resultBool){
+                break;
+            }
+        }
+        return resultBool?Sk.builtin.bool.true$ : Sk.builtin.bool.false$;
+    }
+
+    if(suffix.v == "" && start > end && end >= 0){
+        return Sk.builtin.bool.false$;
+    }
+    return new Sk.builtin.bool(substr.indexOf(suffix.v, substr.length - suffix.v.length) !== -1);
 });
 
 Sk.builtin.str.prototype["replace"] = Sk.builtin.bytes.prototype["replace"] = new Sk.builtin.func(function (self, oldS, newS, count) {
