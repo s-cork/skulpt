@@ -269,10 +269,8 @@ Sk.builtin.bytes.prototype["$r"] = function () {
 };
 
 Sk.builtin.bytes.prototype.mp$subscript = function (index) {
-    var ret;
-    var i;
     if (Sk.misceval.isIndex(index)) {
-        i = Sk.misceval.asIndex(index);
+        let i = Sk.misceval.asIndex(index);
         if (i !== undefined) {
             if (i < 0) {
                 i = this.v.byteLength + i;
@@ -283,7 +281,7 @@ Sk.builtin.bytes.prototype.mp$subscript = function (index) {
             return new Sk.builtin.int_(this.v[i]);
         }
     } else if (index instanceof Sk.builtin.slice) {
-        ret = [];
+        const ret = [];
         index.sssiter$(this.v.byteLength, (i) => {
             ret.push(this.v[i]);
         });
