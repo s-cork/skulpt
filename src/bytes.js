@@ -1,4 +1,5 @@
 require("fastestsmallesttextencoderdecoder");
+import * as str_lib from "./str_lib.js";
 
 // Mapping from supported valid encodings to normalized encoding name
 const supportedEncodings = {
@@ -1353,37 +1354,11 @@ Sk.builtin.bytes.prototype["expandtabs"] = new Sk.builtin.func(function (self, t
 });
 
 Sk.builtin.bytes.prototype["isalnum"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    Sk.builtin.pyCheckArgsLen("isalnum", arguments.length - 1, 0, 0);
-    if (self.v.byteLength === 0) {
-        return Sk.builtin.bool.false$;
-    }
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (!((val >= 48 && val <= 57) || (val >= 65 && val <= 90) || (val >= 97 && val <= 122))) {
-            return Sk.builtin.bool.false$;
-        }
-    }
-    return Sk.builtin.bool.true$;
-
+    return str_lib.isalnum.call(self);
 });
 
 Sk.builtin.bytes.prototype["isalpha"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    Sk.builtin.pyCheckArgsLen("isalpha", arguments.length - 1, 0, 0);
-    if (self.v.byteLength === 0) {
-        return Sk.builtin.bool.false$;
-    }
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (!((val >= 65 && val <= 90) || (val >= 97&& val <= 122))) {
-            return Sk.builtin.bool.false$;
-        }
-    }
-    return Sk.builtin.bool.true$;
-
+    return str_lib.isalpha.call(self);
 });
 
 Sk.builtin.bytes.prototype["isascii"] = new Sk.builtin.func(function (self) {
@@ -1401,41 +1376,11 @@ Sk.builtin.bytes.prototype["isascii"] = new Sk.builtin.func(function (self) {
 });
 
 Sk.builtin.bytes.prototype["isdigit"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    Sk.builtin.pyCheckArgsLen("isdigit", arguments.length - 1, 0, 0);
-    if (self.v.byteLength === 0) {
-        return Sk.builtin.bool.false$;
-    }
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (!(val >= 48 && val < 58)) {
-            return Sk.builtin.bool.false$;
-        }
-    }
-    return Sk.builtin.bool.true$;
-
+    return str_lib.isdigit.call(self);
 });
 
 Sk.builtin.bytes.prototype["islower"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    var flag;
-    Sk.builtin.pyCheckArgsLen("islower", arguments.length - 1, 0, 0);
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (val >= 65 && val <= 90) {
-            return Sk.builtin.bool.false$;
-        }
-        if (!(flag) && (val >= 97 && val <= 122)) {
-            flag = true;
-        }
-    }
-    if (flag) {
-        return Sk.builtin.bool.true$;
-    }
-    return Sk.builtin.bool.false$;
-
+    return str_lib.islower.call(self);
 });
 
 Sk.builtin.bytes.prototype["isspace"] = new Sk.builtin.func(function (self) {
