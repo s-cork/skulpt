@@ -3,7 +3,7 @@ export function title() {
     const ret = jsstr.replace(/[a-z][a-z]*/gi, function (str) {
         return str[0].toUpperCase() + str.substr(1).toLowerCase();
     });
-    return this.$fromBytesString(ret);
+    return this.$fromBinaryString(ret);
 }
 
 export function isalpha() {
@@ -23,6 +23,10 @@ export function isdigit() {
 export function islower() {
     const jsstr = this.$jsstr();
     return new Sk.builtin.bool(jsstr.length && /[a-z]/.test(jsstr) && !/[A-Z]/.test(jsstr));
+}
+
+export function isspace() {
+    return new Sk.builtin.bool( /^\s+$/.test(this.$jsstr()));
 }
 
 export function isupper() {
@@ -68,7 +72,7 @@ export function swapcase() {
         const lc = c.toLowerCase();
         return lc === c ? c.toUpperCase() : lc;
     });
-    return this.$fromBytesString(ret);
+    return this.$fromBinaryString(ret);
 }
 
 export function expandtabs(tabsize) {
@@ -79,9 +83,11 @@ export function expandtabs(tabsize) {
     } else {
         throw new Sk.builtin.TypeError("integer argument expected, got " + Sk.abstr.typeName(tabsize));
     }
-    spaces = new Array(tabsize + 1).join(" ");
-    expanded = this.$jsstr().replace(/([^\r\n\t]*)\t/g, function (a, b) {
+    let spaces = new Array(tabsize + 1).join(" ");
+    const expanded = this.$jsstr().replace(/([^\r\n\t]*)\t/g, function (a, b) {
         return b + spaces.slice(b.length % tabsize);
     });
-    return this.$fromBytesString(expanded);
+    return this.$fromBinaryString(expanded);
 }
+
+

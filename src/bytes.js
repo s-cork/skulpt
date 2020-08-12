@@ -1323,34 +1323,7 @@ Sk.builtin.bytes.prototype["capitalize"] = new Sk.builtin.func(function (self) {
 
 Sk.builtin.bytes.prototype["expandtabs"] = new Sk.builtin.func(function (self, tabsize) {
     Sk.builtin.pyCheckArgsLen("expandtabs", arguments.length, 1, 2);
-
-    if ((tabsize !== undefined) && ! Sk.builtin.checkInt(tabsize)) {
-        throw new Sk.builtin.TypeError("integer argument exepected, got " + Sk.abstr.typeName(tabsize));
-    }
-    if (tabsize === undefined) {
-        tabsize = 8;
-    } else {
-        tabsize = Sk.builtin.asnum$(tabsize);
-    }
-
-    let final = [];
-    let linepos = 0;
-
-    for (let i = 0; i < self.v.byteLength; i++) {
-        if (self.v[i] === 9) {
-            let inc = tabsize - (linepos % tabsize);
-            final = final.concat(Array(inc).fill(32));
-            linepos += inc;
-        } else if (self.v[i] === 10 || self.v[i] === 13) {
-            final.push(self.v[i]);
-            linepos = 0;
-        } else {
-            final.push(self.v[i]);
-            linepos++;
-        }
-    }
-
-    return new Sk.builtin.bytes(final);
+    return str_lib.expandtabs.call(self, tabsize);
 });
 
 Sk.builtin.bytes.prototype["isalnum"] = new Sk.builtin.func(function (self) {
@@ -1402,55 +1375,12 @@ Sk.builtin.bytes.prototype["isspace"] = new Sk.builtin.func(function (self) {
 
 Sk.builtin.bytes.prototype["istitle"] = new Sk.builtin.func(function (self) {
     Sk.builtin.pyCheckArgsLen("istitle", arguments.length - 1, 0, 0);
-
-    if (self.v.byteLength === 0) {
-        return Sk.builtin.bool.false$;
-    }
-
-    let inword = false;
-    let cased = false;
-
-    for (let i = 0; i < self.v.byteLength; i++) {
-        const val = self.v[i];
-        if (val >= 65 && val <= 90) {
-            if (inword) {
-                return Sk.builtin.bool.false$;
-            } else {
-                inword = true;
-            }
-            cased = true;
-        } else if (val >= 97 && val <= 122) {
-            if (!inword) {
-                return Sk.builtin.bool.false$;
-            }
-            cased = true;
-        } else {
-            inword = false;
-        }
-    }
-
-    return cased ? Sk.builtin.bool.true$ : Sk.builtin.bool.false$;
+    return str_lib.istitle.call(self);
 });
 
 Sk.builtin.bytes.prototype["isupper"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    var flag;
     Sk.builtin.pyCheckArgsLen("isupper", arguments.length - 1, 0, 0);
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (!(flag) && (val >= 65 && val <= 90)) {
-            flag = true;
-        }
-        if (val >= 97 && val <= 122) {
-            return Sk.builtin.bool.false$;
-        }
-    }
-    if (flag) {
-        return Sk.builtin.bool.true$;
-    }
-
-    return Sk.builtin.bool.false$;
+    return str_lib.isupper.call(self);
 });
 
 Sk.builtin.bytes.prototype["lower"] = new Sk.builtin.func(function (self) {
@@ -1553,36 +1483,7 @@ Sk.builtin.bytes.prototype["swapcase"] = new Sk.builtin.func(function (self) {
 
 Sk.builtin.bytes.prototype["title"] = new Sk.builtin.func(function (self) {
     Sk.builtin.pyCheckArgsLen("title", arguments.length - 1, 0, 0);
-
-    if (self.v.byteLength === 0) {
-        return new Sk.builtin.bytes(0);
-    }
-    let final = [];
-    let inword = false;
-
-    for (let i = 0; i < self.v.byteLength; i++) {
-        const val = self.v[i];
-        if (val >= 65 && val <= 90) {
-            if (inword) {
-                final.push(val + 32);
-            } else {
-                inword = true;
-                final.push(val);
-            }
-        } else if (val >= 97 && val <= 122) {
-            if (inword) {
-                final.push(val);
-            } else {
-                inword = true;
-                final.push(val - 32);
-            }
-        } else {
-            inword = false;
-            final.push(val);
-        }
-    }
-
-    return new Sk.builtin.bytes(final);
+    return str_lib.title.call(self);
 });
 
 Sk.builtin.bytes.prototype["upper"] = new Sk.builtin.func(function (self) {
