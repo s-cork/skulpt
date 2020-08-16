@@ -697,35 +697,7 @@ Sk.exportSymbol("Sk.abstr.iternext", Sk.abstr.iternext);
  */
 
 Sk.abstr.iter = function(obj) {
-    var iter;
-    var getit;
-    var ret;
-
-    /**
-     * Builds an iterator around classes that have a __getitem__ method.
-     *
-     * @constructor
-     */
-    var seqIter = function (obj) {
-        this.idx = 0;
-        this.myobj = obj;
-        this.getitem = Sk.abstr.lookupSpecial(obj, Sk.builtin.str.$getitem);
-        this.tp$iternext = function () {
-            var ret;
-            try {
-                ret = Sk.misceval.callsimArray(this.getitem, [this.myobj, Sk.ffi.remapToPy(this.idx)]);
-            } catch (e) {
-                if (e instanceof Sk.builtin.IndexError || e instanceof Sk.builtin.StopIteration) {
-                    return undefined;
-                } else {
-                    throw e;
-                }
-            }
-            this.idx++;
-            return ret;
-        };
-    };
-
+    var ret, getf;
     if (obj.tp$iter) {
         ret = obj.tp$iter();
         if (ret.tp$iternext) {
@@ -733,9 +705,9 @@ Sk.abstr.iter = function(obj) {
         } else {
             throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(obj) + "' object is not iterable");
         }
-    } else if (Sk.abstr.lookupSpecial(obj, Sk.builtin.str.$getitem)) {
+    } else if ((getf = Sk.abstr.lookupSpecial(obj, Sk.builtin.str.$getitem))) {
         // create internal iterobject if __getitem__
-        return new seqIter(obj);
+        return new Sk.builtin.seq_iter_(obj, getf);
     }
     throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(obj) + "' object is not iterable");
 };
@@ -818,6 +790,84 @@ Sk.abstr.setUpInheritance = function (childName, child, parent) {
     child.prototype.tp$name = childName;
     child.prototype.ob$type = Sk.builtin.type.makeIntoTypeObj(childName, child);
 };
+
+/**
+ * @function
+ * 
+ * @param {string} typename e.g. "itertools.chain"
+ * @param {Object} iterator minimum options `{constructor: function, iternext: function}`
+ *
+ * @description
+ * effectively a wrapper for easily defining an iterator
+ * `tp$iter` slot is added and returns self
+ *
+ * define a constructor in the usual way
+ *
+ * define `tp$iternext` using iternext in the object literal
+ * mostly as a convenience
+ * you can also define `tp$iternext` in the slots which will take priority
+ *
+ * the main benefit of this helper function is to reduce some repetitive code for defining an iterator class
+ *
+ * If you want a generic iterator see {@link Sk.miscival.iterator}
+ *
+ * 
+ * @example
+ * Sk.builtin.tuple_iter_ = Sk.abstr.buildIteratorClass("tuple_iterator", {
+     constructor: function tuple_iter_(tuple) {
+         this.$index = 0;
+         this.$seq = tuple.sk$asarray();
+     },
+     iternext: function () {
+         if (this.$index >= this.$seq.length) {
+             return undefined;
+         }
+         return this.$seq[this.$index++];
+     }
+ });
+ * 
+ *
+ */
+Sk.abstr.buildIteratorClass = function (typename, iterator) {
+    Sk.asserts.assert(iterator.hasOwnProperty("constructor"), "must provide a constructor");
+    iterator.slots = iterator.slots || {};
+    iterator.slots.tp$iter = genericSelfIter;
+    iterator.slots.tp$iternext = iterator.slots.tp$iternext || iterator.iternext;
+    iterator.slots.tp$getattr = iterator.slots.tp$getattr || Sk.builtin.object.prototype.tp$getattr;
+    let ret = iterator.constructor;
+    Sk.abstr.setUpInheritance(typename, ret, Sk.builtin.object);
+    Object.assign(ret.prototype, iterator.slots);
+    ret.prototype.__next__ = new Sk.builtin.func(__next__);
+    ret.prototype.__iter__ = new Sk.builtin.func(__iter__);
+    ret.prototype.__class__ = ret;
+    ret.prototype.$r = function () {
+        return new Sk.builtin.str(typename);
+    };
+
+    Sk.abstr.built_iterators_.push(ret);
+    return ret;
+};
+
+function genericSelfIter() {
+    return this;
+}
+
+function __next__(self) {
+    Sk.builtin.pyCheckArgsLen("__next__", arguments.length, 1, 1);
+    const ret = self.tp$iternext();
+    if (ret === undefined) {
+        throw new Sk.builtin.StopIteration();
+    }
+    return ret;
+}
+
+function __iter__(self) {
+    Sk.builtin.pyCheckArgsLen("__iter__", arguments.length, 1, 1);
+    return self;
+}
+
+Sk.abstr.built_iterators_ = [];
+
 
 /**
  * Call the super constructor of the provided class, with the object `self` as

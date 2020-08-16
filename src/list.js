@@ -195,11 +195,11 @@ Sk.builtin.list.prototype.tp$richcompare = function (w, op) {
 
 Sk.builtin.list.prototype.__iter__ = new Sk.builtin.func(function (self) {
     Sk.builtin.pyCheckArgsLen("__iter__", arguments.length, 0, 0, true, false);
-    return new Sk.builtin.list_iter_(self);
+    return new list_iter_(self);
 });
 
 Sk.builtin.list.prototype.tp$iter = function () {
-    return new Sk.builtin.list_iter_(this);
+    return new list_iter_(this);
 };
 
 Sk.builtin.list.prototype.sq$length = function () {
@@ -634,41 +634,21 @@ Sk.exportSymbol("Sk.builtin.list", Sk.builtin.list);
 
 /**
  * @constructor
- * @param {Object} lst
+ * @extends {Sk.builtin.object}
+ * @param {Sk.builtin.list} lst
+ * @private
  */
-Sk.builtin.list_iter_ = function (lst) {
-    if (!(this instanceof Sk.builtin.list_iter_)) {
-        return new Sk.builtin.list_iter_(lst);
-    }
-    this.$index = 0;
-    this.lst = lst.v;
-    this.$done = false;
-    this.tp$iter = () => this;
-    this.tp$iternext = function () {
-        if (this.$done || (this.$index >= this.lst.length)) {
+var list_iter_ = Sk.abstr.buildIteratorClass("list_iterator", {
+    constructor: function list_iter_ (lst) {
+        this.$index = 0;
+        this.$seq = lst.v;
+        this.$done = false; // the list can change size but once we've consumed the iterator we must stop
+    },
+    iternext: function () {
+        if (this.$index >= this.$seq.length || this.$done) {
             this.$done = true;
             return undefined;
         }
-        return this.lst[this.$index++];
-    };
-    this.$r = function () {
-        return new Sk.builtin.str("<listiterator>");
-    };
-    return this;
-};
-
-Sk.abstr.setUpInheritance("listiterator", Sk.builtin.list_iter_, Sk.builtin.object);
-
-Sk.builtin.list_iter_.prototype.__class__ = Sk.builtin.list_iter_;
-
-Sk.builtin.list_iter_.prototype.__iter__ = new Sk.builtin.func(function (self) {
-    return self;
+        return this.$seq[this.$index++];
+    },
 });
-
-Sk.builtin.list_iter_.prototype.next$ = function (self) {
-    var ret = self.tp$iternext();
-    if (ret === undefined) {
-        throw new Sk.builtin.StopIteration();
-    }
-    return ret;
-};

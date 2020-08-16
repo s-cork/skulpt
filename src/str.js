@@ -129,6 +129,23 @@ Sk.builtin.str.prototype.$jsstr = function () {
     return this.v;
 };
 
+
+Sk.builtin.str.prototype.sk$asarray = function () {
+    const len = this.sq$length();
+    const arr = [];
+    if (this.$hasAstralCodePoints()) {
+        for (let i = 0; i < len; i++) {
+            arr.push(new Sk.builtin.str(this.v.substring(this.codepoints[i], this.codepoints[i + 1])));
+        }
+    } else {
+        for (let i = 0; i < len; i++) {
+            arr.push(new Sk.builtin.str(this.v[i]));
+        }
+    }
+    return arr;
+};
+
+
 Sk.builtin.str.prototype.mp$subscript = function (index) {
     let len;
     if (Sk.misceval.isIndex(index)) {
@@ -226,11 +243,11 @@ Sk.builtin.str.prototype.__contains__ = new Sk.builtin.func(function(self, item)
 });
 
 Sk.builtin.str.prototype.__iter__ = new Sk.builtin.func(function (self) {
-    return new Sk.builtin.str_iter_(self);
+    return new str_iter_(self);
 });
 
 Sk.builtin.str.prototype.tp$iter = function () {
-    return new Sk.builtin.str_iter_(this);
+    return new str_iter_(this);
 };
 
 Sk.builtin.str.prototype.tp$richcompare = function (other, op) {
@@ -1357,56 +1374,33 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
  * @constructor
  * @param {Object} obj
  */
-Sk.builtin.str_iter_ = function (obj) {
-    if (!(this instanceof Sk.builtin.str_iter_)) {
-        return new Sk.builtin.str_iter_(obj);
-    }
-    this.$index = 0;
-    this.$obj = obj.v.slice();
-    this.tp$iter = () => this;
-    if (obj.$hasAstralCodePoints()) {
-        this.sq$length = obj.codepoints.length;
-        this.$codepoints = obj.codepoints.slice();
-        this.tp$iternext = function () {
-            if (this.$index >= this.sq$length) {
-                return undefined;
-            }
-
-            let r = new Sk.builtin.str(this.$obj.substring(this.$codepoints[this.$index], this.$codepoints[this.$index+1]));
-            this.$index++;
-            return r;
-        };
-    } else {
-        this.sq$length = this.$obj.length;
-        this.tp$iternext = function () {
-            if (this.$index >= this.sq$length) {
-                return undefined;
-            }
-            return new Sk.builtin.str(this.$obj.substr(this.$index++, 1));
-        };
-    }
-    this.$r = function () {
-        return new Sk.builtin.str("iterator");
-    };
-    return this;
-};
-
-Sk.abstr.setUpInheritance("iterator", Sk.builtin.str_iter_, Sk.builtin.object);
-
-Sk.builtin.str_iter_.prototype.__class__ = Sk.builtin.str_iter_;
-
-Sk.builtin.str_iter_.prototype.__iter__ = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("__iter__", arguments.length, 0, 0, true, false);
-    return self;
+var str_iter_ = Sk.abstr.buildIteratorClass("str_iterator", {
+    constructor: function str_iter_(str) {
+        this.$index = 0;
+        this.$jsstr = str.$jsstr();
+        this.$len = str.sq$length();
+        const codepoints = str.codepoints;
+        if (str.$hasAstralCodePoints()) {
+            this.tp$iternext = () => {
+                if (this.$index >= this.$len) {
+                    return undefined;
+                }
+                return new Sk.builtin.str(this.$jsstr.substring(codepoints[this.$index], codepoints[++this.$index]));
+            };
+        } else {
+            this.tp$iternext = () => {
+                if (this.$index >= this.$len) {
+                    return undefined;
+                }
+                return new Sk.builtin.str(this.$jsstr[this.$index++]);
+            };
+        }
+    },
+    iternext: function () {
+        return this.tp$iternext();
+    },
 });
 
-Sk.builtin.str_iter_.prototype.next$ = function (self) {
-    var ret = self.tp$iternext();
-    if (ret === undefined) {
-        throw new Sk.builtin.StopIteration();
-    }
-    return ret;
-};
 
 
 var reservedWords_ = {

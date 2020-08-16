@@ -213,7 +213,30 @@ Sk.configure = function (options) {
     Sk.setupDunderMethods(Sk.__future__.python3);
     setupDictIterators(Sk.__future__.python3);
     Sk.setupObjects(Sk.__future__.python3);
+
+    setupDunderNext(Sk.__future__.python3);
 };
+
+function setupDunderNext(py3) {
+    let new_next, old_next;
+    const iter_objects = Sk.abstr.built_iterators_;
+    if (py3) {
+        new_next = "__next__";
+        old_next = "next";
+    } else {
+        new_next = "next";
+        old_next = "__next__";
+    }
+    if (iter_objects[0].prototype[new_next]) {
+        return;
+    }
+    let obj;
+    for (let i = 0; i < iter_objects.length; i++) {
+        obj = iter_objects[i];
+        obj.prototype[new_next] = obj.prototype[old_next];
+        delete obj.prototype[old_next];
+    }
+}
 
 Sk.exportSymbol("Sk.configure", Sk.configure);
 
@@ -347,16 +370,12 @@ Sk.setup_method_mappings = function () {
         },
         "next$": {
             "classes": [Sk.builtin.dict_iter_,
-                        Sk.builtin.list_iter_,
                         Sk.builtin.set_iter_,
-                        Sk.builtin.str_iter_,
-                        Sk.builtin.tuple_iter_,
                         Sk.builtin.generator,
                         Sk.builtin.enumerate,
                         Sk.builtin.filter_,
                         Sk.builtin.zip_,
-                        Sk.builtin.map_,
-                        Sk.builtin.iterator],
+                        Sk.builtin.map_,],
             2: "next",
             3: "__next__"
         },

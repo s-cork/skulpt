@@ -1680,51 +1680,29 @@ Sk.builtin.bytes.prototype["zfill"] = new Sk.builtin.func(function (self, width)
 
 Sk.builtin.bytes.prototype["__iter__"] = new Sk.builtin.func(function (self) {
     Sk.builtin.pyCheckArgsLen("__iter__", arguments.length, 0, 0, true, false);
-    return new Sk.builtin.bytes_iter_(self);
+    return new bytes_iter_(self);
 });
 
 Sk.builtin.bytes.prototype.tp$iter = function () {
-    return new Sk.builtin.bytes_iter_(this);
+    return new bytes_iter_(this);
 };
 
 /**
  * @constructor
- * @param {Object} bts
+ * @param {Sk.builtin.bytes} bts
+ * @extends {Sk.builtin.object}
+ * @private
  */
-Sk.builtin.bytes_iter_ = function (bts) {
-    if (!(this instanceof Sk.builtin.bytes_iter_)) {
-        return new Sk.builtin.bytes_iter_(bts);
-    }
-    this.$index = 0;
-    this.sq$length = bts.v.byteLength;
-    this.tp$iter = () => this;
-    this.tp$iternext = function () {
-        if (this.$index >= this.sq$length) {
+var bytes_iter_ = Sk.abstr.buildIteratorClass("bytes_iterator", {
+    constructor: function bytes_iter_(bts) {
+        this.$index = 0;
+        this.$uint8 = bts.v;
+        this.$len = bts.v.byteLength;
+    },
+    iternext: function () {
+        if (this.$index >= this.$len) {
             return undefined;
         }
-        return new Sk.builtin.int_(bts.v[this.$index++]);
-    };
-    this.$r = function () {
-        return new Sk.builtin.str("bytesiterator");
-    };
-    return this;
-};
-
-Sk.abstr.setUpInheritance("bytesiterator", Sk.builtin.bytes_iter_, Sk.builtin.object);
-
-Sk.builtin.bytes_iter_.prototype.__class__ = Sk.builtin.bytes_iter_;
-
-Sk.builtin.bytes_iter_.prototype.__iter__ = new Sk.builtin.func(function (self) {
-    return self;
-});
-
-Sk.builtin.bytes_iter_.prototype.next$ = function (self) {
-    var ret = self.tp$iternext();
-    if (ret === undefined) {
-        throw new Sk.builtin.StopIteration();
+        return new Sk.builtin.int_(this.$uint8[this.$index++]); 
     }
-    return ret;
-};
-
-
-Sk.exportSymbol("Sk.builtin.bytes", Sk.builtin.bytes);
+});
