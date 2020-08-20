@@ -133,6 +133,20 @@ Sk.builtin.str.prototype.$jsstr = function () {
     return this.v;
 };
 
+Sk.builtin.str.prototype.type$like = function (obj) {
+    return obj instanceof Sk.builtin.str;
+};
+Sk.builtin.str.prototype.like$name = "str instance";
+
+Sk.builtin.str.prototype.sub$name = "substring";
+
+Sk.builtin.str.prototype.get$tgt = function (tgt) {
+    if (tgt instanceof Sk.builtin.str) {
+        return tgt.$jsstr();
+    }
+    throw new Sk.builtin.TypeError("a str instance is required not '" + Sk.abstr.typeName(tgt) + "'");
+};
+
 Sk.builtin.str.prototype.mp$subscript = function (index) {
     let len;
     if (Sk.misceval.isIndex(index)) {
@@ -237,28 +251,7 @@ Sk.builtin.str.prototype.tp$iter = function () {
     return new Sk.builtin.str_iter_(this);
 };
 
-Sk.builtin.str.prototype.tp$richcompare = function (other, op) {
-    if (!(other instanceof Sk.builtin.str)) {
-        return Sk.builtin.NotImplemented.NotImplemented$;
-    }
-
-    switch (op) {
-        case "Lt":
-            return this.v < other.v;
-        case "LtE":
-            return this.v <= other.v;
-        case "Eq":
-            return this.v === other.v;
-        case "NotEq":
-            return this.v !== other.v;
-        case "Gt":
-            return this.v > other.v;
-        case "GtE":
-            return this.v >= other.v;
-        default:
-            Sk.asserts.fail();
-    }
-};
+Sk.builtin.str.prototype.tp$richcompare = str_lib.richCompare;
 
 Sk.builtin.str.prototype["$r"] = function () {
     // single is preferred
@@ -320,26 +313,7 @@ Sk.builtin.str.prototype["$r"] = function () {
 };
 
 
-Sk.builtin.str.re_escape_ = function (s) {
-    var c;
-    var i;
-    var ret = [];
-    var re = /^[A-Za-z0-9]+$/;
-    for (i = 0; i < s.length; ++i) {
-        c = s.charAt(i);
 
-        if (re.test(c)) {
-            ret.push(c);
-        } else {
-            if (c === "\\000") {
-                ret.push("\\000");
-            } else {
-                ret.push("\\" + c);
-            }
-        }
-    }
-    return ret.join("");
-};
 
 Sk.builtin.str.prototype["lower"] = str_lib.lower;
 
@@ -347,128 +321,15 @@ Sk.builtin.str.prototype["upper"] = str_lib.upper;
 
 Sk.builtin.str.prototype["capitalize"] = str_lib.capitalize;
 
-Sk.builtin.str.prototype["join"] = new Sk.builtin.func(function (self, seq) {
-    var it, i;
-    var arrOfStrs;
-    Sk.builtin.pyCheckArgsLen("join", arguments.length, 2, 2);
-    Sk.builtin.pyCheckType("seq", "iterable", Sk.builtin.checkIterable(seq));
-    arrOfStrs = [];
-    for (it = seq.tp$iter(), i = it.tp$iternext(); i !== undefined; i = it.tp$iternext()) {
-        if (i.constructor !== Sk.builtin.str) {
-            throw new Sk.builtin.TypeError("TypeError: sequence item " + arrOfStrs.length + ": expected string, " + Sk.abstr.typeName(i) + " found");
-        }
-        arrOfStrs.push(i.v);
-    }
-    return new Sk.builtin.str(arrOfStrs.join(self.v));
-});
+Sk.builtin.str.prototype["join"] = str_lib.join;
 
-Sk.builtin.str.prototype["split"] = new Sk.builtin.func(function (self, on, howmany) {
-    var splits;
-    var index;
-    var match;
-    var result;
-    var s;
-    var str;
-    var regex;
-    Sk.builtin.pyCheckArgsLen("split", arguments.length, 1, 3);
-    if ((on === undefined) || (on === Sk.builtin.none.none$)) {
-        on = null;
-    }
-    if ((on !== null) && !Sk.builtin.checkString(on)) {
-        throw new Sk.builtin.TypeError("expected a string");
-    }
-    if ((on !== null) && on.v === "") {
-        throw new Sk.builtin.ValueError("empty separator");
-    }
-    if ((howmany !== undefined) && !Sk.builtin.checkInt(howmany)) {
-        throw new Sk.builtin.TypeError("an integer is required");
-    }
+Sk.builtin.str.prototype["split"] = str_lib.split;
 
-    howmany = Sk.builtin.asnum$(howmany);
-    regex = /[\s\xa0]+/g;
-    str = self.v;
-    if (on === null) {
-        // Remove leading whitespace
-        str = str.replace(/^[\s\xa0]+/, "");
-    } else {
-        // Escape special characters in "on" so we can use a regexp
-        s = on.v.replace(/([.*+?=|\\\/()\[\]\{\}^$])/g, "\\$1");
-        regex = new RegExp(s, "g");
-    }
+Sk.builtin.str.prototype["strip"] = str_lib.strip;
 
-    // This is almost identical to re.split,
-    // except how the regexp is constructed
+Sk.builtin.str.prototype["lstrip"] = str_lib.lstrip;
 
-    result = [];
-    index = 0;
-    splits = 0;
-    while ((match = regex.exec(str)) != null) {
-        if (match.index === regex.lastIndex) {
-            // empty match
-            break;
-        }
-        result.push(new Sk.builtin.str(str.substring(index, match.index)));
-        index = regex.lastIndex;
-        splits += 1;
-        if (howmany && (splits >= howmany)) {
-            break;
-        }
-    }
-    str = str.substring(index);
-    if (on !== null || (str.length > 0)) {
-        result.push(new Sk.builtin.str(str));
-    }
-
-    return new Sk.builtin.list(result);
-});
-
-Sk.builtin.str.prototype["strip"] = new Sk.builtin.func(function (self, chars) {
-    var regex;
-    var pattern;
-    Sk.builtin.pyCheckArgsLen("strip", arguments.length, 1, 2);
-    if ((chars !== undefined) && !Sk.builtin.checkString(chars)) {
-        throw new Sk.builtin.TypeError("strip arg must be None or str");
-    }
-    if (chars === undefined) {
-        pattern = /^\s+|\s+$/g;
-    } else {
-        regex = Sk.builtin.str.re_escape_(chars.v);
-        pattern = new RegExp("^[" + regex + "]+|[" + regex + "]+$", "g");
-    }
-    return new Sk.builtin.str(self.v.replace(pattern, ""));
-});
-
-Sk.builtin.str.prototype["lstrip"] = new Sk.builtin.func(function (self, chars) {
-    var regex;
-    var pattern;
-    Sk.builtin.pyCheckArgsLen("lstrip", arguments.length, 1, 2);
-    if ((chars !== undefined) && !Sk.builtin.checkString(chars)) {
-        throw new Sk.builtin.TypeError("lstrip arg must be None or str");
-    }
-    if (chars === undefined) {
-        pattern = /^\s+/g;
-    } else {
-        regex = Sk.builtin.str.re_escape_(chars.v);
-        pattern = new RegExp("^[" + regex + "]+", "g");
-    }
-    return new Sk.builtin.str(self.v.replace(pattern, ""));
-});
-
-Sk.builtin.str.prototype["rstrip"] = new Sk.builtin.func(function (self, chars) {
-    var regex;
-    var pattern;
-    Sk.builtin.pyCheckArgsLen("rstrip", arguments.length, 1, 2);
-    if ((chars !== undefined) && !Sk.builtin.checkString(chars)) {
-        throw new Sk.builtin.TypeError("rstrip arg must be None or str");
-    }
-    if (chars === undefined) {
-        pattern = /\s+$/g;
-    } else {
-        regex = Sk.builtin.str.re_escape_(chars.v);
-        pattern = new RegExp("[" + regex + "]+$", "g");
-    }
-    return new Sk.builtin.str(self.v.replace(pattern, ""));
-});
+Sk.builtin.str.prototype["rstrip"] = str_lib.rstrip;
 
 Sk.builtin.str.prototype["__format__"] = new Sk.builtin.func(function (self, format_spec) {
     var formatstr;
@@ -490,355 +351,37 @@ Sk.builtin.str.prototype["__format__"] = new Sk.builtin.func(function (self, for
     return new Sk.builtin.str(self);
 });
 
-Sk.builtin.str.prototype["partition"] = new Sk.builtin.func(function (self, sep) {
-    var pos;
-    var sepStr;
-    Sk.builtin.pyCheckArgsLen("partition", arguments.length, 2, 2);
-    Sk.builtin.pyCheckType("sep", "string", Sk.builtin.checkString(sep));
-    sepStr = new Sk.builtin.str(sep);
-    pos = self.v.indexOf(sepStr.v);
-    if (pos < 0) {
-        return new Sk.builtin.tuple([self, Sk.builtin.str.$emptystr, Sk.builtin.str.$emptystr]);
-    }
+Sk.builtin.str.prototype["partition"] = str_lib.partition;
 
-    return new Sk.builtin.tuple([
-        new Sk.builtin.str(self.v.substring(0, pos)),
-        sepStr,
-        new Sk.builtin.str(self.v.substring(pos + sepStr.v.length))]);
-});
+Sk.builtin.str.prototype["rpartition"] = str_lib.rpartition;
 
-Sk.builtin.str.prototype["rpartition"] = new Sk.builtin.func(function (self, sep) {
-    var pos;
-    var sepStr;
-    Sk.builtin.pyCheckArgsLen("rpartition", arguments.length, 2, 2);
-    Sk.builtin.pyCheckType("sep", "string", Sk.builtin.checkString(sep));
-    sepStr = new Sk.builtin.str(sep);
-    pos = self.v.lastIndexOf(sepStr.v);
-    if (pos < 0) {
-        return new Sk.builtin.tuple([Sk.builtin.str.$emptystr, Sk.builtin.str.$emptystr, self]);
-    }
+Sk.builtin.str.prototype["count"] = str_lib.count;
 
-    return new Sk.builtin.tuple([
-        new Sk.builtin.str(self.v.substring(0, pos)),
-        sepStr,
-        new Sk.builtin.str(self.v.substring(pos + sepStr.v.length))]);
-});
+Sk.builtin.str.prototype["ljust"] = str_lib.ljust;
 
-Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, pat, start, end) {
-    var normaltext;
-    var ctl;
-    var slice;
-    var m;
-    Sk.builtin.pyCheckArgsLen("count", arguments.length, 2, 4);
-    if (!Sk.builtin.checkString(pat)) {
-        throw new Sk.builtin.TypeError("expected a character buffer object");
-    }
-    if ((start !== undefined) && !Sk.builtin.checkInt(start) && !Sk.builtin.checkNone(start)) {
-        throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
-    }
-    if ((end !== undefined) && !Sk.builtin.checkInt(end)&& !Sk.builtin.checkNone(end)) {
-        throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
-    }
+Sk.builtin.str.prototype["rjust"] = str_lib.rjust;
 
-    let len = self.sq$length();
+Sk.builtin.str.prototype["center"] = str_lib.center;
 
-    if (start === undefined || start === Sk.builtin.none.none$) {
-        start = 0;
-    } else {
-        start = Sk.builtin.asnum$(start);
-        start = start >= 0 ? start : len + start;
-        if (start > len) {
-            // Guard against running off the end of the codepoints array
-            return new Sk.builtin.int_(0);
-        }
-    }
+Sk.builtin.str.prototype.find$left = str_lib.find$left;
 
-    if (end === undefined || end === Sk.builtin.none.none$) {
-        end = len;
-    } else {
-        end = Sk.builtin.asnum$(end);
-        end = end >= 0 ? end : len + end;
-    }
+Sk.builtin.str.prototype.find$right = str_lib.find$right;
 
-    normaltext = pat.v.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-    m = new RegExp(normaltext, "g");
-    slice = self.v.slice(self.codepoints ? self.codepoints[start] : start,
-                         self.codepoints ? self.codepoints[end] : end);
-    ctl = slice.match(m);
-    if (!ctl) {
-        return  new Sk.builtin.int_(0);
-    } else {
-        return new Sk.builtin.int_(ctl.length);
-    }
+Sk.builtin.str.prototype["find"] = str_lib.find;
 
-});
+Sk.builtin.str.prototype["index"] = str_lib.index;
 
+Sk.builtin.str.prototype["rfind"] = str_lib.rfind;
 
-function mkJust(isRight, isCenter) {
-    return new Sk.builtin.func(function (self, len, fillchar) {
-        var newstr;
-        Sk.builtin.pyCheckArgsLen(isCenter ? "center" : isRight ? "rjust" : "ljust",
-                                  arguments.length, 2, 3);
-        if (!Sk.builtin.checkInt(len)) {
-            throw new Sk.builtin.TypeError("integer argument expected, got " + Sk.abstr.typeName(len));
-        }
-        if ((fillchar !== undefined) && (!Sk.builtin.checkString(fillchar) || fillchar.v.length !== 1 && fillchar.sq$length() !== 1)) {
-            throw new Sk.builtin.TypeError("must be char, not " + Sk.abstr.typeName(fillchar));
-        }
-        if (fillchar === undefined) {
-            fillchar = " ";
-        } else {
-            fillchar = fillchar.v;
-        }
-        len = Sk.builtin.asnum$(len);
-        let mylen = self.sq$length();
-        if (mylen >= len) {
-            return self;
-        } else if (isCenter) {
-            newstr = fillchar.repeat(Math.floor((len - mylen)/2));
+Sk.builtin.str.prototype["rindex"] = str_lib.rindex;
 
-            newstr = newstr + self.v + newstr;
+Sk.builtin.str.prototype["startswith"] = str_lib.startswith;
 
-            if ((len - mylen) % 2) {
-                newstr += fillchar;
-            }
+Sk.builtin.str.prototype["endswith"] = str_lib.endswith;
 
-            return new Sk.builtin.str(newstr);
+Sk.builtin.str.prototype["replace"] = str_lib.replace;
 
-        } else {
-            newstr = fillchar.repeat(len - mylen);
-            return new Sk.builtin.str(isRight ? (newstr + self.v) : (self.v + newstr));
-        }
-    });
-}
-
-Sk.builtin.str.prototype["ljust"] = mkJust(false);
-
-Sk.builtin.str.prototype["rjust"] = mkJust(true);
-
-Sk.builtin.str.prototype["center"] = mkJust(false, true);
-
-function indices(self, start, end) {
-    const len = self.sq$length();
-    if (start === undefined || Sk.builtin.checkNone(start)) {
-        start = 0;
-    } else if (!Sk.misceval.isIndex(start)) {
-        throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
-    } else {
-        start = Sk.misceval.asIndex(start);
-        start = start >= 0 ? start : len + start;
-        if (start < 0) {
-            start = 0;
-        }
-    }
-    if (end === undefined || Sk.builtin.checkNone(end)) {
-        end = len;
-    } else if (!Sk.misceval.isIndex(end)) {
-        throw new Sk.builtin.TypeError("slice indices must be integers or None or have an __index__ method");
-    } else {
-        end = Sk.misceval.asIndex(end);
-        end = end >= 0 ? end : len + end;
-        if (end < 0) {
-            end = 0;
-        } else if (end > len) {
-            end = len;
-        }
-    }
-
-    if (self.$hasAstralCodePoints()) {
-        start = self.codepoints[start];
-        end = self.codepoints[end];
-        start = start === undefined ? self.v.length : start;
-        end = end === undefined ? self.v.length : end;
-    }
-
-    return {
-        start: start,
-        end: end,
-    };
-}
-
-
-function mkFind(isReversed) {
-    return new Sk.builtin.func(function (self, tgt, start, end) {
-        var idx;
-        Sk.builtin.pyCheckArgsLen("find", arguments.length, 2, 4);
-        if (!Sk.builtin.checkString(tgt)) {
-            throw new Sk.builtin.TypeError("expected a character buffer object");
-        }
-        ({ start, end } = indices(self, start, end));
-
-        const len = self.sq$length();
-
-        // This guard makes sure we don't, eg, look for self.codepoints[-1]
-        if (end < start) {
-            return new Sk.builtin.int_(-1);
-        }
-
-        // ...do the search..
-        end -= tgt.v.length;
-        let jsidx = isReversed ? self.v.lastIndexOf(tgt.v, end) : self.v.indexOf(tgt.v, start);
-        jsidx = jsidx >= start && jsidx <= end ? jsidx : -1;
-
-        if (self.$hasAstralCodePoints()) {
-            // ...and now convert them back
-
-            idx = -1;
-
-            for (let i = 0; i < len; i++) {
-                if (jsidx == self.codepoints[i]) {
-                    idx = i;
-                }
-            }
-        } else {
-            // No astral codepoints, no conversion required
-            idx = jsidx;
-        }
-
-        return new Sk.builtin.int_(idx);
-    });
-};
-
-Sk.builtin.str.prototype["find"] = mkFind(false);
-
-Sk.builtin.str.prototype["index"] = new Sk.builtin.func(function (self, tgt, start, end) {
-    var idx;
-    Sk.builtin.pyCheckArgsLen("index", arguments.length, 2, 4);
-    idx = Sk.misceval.callsimArray(self["find"], [self, tgt, start, end]);
-    if (Sk.builtin.asnum$(idx) === -1) {
-        throw new Sk.builtin.ValueError("substring not found");
-    }
-    return idx;
-});
-
-Sk.builtin.str.prototype["rfind"] = mkFind(true);
-
-Sk.builtin.str.prototype["rindex"] = new Sk.builtin.func(function (self, tgt, start, end) {
-    var idx;
-    Sk.builtin.pyCheckArgsLen("rindex", arguments.length, 2, 4);
-    idx = Sk.misceval.callsimArray(self["rfind"], [self, tgt, start, end]);
-    if (Sk.builtin.asnum$(idx) === -1) {
-        throw new Sk.builtin.ValueError("substring not found");
-    }
-    return idx;
-});
-
-Sk.builtin.str.prototype["startswith"] = new Sk.builtin.func(function (self, prefix, start, end) {
-    Sk.builtin.pyCheckArgsLen("startswith", arguments.length - 1, 1, 3);
-
-    if (!(prefix instanceof Sk.builtin.str) && !(prefix instanceof Sk.builtin.tuple)) {
-        throw new Sk.builtin.TypeError("startswith first arg must be str or a tuple of str, not " + Sk.abstr.typeName(prefix));
-    }
-
-    ({ start, end } = indices(self, start, end));
-
-    if (start > end) {
-        return Sk.builtin.bool.false$;
-    }
-
-    let substr = self.v.slice(start, end);
-
-    if (prefix instanceof Sk.builtin.tuple) {
-        for (let it = Sk.abstr.iter(prefix), i = it.tp$iternext(); i !== undefined; i = it.tp$iternext()) {
-            if (!(i instanceof Sk.builtin.str)) {
-                throw new Sk.builtin.TypeError("tuple for startswith must only contain str, not " + Sk.abstr.typeName(i));
-            }
-            if (substr.indexOf(i.v) === 0) {
-                return Sk.builtin.bool.true$;
-            }
-        }
-        return Sk.builtin.bool.false$;
-    }
-    return new Sk.builtin.bool(substr.indexOf(prefix.v) === 0);
-});
-
-// http://stackoverflow.com/questions/280634/endswith-in-javascript
-Sk.builtin.str.prototype["endswith"] = new Sk.builtin.func(function (self, suffix, start, end) {
-    Sk.builtin.pyCheckArgsLen("endswith", arguments.length - 1, 1, 3);
-
-    if (!(suffix instanceof Sk.builtin.str) && !(suffix instanceof Sk.builtin.tuple)) {
-        throw new Sk.builtin.TypeError("endswith first arg must be str or a tuple of str, not " + Sk.abstr.typeName(suffix));
-    }
-
-    ({ start, end } = indices(self, start, end));
-
-    if (start > end) {
-        return Sk.builtin.bool.false$;
-    }
-
-    let substr = self.v.slice(start, end);
-
-
-    if (suffix instanceof Sk.builtin.tuple) {
-        for (let it = Sk.abstr.iter(suffix), i = it.tp$iternext(); i !== undefined; i = it.tp$iternext()) {
-            if (!(i instanceof Sk.builtin.str)) {
-                throw new Sk.builtin.TypeError("tuple for endswith must only contain str, not " + Sk.abstr.typeName(i));
-            }
-            if (substr.indexOf(i.v, substr.length - i.v.length) !== -1) {
-                return Sk.builtin.bool.true$;
-            }
-        }
-        return Sk.builtin.bool.false$;
-    }
-
-    return new Sk.builtin.bool(substr.indexOf(suffix.v, substr.length - suffix.v.length) !== -1);
-});
-
-Sk.builtin.str.prototype["replace"] = new Sk.builtin.func(function (self, oldS, newS, count) {
-    var c;
-    var patt;
-    Sk.builtin.pyCheckArgsLen("replace", arguments.length, 3, 4);
-    Sk.builtin.pyCheckType("oldS", "string", Sk.builtin.checkString(oldS));
-    Sk.builtin.pyCheckType("newS", "string", Sk.builtin.checkString(newS));
-    if ((count !== undefined) && !Sk.builtin.checkInt(count)) {
-        throw new Sk.builtin.TypeError("integer argument expected, got " +
-            Sk.abstr.typeName(count));
-    }
-    count = Sk.builtin.asnum$(count);
-    patt = new RegExp(Sk.builtin.str.re_escape_(oldS.v), "g");
-
-    if ((count === undefined) || (count < 0)) {
-        return new Sk.builtin.str(self.v.replace(patt, newS.v));
-    }
-
-    c = 0;
-
-    function replacer (match) {
-        c++;
-        if (c <= count) {
-            return newS.v;
-        }
-        return match;
-    }
-
-    return new Sk.builtin.str(self.v.replace(patt, replacer));
-});
-
-Sk.builtin.str.prototype["zfill"] = new Sk.builtin.func(function (self, len) {
-    var str = self.v;
-    var ret;
-    var zeroes;
-    var offset;
-    var pad = "";
-
-    Sk.builtin.pyCheckArgsLen("zfill", arguments.length, 2, 2);
-    if (! Sk.builtin.checkInt(len)) {
-        throw new Sk.builtin.TypeError("integer argument expected, got " + Sk.abstr.typeName(len));
-    }
-
-    // figure out how many zeroes are needed to make the proper length
-    zeroes = len.v - str.length;
-    // offset by 1 if there is a +/- at the beginning of the string
-    offset = (str[0] === "+" || str[0] === "-") ? 1 : 0;
-    for(var i = 0; i < zeroes; i++){
-        pad += "0";
-    }
-    // combine the string and the zeroes
-    ret = str.substr(0, offset) + pad + str.substr(offset);
-    return new Sk.builtin.str(ret);
-
-
-});
+Sk.builtin.str.prototype["zfill"] = str_lib.zfill;
 
 Sk.builtin.str.prototype["isdigit"] = str_lib.isdigit;
 
@@ -937,317 +480,7 @@ Sk.builtin.str.$py2decode = new Sk.builtin.func(function (self, encoding, errors
     return Sk.builtin.bytes.$decode(pyBytes, encoding, errors);
 });
 
-Sk.builtin.str.prototype.nb$remainder = function (rhs) {
-    // % format op. rhs can be a value, a tuple, or something with __getitem__ (dict)
-
-    // From http://docs.python.org/library/stdtypes.html#string-formatting the
-    // format looks like:
-    // 1. The '%' character, which marks the start of the specifier.
-    // 2. Mapping key (optional), consisting of a parenthesised sequence of characters (for example, (somename)).
-    // 3. Conversion flags (optional), which affect the result of some conversion types.
-    // 4. Minimum field width (optional). If specified as an '*' (asterisk), the actual width is read from the next
-    // element of the tuple in values, and the object to convert comes after the minimum field width and optional
-    // precision. 5. Precision (optional), given as a '.' (dot) followed by the precision. If specified as '*' (an
-    // asterisk), the actual width is read from the next element of the tuple in values, and the value to convert comes
-    // after the precision. 6. Length modifier (optional). 7. Conversion type.  length modifier is ignored
-
-    var ret;
-    var replFunc;
-    var index;
-    var regex;
-    var val;
-    const strBytesConstructor = this.sk$builtinBase;
-    // distinguish between bytes and str
-
-    if (rhs.constructor !== Sk.builtin.tuple && (rhs.mp$subscript === undefined || rhs.constructor === strBytesConstructor)) {
-        rhs = new Sk.builtin.tuple([rhs]);
-    }
-    // general approach is to use a regex that matches the format above, and
-    // do an re.sub with a function as replacement to make the subs.
-
-    //           1 2222222222222222   33333333   444444444   5555555555555  66666  777777777777777777
-    regex = /%(\([a-zA-Z0-9]+\))?([#0 +\-]+)?(\*|[0-9]+)?(\.(\*|[0-9]+))?[hlL]?([diouxXeEfFgGcrsb%])/g;
-    index = 0;
-    replFunc = function (substring, mappingKey, conversionFlags, fieldWidth, precision, precbody, conversionType) {
-        var result;
-        var convName;
-        var convValue;
-        var base;
-        var r;
-        var mk;
-        var value;
-        var handleWidth;
-        var formatNumber;
-        var alternateForm;
-        var precedeWithSign;
-        var blankBeforePositive;
-        var leftAdjust;
-        var zeroPad;
-        var i;
-
-        fieldWidth = Sk.builtin.asnum$(fieldWidth);
-        precision = Sk.builtin.asnum$(precision);
-
-        if ((mappingKey === undefined || mappingKey === "") && conversionType != "%") {
-            i = index++;
-        } // ff passes '' not undef for some reason
-
-        if (precision === "") { // ff passes '' here aswell causing problems with G,g, etc.
-            precision = undefined;
-        }
-
-        zeroPad = false;
-        leftAdjust = false;
-        blankBeforePositive = false;
-        precedeWithSign = false;
-        alternateForm = false;
-        if (conversionFlags) {
-            if (conversionFlags.indexOf("-") !== -1) {
-                leftAdjust = true;
-            } else if (conversionFlags.indexOf("0") !== -1) {
-                zeroPad = true;
-            }
-
-            if (conversionFlags.indexOf("+") !== -1) {
-                precedeWithSign = true;
-            } else if (conversionFlags.indexOf(" ") !== -1) {
-                blankBeforePositive = true;
-            }
-
-            alternateForm = conversionFlags.indexOf("#") !== -1;
-        }
-
-        if (precision) {
-            precision = parseInt(precision.substr(1), 10);
-        }
-
-        formatNumber = function (n, base) {
-            var precZeroPadded;
-            var prefix;
-            var didSign;
-            var neg;
-            var r;
-            var j;
-            base = Sk.builtin.asnum$(base);
-            neg = false;
-            didSign = false;
-            if (typeof n === "number") {
-                if (n < 0) {
-                    n = -n;
-                    neg = true;
-                }
-                r = n.toString(base);
-            } else if (n instanceof Sk.builtin.float_) {
-                r = n.str$(base, false);
-                if (r.length > 2 && r.substr(-2) === ".0") {
-                    r = r.substr(0, r.length - 2);
-                }
-                neg = n.nb$isnegative();
-            } else if (n instanceof Sk.builtin.int_) {
-                r = n.str$(base, false);
-                neg = n.nb$isnegative();
-            } else if (n instanceof Sk.builtin.lng) {
-                r = n.str$(base, false);
-                neg = n.nb$isnegative();
-            }
-
-            Sk.asserts.assert(r !== undefined, "unhandled number format");
-
-            precZeroPadded = false;
-
-            if (precision) {
-                //print("r.length",r.length,"precision",precision);
-                for (j = r.length; j < precision; ++j) {
-                    r = "0" + r;
-                    precZeroPadded = true;
-                }
-            }
-
-            prefix = "";
-
-            if (neg) {
-                prefix = "-";
-            } else if (precedeWithSign) {
-                prefix = "+" + prefix;
-            } else if (blankBeforePositive) {
-                prefix = " " + prefix;
-            }
-
-            if (alternateForm) {
-                if (base === 16) {
-                    prefix += "0x";
-                } else if (base === 8 && !precZeroPadded && r !== "0") {
-                    prefix += "0";
-                }
-            }
-
-            return [prefix, r];
-        };
-
-        handleWidth = function (args) {
-            var totLen;
-            var prefix = args[0];
-            var r = args[1];
-            var j;
-
-            if (fieldWidth) {
-                fieldWidth = parseInt(fieldWidth, 10);
-                totLen = r.length + prefix.length;
-                if (zeroPad) {
-                    for (j = totLen; j < fieldWidth; ++j) {
-                        r = "0" + r;
-                    }
-                } else if (leftAdjust) {
-                    for (j = totLen; j < fieldWidth; ++j) {
-                        r = r + " ";
-                    }
-                    if (Sk.__future__.python3) {
-                        r += prefix;
-                        prefix = "";
-                    }
-                } else {
-                    for (j = totLen; j < fieldWidth; ++j) {
-                        prefix = " " + prefix;
-                    }
-                }
-            }
-            return prefix + r;
-        };
-        //print("Rhs:",rhs, "ctor", rhs.constructor);
-        if (rhs.constructor === Sk.builtin.tuple) {
-            value = rhs.v[i];
-        } else if (rhs.mp$subscript !== undefined && mappingKey !== undefined) {
-            mk = mappingKey.substring(1, mappingKey.length - 1);
-            //print("mk",mk);
-            value = rhs.mp$subscript(new strBytesConstructor(mk));
-        } else if (rhs.constructor === Sk.builtin.dict || rhs.constructor === Sk.builtin.list) {
-            // new case where only one argument is provided
-            value = rhs;
-        } else {
-            throw new Sk.builtin.AttributeError(rhs.tp$name + " instance has no attribute 'mp$subscript'");
-        }
-        base = 10;
-        if (conversionType === "d" || conversionType === "i") {
-            let tmpData = formatNumber(value, base);
-            if (tmpData[1] === undefined){
-                throw new Sk.builtin.TypeError("%"+ conversionType+" format: a number is required, not "+ Sk.abstr.typeName(value));
-            }
-            let r = tmpData[1];
-            tmpData[1] = r.indexOf(".") !== -1 ? parseInt(r, 10).toString() : r;
-            return handleWidth(tmpData);
-        } else if (conversionType === "o") {
-            return handleWidth(formatNumber(value, 8));
-        } else if (conversionType === "x") {
-            return handleWidth(formatNumber(value, 16));
-        } else if (conversionType === "X") {
-            return handleWidth(formatNumber(value, 16)).toUpperCase();
-        } else if (conversionType === "f" || conversionType === "F" || conversionType === "e" || conversionType === "E" || conversionType === "g" || conversionType === "G") {
-            convValue = Sk.builtin.asnum$(value);
-            if (typeof convValue === "string") {
-                convValue = Number(convValue);
-            }
-            if (convValue === Infinity) {
-                return "inf";
-            }
-            if (convValue === -Infinity) {
-                return "-inf";
-            }
-            if (isNaN(convValue)) {
-                return "nan";
-            }
-            convName = ["toExponential", "toFixed", "toPrecision"]["efg".indexOf(conversionType.toLowerCase())];
-            if (precision === undefined || precision === "") {
-
-                if (conversionType === "e" || conversionType === "E") {
-                    precision = 6;
-                } else if (conversionType === "f" || conversionType === "F") {
-                    if (Sk.__future__.python3) {
-                        precision = 6;
-                    } else {
-                        precision = 7;
-                    }
-                }
-            }
-            result = (convValue)[convName](precision); // possible loose of negative zero sign
-
-            // apply sign to negative zeros, floats only!
-            if(Sk.builtin.checkFloat(value)) {
-                if(convValue === 0 && 1/convValue === -Infinity) {
-                    result = "-" + result; // add sign for zero
-                }
-            }
-            if (Sk.__future__.python3) {
-                if ((result.length >= 7) && (result.slice(0, 6) == "0.0000")) {
-
-                    val = parseFloat(result);
-                    result = val.toExponential();
-                }
-                if (result.charAt(result.length -2) == "-") {
-                    result = result.slice(0, result.length - 1) + "0" + result.charAt(result.length - 1);
-                }
-            }
-            if ("EFG".indexOf(conversionType) !== -1) {
-                result = result.toUpperCase();
-            }
-            return handleWidth(["", result]);
-        } else if (conversionType === "c") {
-            if (typeof value === "number") {
-                return String.fromCharCode(value);
-            } else if (value instanceof Sk.builtin.int_) {
-                return String.fromCharCode(value.v);
-            } else if (value instanceof Sk.builtin.float_) {
-                return String.fromCharCode(value.v);
-            } else if (value instanceof Sk.builtin.lng) {
-                return String.fromCharCode(value.str$(10, false)[0]);
-            } else if (value.constructor === Sk.builtin.str) {
-                return value.v.substr(0, 1);
-            } else {
-                throw new Sk.builtin.TypeError("an integer is required");
-            }
-        } else if (conversionType === "r") {
-            r = Sk.builtin.repr(value);
-            if (precision) {
-                return r.v.substr(0, precision);
-            }
-            return r.v;
-        } else if (conversionType === "s" && strBytesConstructor === Sk.builtin.str) {
-            r = new Sk.builtin.str(value);
-            r = r.$jsstr();
-            if (precision) {
-                return r.substr(0, precision);
-            }
-            if(fieldWidth) {
-                r = handleWidth([" ", r]);
-            }
-            return r;
-        } else if (conversionType === "b" || conversionType === "s") {
-            if (strBytesConstructor === Sk.builtin.str) {
-                throw new Sk.builtin.ValueError("unsupported format character 'b'");
-            }
-            let func;
-            if (!(value instanceof Sk.builtin.bytes) && (func = Sk.abstr.lookupSpecial(value, Sk.builtin.str.$bytes)) === undefined) {
-                throw new Sk.builtin.TypeError("%b requires a bytes-like object, or an object that implements __bytes__, not '" + Sk.abstr.typeName(value) + "'");
-            }
-            if (func !== undefined) {
-                value = new Sk.builtin.bytes(value);
-                // raises the appropriate error message if __bytes__ does not return bytes
-            }
-            r = value.$jsstr();
-            if (precision) {
-                return r.substr(0, precision);
-            }
-            if (fieldWidth) {
-                r = handleWidth([" ", r]);
-            }
-            return r;
-        } else if (conversionType === "%") {
-            return "%";
-        }
-    };
-    ret = this.$jsstr().replace(regex, replFunc);
-    return new strBytesConstructor(ret);
-};
-
+Sk.builtin.str.prototype.nb$remainder = str_lib.mod;
 /**
  * @constructor
  * @param {Object} obj
