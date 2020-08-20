@@ -1,3 +1,5 @@
+import * as str_lib from "./str_lib.js";
+
 Sk.builtin.interned = Object.create(null);
 
 function getInterned (x) {
@@ -339,33 +341,11 @@ Sk.builtin.str.re_escape_ = function (s) {
     return ret.join("");
 };
 
-Sk.builtin.str.prototype["lower"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("lower", arguments.length, 1, 1);
-    return new Sk.builtin.str(self.v.toLowerCase());
-});
+Sk.builtin.str.prototype["lower"] = str_lib.lower;
 
-Sk.builtin.str.prototype["upper"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("upper", arguments.length, 1, 1);
-    return new Sk.builtin.str(self.v.toUpperCase());
-});
+Sk.builtin.str.prototype["upper"] = str_lib.upper;
 
-Sk.builtin.str.prototype["capitalize"] = new Sk.builtin.func(function (self) {
-    var i;
-    var cap;
-    var orig;
-    Sk.builtin.pyCheckArgsLen("capitalize", arguments.length, 1, 1);
-    orig = self.v;
-
-    if (orig.length === 0) {
-        return new Sk.builtin.str("");
-    }
-    cap = orig.charAt(0).toUpperCase();
-
-    for (i = 1; i < orig.length; i++) {
-        cap += orig.charAt(i).toLowerCase();
-    }
-    return new Sk.builtin.str(cap);
-});
+Sk.builtin.str.prototype["capitalize"] = str_lib.capitalize;
 
 Sk.builtin.str.prototype["join"] = new Sk.builtin.func(function (self, seq) {
     var it, i;
@@ -860,59 +840,13 @@ Sk.builtin.str.prototype["zfill"] = new Sk.builtin.func(function (self, len) {
 
 });
 
-Sk.builtin.str.prototype["isdigit"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("isdigit", arguments.length, 1, 1);
-    return new Sk.builtin.bool( /^\d+$/.test(self.v));
-});
+Sk.builtin.str.prototype["isdigit"] = str_lib.isdigit;
 
-Sk.builtin.str.prototype["isspace"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("isspace", arguments.length, 1, 1);
-    return new Sk.builtin.bool( /^\s+$/.test(self.v));
-});
+Sk.builtin.str.prototype["isspace"] = str_lib.isspace;
 
+Sk.builtin.str.prototype["expandtabs"] = str_lib.expandtabs;
 
-Sk.builtin.str.prototype["expandtabs"] = new Sk.builtin.func(function (self, tabsize) {
-    // var input = self.v;
-    // var expanded = "";
-    // var split;
-    // var spacestr = "";
-    // var spacerem;
-
-
-    var spaces;
-    var expanded;
-
-    Sk.builtin.pyCheckArgsLen("expandtabs", arguments.length, 1, 2);
-
-
-    if ((tabsize !== undefined) && ! Sk.builtin.checkInt(tabsize)) {
-        throw new Sk.builtin.TypeError("integer argument expected, got " + Sk.abstr.typeName(tabsize));
-    }
-    if (tabsize === undefined) {
-        tabsize = 8;
-    } else {
-        tabsize = Sk.builtin.asnum$(tabsize);
-    }
-
-    spaces = (new Array(tabsize + 1)).join(" ");
-    expanded = self.v.replace(/([^\r\n\t]*)\t/g, function(a, b) {
-        return b + spaces.slice(b.length % tabsize);
-    });
-    return new Sk.builtin.str(expanded);
-});
-
-Sk.builtin.str.prototype["swapcase"] = new Sk.builtin.func(function (self) {
-    var ret;
-    Sk.builtin.pyCheckArgsLen("swapcase", arguments.length, 1, 1);
-
-
-    ret = self.v.replace(/[a-z]/gi, function(c) {
-        var lc = c.toLowerCase();
-        return lc === c ? c.toUpperCase() : lc;
-    });
-
-    return new Sk.builtin.str(ret);
-});
+Sk.builtin.str.prototype["swapcase"] = str_lib.swapcase;
 
 Sk.builtin.str.prototype["splitlines"] = new Sk.builtin.func(function (self, keepends) {
     var data = self.v;
@@ -967,72 +901,20 @@ Sk.builtin.str.prototype["splitlines"] = new Sk.builtin.func(function (self, kee
     return new Sk.builtin.list(strs_w);
 });
 
-Sk.builtin.str.prototype["title"] = new Sk.builtin.func(function (self) {
-    var ret;
+Sk.builtin.str.prototype["title"] = str_lib.title;
 
-    Sk.builtin.pyCheckArgsLen("title", arguments.length, 1, 1);
+Sk.builtin.str.prototype["isalpha"] = str_lib.isalpha;
 
-    ret = self.v.replace(/[a-z][a-z]*/gi, function(str) {
-        return str[0].toUpperCase() + str.substr(1).toLowerCase();
-    });
-
-    return new Sk.builtin.str(ret);
-});
-
-Sk.builtin.str.prototype["isalpha"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("isalpha", arguments.length, 1, 1);
-    return new Sk.builtin.bool( self.v.length && !/[^a-zA-Z]/.test(self.v));
-});
-
-Sk.builtin.str.prototype["isalnum"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("isalnum", arguments.length, 1, 1);
-    return new Sk.builtin.bool( self.v.length && !/[^a-zA-Z0-9]/.test(self.v));
-});
+Sk.builtin.str.prototype["isalnum"] = str_lib.isalnum;
 
 // does not account for unicode numeric values
-Sk.builtin.str.prototype["isnumeric"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("isnumeric", arguments.length, 1, 1);
-    return new Sk.builtin.bool( self.v.length && !/[^0-9]/.test(self.v));
-});
+Sk.builtin.str.prototype["isnumeric"] = str_lib.isnumeric;
 
-Sk.builtin.str.prototype["islower"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("islower", arguments.length, 1, 1);
-    return new Sk.builtin.bool( self.v.length && /[a-z]/.test(self.v) && !/[A-Z]/.test(self.v));
-});
+Sk.builtin.str.prototype["islower"] = str_lib.islower;
 
-Sk.builtin.str.prototype["isupper"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("isupper", arguments.length, 1, 1);
-    return new Sk.builtin.bool( self.v.length && !/[a-z]/.test(self.v) && /[A-Z]/.test(self.v));
-});
+Sk.builtin.str.prototype["isupper"] = str_lib.isupper;
 
-Sk.builtin.str.prototype["istitle"] = new Sk.builtin.func(function (self) {
-    // Comparing to str.title() seems the most intuitive thing, but it fails on "",
-    // Other empty-ish strings with no change.
-    var input = self.v;
-    var cased = false;
-    var previous_is_cased = false;
-    var pos;
-    var ch;
-    Sk.builtin.pyCheckArgsLen("istitle", arguments.length, 1, 1);
-    for (pos = 0; pos < input.length; pos ++) {
-        ch = input.charAt(pos);
-        if (! /[a-z]/.test(ch) && /[A-Z]/.test(ch)) {
-            if (previous_is_cased) {
-                return new Sk.builtin.bool( false);
-            }
-            previous_is_cased = true;
-            cased = true;
-        } else if (/[a-z]/.test(ch) && ! /[A-Z]/.test(ch)) {
-            if (! previous_is_cased) {
-                return new Sk.builtin.bool( false);
-            }
-            cased = true;
-        } else {
-            previous_is_cased = false;
-        }
-    }
-    return new Sk.builtin.bool( cased);
-});
+Sk.builtin.str.prototype["istitle"] = str_lib.istitle;
 
 Sk.builtin.str.prototype["encode"] = new Sk.builtin.func(function (self, encoding, errors) {
     Sk.builtin.pyCheckArgsLen("encode", arguments.length, 1, 3);

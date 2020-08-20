@@ -1293,113 +1293,27 @@ Sk.builtin.bytes.prototype["strip"] = new Sk.builtin.func(function (self, chars)
     return lstripped.right$strip(chars);
 });
 
-Sk.builtin.bytes.prototype["capitalize"] = new Sk.builtin.func(function (self) {
-    var final;
-    var i;
-    var val;
-    Sk.builtin.pyCheckArgsLen("capitalize", arguments.length - 1, 0, 0);
+Sk.builtin.bytes.prototype["capitalize"] = str_lib.capitalize;
 
-    if (self.v.byteLength === 0) {
-        return new Sk.builtin.bytes(0);
-    }
-    final = [];
-    if (self.v[0] >= 97 && self.v[0] <= 122) {
-        val = self.v[0] - 32;
-    } else {
-        val = self.v[0];
-    }
-    final.push(val);
-    for (i = 1; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (val >= 65 && val <= 90) {
-            val += 32;
-            final.push(val);
-        } else {
-            final.push(val);
-        }
-    }
-    return new Sk.builtin.bytes(final);
-});
+Sk.builtin.bytes.prototype["expandtabs"] = str_lib.expandtabs;
 
-Sk.builtin.bytes.prototype["expandtabs"] = new Sk.builtin.func(function (self, tabsize) {
-    Sk.builtin.pyCheckArgsLen("expandtabs", arguments.length, 1, 2);
-    return str_lib.expandtabs.call(self, tabsize);
-});
+Sk.builtin.bytes.prototype["isalnum"] = str_lib.isalnum;
 
-Sk.builtin.bytes.prototype["isalnum"] = new Sk.builtin.func(function (self) {
-    return str_lib.isalnum.call(self);
-});
+Sk.builtin.bytes.prototype["isalpha"] = str_lib.isalpha;
 
-Sk.builtin.bytes.prototype["isalpha"] = new Sk.builtin.func(function (self) {
-    return str_lib.isalpha.call(self);
-});
+Sk.builtin.bytes.prototype["isascii"] = str_lib.isascii;
 
-Sk.builtin.bytes.prototype["isascii"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    Sk.builtin.pyCheckArgsLen("isascii", arguments.length - 1, 0, 0);
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (!(val >= 0 && val < 128)) {
-            return Sk.builtin.bool.false$;
-        }
-    }
-    return Sk.builtin.bool.true$;
+Sk.builtin.bytes.prototype["isdigit"] = str_lib.isdigit;
 
-});
+Sk.builtin.bytes.prototype["islower"] = str_lib.islower;
 
-Sk.builtin.bytes.prototype["isdigit"] = new Sk.builtin.func(function (self) {
-    return str_lib.isdigit.call(self);
-});
+Sk.builtin.bytes.prototype["isspace"] = str_lib.isspace;
 
-Sk.builtin.bytes.prototype["islower"] = new Sk.builtin.func(function (self) {
-    return str_lib.islower.call(self);
-});
+Sk.builtin.bytes.prototype["istitle"] = str_lib.istitle;
 
-Sk.builtin.bytes.prototype["isspace"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    Sk.builtin.pyCheckArgsLen("isspace", arguments.length - 1, 0, 0);
-    if (self.v.byteLength === 0) {
-        return Sk.builtin.bool.false$;
-    }
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (!(val === 32 || val === 9 || val === 10 || val === 13 || val === 11 || val === 12)) {
-            return Sk.builtin.bool.false$;
-        }
-    }
-    return Sk.builtin.bool.true$;
+Sk.builtin.bytes.prototype["isupper"] = str_lib.isupper;
 
-});
-
-Sk.builtin.bytes.prototype["istitle"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("istitle", arguments.length - 1, 0, 0);
-    return str_lib.istitle.call(self);
-});
-
-Sk.builtin.bytes.prototype["isupper"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("isupper", arguments.length - 1, 0, 0);
-    return str_lib.isupper.call(self);
-});
-
-Sk.builtin.bytes.prototype["lower"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    var final;
-    Sk.builtin.pyCheckArgsLen("lower", arguments.length - 1, 0, 0);
-    final = [];
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (val >= 65 && val <= 90) {
-            val += 32;
-            final.push(val);
-        } else {
-            final.push(val);
-        }
-    }
-    return new Sk.builtin.bytes(final);
-});
+Sk.builtin.bytes.prototype["lower"] = str_lib.lower;
 
 Sk.builtin.bytes.prototype["splitlines"] = new Sk.builtin.func(function (self, keepends) {
     Sk.builtin.pyCheckArgsLen("splitlines", arguments.length, 1, 2);
@@ -1460,49 +1374,11 @@ Sk.builtin.bytes.prototype["splitlines"] = new Sk.builtin.func(function (self, k
     return new Sk.builtin.list(final);
 });
 
-Sk.builtin.bytes.prototype["swapcase"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    var final;
-    Sk.builtin.pyCheckArgsLen("swapcase", arguments.length - 1, 0, 0);
-    final = [];
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (val >= 65 && val <= 90) {
-            val += 32;
-            final.push(val);
-        } else if (val >= 97 && val <= 122) {
-            val -= 32;
-            final.push(val);
-        } else {
-            final.push(val);
-        }
-    }
-    return new Sk.builtin.bytes(final);
-});
+Sk.builtin.bytes.prototype["swapcase"] = str_lib.swapcase;
 
-Sk.builtin.bytes.prototype["title"] = new Sk.builtin.func(function (self) {
-    Sk.builtin.pyCheckArgsLen("title", arguments.length - 1, 0, 0);
-    return str_lib.title.call(self);
-});
+Sk.builtin.bytes.prototype["title"] = str_lib.title;
 
-Sk.builtin.bytes.prototype["upper"] = new Sk.builtin.func(function (self) {
-    var i;
-    var val;
-    var final;
-    Sk.builtin.pyCheckArgsLen("upper", arguments.length - 1, 0, 0);
-    final = [];
-    for (i = 0; i < self.v.byteLength; i++) {
-        val = self.v[i];
-        if (val >= 97 && val <= 122) {
-            val -= 32;
-            final.push(val);
-        } else {
-            final.push(val);
-        }
-    }
-    return new Sk.builtin.bytes(final);
-});
+Sk.builtin.bytes.prototype["upper"] = str_lib.upper;
 
 Sk.builtin.bytes.prototype["zfill"] = new Sk.builtin.func(function (self, width) {
     var fill;
