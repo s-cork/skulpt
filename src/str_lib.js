@@ -1,4 +1,4 @@
-export function richCompare(other, op) {
+export function tp$richcompare(other, op) {
     if (!this.type$like(other)) {
         return Sk.builtin.NotImplemented.NotImplemented$;
     }
@@ -53,7 +53,7 @@ export var replace = new Sk.builtin.func(function replace(self, oldS, newS, coun
     );
 });
 
-var leading_whitespace = /[\s\xa0]+/g;
+
 var special_chars = /([.*+?=|\\\/()\[\]\{\}^$])/g;
 
 function mkSplit (funcname, isReversed) {
@@ -78,10 +78,11 @@ function mkSplit (funcname, isReversed) {
             throw new Sk.builtin.TypeError("a " + self.like$name + " is required not, " + Sk.abstr.typeName(sep));
         }
 
-        let regex = leading_whitespace;
+        let regex;
         let jsstr = self.$jsstr();
         if (sep === null) {
             // Remove leading whitespace
+            regex = /[\s\xa0]+/g;
             jsstr = jsstr.replace(regex, "");
         } else {
             // Escape special characters in null so we can use a regexp
@@ -106,7 +107,7 @@ function mkSplit (funcname, isReversed) {
         }
         jsstr = jsstr.substring(index);
         if (sep !== null || jsstr.length > 0) {
-            result.push(new self.sk.sk$builtinBase(jsstr));
+            result.push(new self.sk$builtinBase(jsstr));
         }
 
         return new Sk.builtin.list(result);
@@ -380,7 +381,50 @@ export var lower = new Sk.builtin.func(function lower(self) {
     return new self.sk$builtinBase(self.$jsstr().toLowerCase());
 });
 
-// export var splitlines = new Sk.builtin.func(function splitlines() {});
+export var splitlines = new Sk.builtin.func(function splitlines(self, keepends) {
+    Sk.builtin.pyCheckArgsLen("splitlines", arguments.length, 1, 2);
+    if (keepends === undefined) {
+        keepends = false;
+    } else if (!Sk.builtin.checkBool(keepends)) {
+        throw new Sk.builtin.TypeError("boolean argument expected, got " + Sk.abstr.typeName(keepends));
+    } else {
+        keepends = keepends.v;
+    }
+    const data = self.$jsstr();
+    const final = [];
+    const len = data.length;
+    const thisType = self.sk$builtinBase;
+    let slice, ch, eol, sol=0;
+    for (let i = 0; i < len; i++) {
+        ch = data.charAt(i);
+        if (data.charAt(i + 1) === "\n" && ch === "\r") {
+            eol = i + 2;
+            slice = data.slice(sol, eol);
+            if (! keepends) {
+                slice = slice.replace(/(\r|\n)/g, "");
+            }
+            final.push(new thisType(slice));
+            sol = eol;
+        } else if ((ch === "\n" && data.charAt(i - 1) !== "\r") || ch === "\r") {
+            eol = i + 1;
+            slice = data.slice(sol, eol);
+            if (! keepends) {
+                slice = slice.replace(/(\r|\n)/g, "");
+            }
+            final.push(new thisType(slice));
+            sol = eol;
+        }
+    }
+    if (sol < len) {
+        eol = len;
+        slice = data.slice(sol, eol);
+        if (! keepends) {
+            slice = slice.replace(/(\r|\n)/g, "");
+        }
+        final.push(new thisType(slice));
+    }
+    return new Sk.builtin.list(final);
+});
 
 
 function re_escape_(s) {
@@ -590,7 +634,7 @@ export var zfill = new Sk.builtin.func(function zfill(self, len) {
 
 // export var __format__ = new Sk.builtin.func(function __format__() {});
 
-export function mod(rhs) {
+export function nb$remainder(rhs) {
     // % format op. rhs can be a value, a tuple, or something with __getitem__ (dict)
 
     // From http://docs.python.org/library/stdtypes.html#string-formatting the

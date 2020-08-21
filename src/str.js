@@ -251,8 +251,6 @@ Sk.builtin.str.prototype.tp$iter = function () {
     return new Sk.builtin.str_iter_(this);
 };
 
-Sk.builtin.str.prototype.tp$richcompare = str_lib.richCompare;
-
 Sk.builtin.str.prototype["$r"] = function () {
     // single is preferred
     var ashex;
@@ -314,23 +312,6 @@ Sk.builtin.str.prototype["$r"] = function () {
 
 
 
-
-Sk.builtin.str.prototype["lower"] = str_lib.lower;
-
-Sk.builtin.str.prototype["upper"] = str_lib.upper;
-
-Sk.builtin.str.prototype["capitalize"] = str_lib.capitalize;
-
-Sk.builtin.str.prototype["join"] = str_lib.join;
-
-Sk.builtin.str.prototype["split"] = str_lib.split;
-
-Sk.builtin.str.prototype["strip"] = str_lib.strip;
-
-Sk.builtin.str.prototype["lstrip"] = str_lib.lstrip;
-
-Sk.builtin.str.prototype["rstrip"] = str_lib.rstrip;
-
 Sk.builtin.str.prototype["__format__"] = new Sk.builtin.func(function (self, format_spec) {
     var formatstr;
     Sk.builtin.pyCheckArgsLen("__format__", arguments.length, 2, 2);
@@ -351,113 +332,8 @@ Sk.builtin.str.prototype["__format__"] = new Sk.builtin.func(function (self, for
     return new Sk.builtin.str(self);
 });
 
-Sk.builtin.str.prototype["partition"] = str_lib.partition;
-
-Sk.builtin.str.prototype["rpartition"] = str_lib.rpartition;
-
-Sk.builtin.str.prototype["count"] = str_lib.count;
-
-Sk.builtin.str.prototype["ljust"] = str_lib.ljust;
-
-Sk.builtin.str.prototype["rjust"] = str_lib.rjust;
-
-Sk.builtin.str.prototype["center"] = str_lib.center;
-
-Sk.builtin.str.prototype.find$left = str_lib.find$left;
-
-Sk.builtin.str.prototype.find$right = str_lib.find$right;
-
-Sk.builtin.str.prototype["find"] = str_lib.find;
-
-Sk.builtin.str.prototype["index"] = str_lib.index;
-
-Sk.builtin.str.prototype["rfind"] = str_lib.rfind;
-
-Sk.builtin.str.prototype["rindex"] = str_lib.rindex;
-
-Sk.builtin.str.prototype["startswith"] = str_lib.startswith;
-
-Sk.builtin.str.prototype["endswith"] = str_lib.endswith;
-
-Sk.builtin.str.prototype["replace"] = str_lib.replace;
-
-Sk.builtin.str.prototype["zfill"] = str_lib.zfill;
-
-Sk.builtin.str.prototype["isdigit"] = str_lib.isdigit;
-
-Sk.builtin.str.prototype["isspace"] = str_lib.isspace;
-
-Sk.builtin.str.prototype["expandtabs"] = str_lib.expandtabs;
-
-Sk.builtin.str.prototype["swapcase"] = str_lib.swapcase;
-
-Sk.builtin.str.prototype["splitlines"] = new Sk.builtin.func(function (self, keepends) {
-    var data = self.v;
-    var i = 0;
-    var j = i;
-    var selflen = self.v.length;
-    var strs_w = [];
-    var ch;
-    var eol;
-    var sol = 0;
-    var slice;
-    Sk.builtin.pyCheckArgsLen("splitlines", arguments.length, 1, 2);
-    if ((keepends !== undefined) && ! Sk.builtin.checkBool(keepends)) {
-        throw new Sk.builtin.TypeError("boolean argument expected, got " + Sk.abstr.typeName(keepends));
-    }
-    if (keepends === undefined) {
-        keepends = false;
-    } else {
-        keepends = keepends.v;
-    }
 
 
-    for (i = 0; i < selflen; i ++) {
-        ch = data.charAt(i);
-        if (data.charAt(i + 1) === "\n" && ch === "\r") {
-            eol = i + 2;
-            slice = data.slice(sol, eol);
-            if (! keepends) {
-                slice = slice.replace(/(\r|\n)/g, "");
-            }
-            strs_w.push(new Sk.builtin.str(slice));
-            sol = eol;
-        } else if ((ch === "\n" && data.charAt(i - 1) !== "\r") || ch === "\r") {
-            eol = i + 1;
-            slice = data.slice(sol, eol);
-            if (! keepends) {
-                slice = slice.replace(/(\r|\n)/g, "");
-            }
-            strs_w.push(new Sk.builtin.str(slice));
-            sol = eol;
-        }
-
-    }
-    if (sol < selflen) {
-        eol = selflen;
-        slice = data.slice(sol, eol);
-        if (! keepends) {
-            slice = slice.replace(/(\r|\n)/g, "");
-        }
-        strs_w.push(new Sk.builtin.str(slice));
-    }
-    return new Sk.builtin.list(strs_w);
-});
-
-Sk.builtin.str.prototype["title"] = str_lib.title;
-
-Sk.builtin.str.prototype["isalpha"] = str_lib.isalpha;
-
-Sk.builtin.str.prototype["isalnum"] = str_lib.isalnum;
-
-// does not account for unicode numeric values
-Sk.builtin.str.prototype["isnumeric"] = str_lib.isnumeric;
-
-Sk.builtin.str.prototype["islower"] = str_lib.islower;
-
-Sk.builtin.str.prototype["isupper"] = str_lib.isupper;
-
-Sk.builtin.str.prototype["istitle"] = str_lib.istitle;
 
 Sk.builtin.str.prototype["encode"] = new Sk.builtin.func(function (self, encoding, errors) {
     Sk.builtin.pyCheckArgsLen("encode", arguments.length, 1, 3);
@@ -480,7 +356,9 @@ Sk.builtin.str.$py2decode = new Sk.builtin.func(function (self, encoding, errors
     return Sk.builtin.bytes.$decode(pyBytes, encoding, errors);
 });
 
-Sk.builtin.str.prototype.nb$remainder = str_lib.mod;
+
+Object.assign(Sk.builtin.str.prototype, str_lib);
+
 /**
  * @constructor
  * @param {Object} obj

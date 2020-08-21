@@ -1462,10 +1462,6 @@ Sk.builtin.id = function (obj) {
     return new Sk.builtin.int_(obj.__id);
 };
 
-Sk.builtin.bytearray = function bytearray () {
-    throw new Sk.builtin.NotImplementedError("bytearray is not yet implemented");
-};
-
 Sk.builtin.callable = function callable (obj) {
     // check num of args
     Sk.builtin.pyCheckArgsLen("callable", arguments.length, 1, 1);
