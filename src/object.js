@@ -25,6 +25,16 @@ Object.defineProperties(
             writable: true,
         },
         hp$type: { value: undefined, writable: true },
+        toString: {value: function () {
+            return this.tp$str().v;
+        }}
+    }
+);
+
+Object.defineProperties(
+    Sk.builtin.type.prototype,
+    /**@lends {Sk.builtin.type.prototype}*/ {
+        tp$base: { value: Sk.builtin.object, writable: true },
     }
 );
 
@@ -115,7 +125,7 @@ Sk.builtin.object.prototype.$r = function () {
     const mod = Sk.abstr.lookupSpecial(this, Sk.builtin.str.$module);
     let cname = "";
     if (mod && Sk.builtin.checkString(mod)) {
-        cname = mod.v + ".";
+        cname = mod.toString() + ".";
     }
     return new Sk.builtin.str("<" + cname + Sk.abstr.typeName(this) + " object>");
 };
@@ -125,6 +135,7 @@ Sk.builtin.object.prototype.tp$str = function () {
     return this.$r();
 };
 
+var hashMap = new Map();
 /**
  * Return the hash value of this instance.
  *
@@ -134,10 +145,13 @@ Sk.builtin.object.prototype.tp$str = function () {
  * @ignore
  */
 Sk.builtin.object.prototype.tp$hash = function () {
-    if (!this.$savedHash_) {
-        this.$savedHash_ = new Sk.builtin.int_(Sk.builtin.hashCount++);
+    let hash = hashMap.get(this);
+    if (hash !== undefined) {
+        return hash;
     }
-    return this.$savedHash_;
+    hash = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER - Number.MAX_SAFE_INTEGER / 2);
+    hashMap.set(this, hash);
+    return new Sk.builtin.int_(hash);
 };
 
 Sk.builtin.object.prototype.tp$richcompare = function (other, op) {
@@ -250,19 +264,25 @@ Sk.builtin.none = function () {
     return Sk.builtin.none.none$; // always return the same object
 };
 Sk.abstr.setUpInheritance("NoneType", Sk.builtin.none, Sk.builtin.object);
-Sk.builtin.none.sk$acceptable_as_base_class = false;
-Sk.builtin.none.prototype.$r = function () {
-    return new Sk.builtin.str("None");
-};
 
-Sk.builtin.none.prototype.tp$hash = function () {
-    return new Sk.builtin.int_(0);
-};
+Object.defineProperties(Sk.builtin.none.prototype, {
+    valueOf: {value: () => null}
+});
 
-Sk.builtin.none.prototype.tp$new = function (args, kwargs) {
-    Sk.abstr.checkNoArgs("NoneType", args, kwargs);
-    return Sk.builtin.none.none$;
-};
+Object.assign(Sk.builtin.none.prototype, {
+    tp$new: function (args, kwargs) {
+        Sk.abstr.checkNoArgs("NoneType", args, kwargs);
+        return Sk.builtin.none.none$;
+    },
+    $r: () => new Sk.builtin.str("None"),
+    tp$as_number: true,
+    nb$bool: () => false,
+});
+
+Object.defineProperties(Sk.builtin.none, {
+    sk$acceptable_as_base_class: {value: false}
+});
+
 
 /**
  * Python None value.

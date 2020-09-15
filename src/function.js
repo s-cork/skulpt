@@ -49,6 +49,8 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
         this.memoised = code.co_fastcall || undefined;
         if (code.co_fastcall) {
             this.tp$call = code;
+        } else {
+            this.tp$call = Sk.builtin.func.prototype.tp$call; // keep func the same shape
         }
         
     },
@@ -104,7 +106,7 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
                 if (!Sk.builtin.checkString(value)) {
                     throw new Sk.builtin.TypeError("__name__ must be set to a string object");
                 }
-                this.$name = value.$jsstr();
+                this.$name = String(value);
             },
         },
         __qualname__: {
@@ -115,7 +117,7 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
                 if (!Sk.builtin.checkString(value)) {
                     throw new Sk.builtin.TypeError("__qualname__ must be set to a string object");
                 }
-                this.$qualname = value.$jsstr();
+                this.$qualname = value.toString();
             },
         },
         __dict__: Sk.generic.getSetDict,

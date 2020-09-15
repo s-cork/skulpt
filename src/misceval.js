@@ -78,62 +78,59 @@ Sk.exportSymbol("Sk.misceval.isIndex", Sk.misceval.isIndex);
 
 
 function asIndex(o) {
-    let res;
     if (o === null || o === undefined) {
-        // pass
+        return;
     } else if (o.constructor === Sk.builtin.int_) {
         // the common case;
-        res = o.v;
+        return o.v;
     } else if (o.nb$index) {
-        res = o.nb$index().v; // this slot will check the return value is an int.
-    } else if (typeof o === "number") {
-        if (Number.isInteger(o)) {
-            return o;
-        }
+        return o.nb$index().v; // this slot will check the return value is an int.
+    } else if (typeof o === "number" && Number.isInteger(o)) {
+        return o;
     }
-    if (typeof res === "number") {
-        return res;
-    } else if (JSBI.__isBigInt(res)) {
-        return res.toString();
-    }
-    return res;
 };
+
+function asIndexOrThrow(index, msg) {
+    const i = asIndex(index);
+    if (i !== undefined) {
+        return i;
+    }
+    msg = msg || "'{tp$name}' object cannot be interpreted as an integer";
+    msg = msg.replace("{tp$name}", Sk.abstr.typeName(index));
+    throw new Sk.builtin.TypeError(msg);
+}
 
 Sk.misceval.asIndex = asIndex;
 
-Sk.misceval.asIndexSized = function (index, Err) {
-    const i = asIndex(index);
+Sk.misceval.asIndexSized = function (index, Err, msg) {
+    const i = this.asIndexOrThrow(index, msg);
     if (typeof i === "number") {
         return i; // integer v property will by a javascript number if it is index sized
-    } else if (i === undefined) {
-        throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(index) + "' object cannot be interpreted as an index");
     }
-    Err = Err || Sk.builtin.IndexError;
+    if (Err == null) {
+        return JSBI.lessThan(i, JSBI.__ZERO) ? -Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+    }
     throw new Err("cannot fit '" + Sk.abstr.typeName(index) + "' into an index-sized integer");
 };
 
 /**
  * @function
  * 
- * @param {pyObject|number} obj - typically an {@link Sk.builtin.int_} legacy code might use a js number 
+ * @param {pyObject|number} index - typically an {@link Sk.builtin.int_} legacy code might use a js number 
  * @param {string=} msg - an optional message when throwing the TypeError
  * @throws {Sk.builtin.TypeError}
  *
  * @description
  * requires a pyObject - returns a string or integer depending on the size.
- * throws a generic error that the object cannot be interpreted as an index
+ * throws a TypeError that the object cannot be interpreted as an index
+ * can provide a custom message
+ * include {tp$name} in the custom message which will be replaced by the typeName of the object
+ * 
  * - converts the `Sk.builtin.int_` 
  * - if the number is too large to be safe returns a string
  * @returns {number|string} 
  */
-Sk.misceval.asIndexOrThrow = function (obj, msg) {
-    let res = asIndex(obj);
-    if (res !== undefined) {
-        return res;
-    }
-    msg = msg || "'" + Sk.abstr.typeName(obj) + "' object cannot be interpreted as an index";
-    throw new Sk.builtin.TypeError(msg);
-};
+Sk.misceval.asIndexOrThrow = asIndexOrThrow;
 
 /**
  * return u[v:w]
@@ -600,39 +597,23 @@ Sk.exportSymbol("Sk.misceval.opAllowsEquality", Sk.misceval.opAllowsEquality);
  * @param {*} x 
  */
 Sk.misceval.isTrue = function (x) {
-    var ret;
-    if (x === true) {
+    if (x === true || x === Sk.builtin.bool.true$) {
         return true;
     }
-    if (x === false) {
+    if (x === false || x === Sk.builtin.bool.false$) {
         return false;
     }
-    if (x === null) {
+    if (x === null || x === undefined) {
         return false;
-    }
-    if (x === undefined) {
-        return false;
-    }
-    if (x.constructor === Sk.builtin.bool) {
-        return x.v !== 0;
-    }
-    if (x === Sk.builtin.none.none$) {
-        return false;
-    }
-    if (x === Sk.builtin.NotImplemented.NotImplemented$) {
-        return false;
-    }
-    if (typeof x === "number") {
-        return x !== 0;
     }
     if (x.nb$bool) {
-        return  x.nb$bool();
+        return x.nb$bool(); // the slot wrapper takes care of converting to js Boolean
     }
     if (x.sq$length) {
-        ret = x.sq$length(); // the slot wrapper takes care of the error message
-        return Sk.builtin.asnum$(ret) !== 0;
+        // the slot wrapper takes care of the error message and converting to js int
+        return x.sq$length() !== 0;
     }
-    return true;
+    return Boolean(x);
 };
 Sk.exportSymbol("Sk.misceval.isTrue", Sk.misceval.isTrue);
 
@@ -1336,19 +1317,8 @@ Sk.misceval.buildClass = function (globals, func, name, bases, cell) {
     }
     var _name = new Sk.builtin.str(name);
     var _bases = new Sk.builtin.tuple(bases);
-    var _locals = [];
-    var key;
-
     // build array for python dict
-    for (key in locals) {
-        if (!locals.hasOwnProperty(key)) {
-            //The current property key not a direct property of p
-            continue;
-        }
-        _locals.push(new Sk.builtin.str(key)); // push key
-        _locals.push(locals[key]); // push associated value
-    }
-    _locals = new Sk.builtin.dict(_locals);
+    _locals = Sk.ffi.toPyDict(locals);
 
     klass = Sk.misceval.callsimArray(meta, [_name, _bases, _locals]);
 

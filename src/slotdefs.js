@@ -385,7 +385,7 @@ slots.__str__ = {
 slots.__hash__ = {
     $name: "__hash__",
     $slot_name: "tp$hash",
-    $slot_func: slotFuncNoArgsWithCheck("__hash__", Sk.builtin.checkInt, "int"),
+    $slot_func: slotFuncNoArgsWithCheck("__hash__", Sk.builtin.checkInt, "int", (int) => typeof int.v === "number" ? int : int.tp$hash()),
     $wrapper: wrapperCallNoArgs,
     $textsig: "($self, /)",
     $flags: { NoArgs: true },
@@ -472,7 +472,7 @@ slots.__getattribute__ = {
         }
         const res = this.call(self, pyName);
         if (res === undefined) {
-            throw new Sk.builtin.AttributeError(Sk.abstr.typeName(self) + " has no attribute " + pyName.$jsstr());
+            throw new Sk.builtin.AttributeError(Sk.abstr.typeName(self) + " has no attribute " + pyName);
         }
         return res;
     },
@@ -859,17 +859,17 @@ slots.__len__ = {
             if (canSuspend) {
                 res = Sk.misceval.callsimOrSuspendArray(func, []);
                 return Sk.misceval.chain(res, (r) => {
-                    return Sk.misceval.asIndexOrThrow(r, "'" + Sk.abstr.typeName(r) + "' object cannot be interpreted as an integer");
+                    return Sk.misceval.asIndexOrThrow(r);
                 });
             } else {
                 res = Sk.misceval.callsimArray(func, []);
-                return Sk.misceval.asIndexOrThrow(res, "'" + Sk.abstr.typeName(res) + "' object cannot be interpreted as an integer");
+                return Sk.misceval.asIndexOrThrow(res);
             }
         };
     },
     $wrapper: function __len__(self, args, kwargs) {
         Sk.abstr.checkNoArgs("__len__", args, kwargs);
-        return new Sk.builtin.int_(self.sq$length(true));
+        return new Sk.builtin.int_(self.sq$length());
     },
     $flags: { NoArgs: true },
     $textsig: "($self, /)",

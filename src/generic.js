@@ -91,7 +91,7 @@ Sk.generic.setAttr = function __setattr__(pyName, value, canSuspend) {
                     return dict.mp$ass_subscript(pyName);
                 } catch (e) {
                     if (e instanceof Sk.builtin.KeyError) {
-                        throw new Sk.builtin.AttributeError("'" + Sk.abstr.typeName(this) + "' object has no attribute '" + pyName.$jsstr() + "'");
+                        throw new Sk.builtin.AttributeError("'" + Sk.abstr.typeName(this) + "' object has no attribute '" + pyName + "'");
                     }
                     throw e;
                 }
@@ -107,7 +107,7 @@ Sk.generic.setAttr = function __setattr__(pyName, value, canSuspend) {
             }
         }
     }
-    throw new Sk.builtin.AttributeError(this.sk$attrError() +  " has no attribute '" + pyName.$jsstr() + "'");
+    throw new Sk.builtin.AttributeError(this.sk$attrError() +  " has no attribute '" + pyName + "'");
 };
 Sk.exportSymbol("Sk.generic.setAttr", Sk.generic.setAttr);
 

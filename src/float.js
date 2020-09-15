@@ -1,5 +1,5 @@
 /** @typedef {Sk.builtin.object} */ var pyObject;
-
+var hashMap = {};
 
 /**
  * @constructor
@@ -28,18 +28,20 @@ Sk.builtin.float_ = Sk.abstr.buildNativeClass("float", {
         tp$as_number: true,
         tp$doc: "Convert a string or number to a floating point number, if possible.",
         tp$hash: function () {
-            //todo - this hash function causes a lot of collisions - Cpython implementation is different
-            return this.nb$int_();
+            let hash = hashMap[this.v];
+            if (hash !== undefined) {
+                return hash;
+            }
+            hash = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER - Number.MAX_SAFE_INTEGER / 2);
+            hashMap[this.v] = hash;
+            return new Sk.builtin.int_(hash);
         },
         $r: function () {
             return new Sk.builtin.str(this.str$(10, true));
         },
         tp$new: function (args, kwargs) {
-            if (kwargs && kwargs.length) {
-                throw new Sk.builtin.TypeError("float() takes no keyword arguments");
-            } else if (args && args.length > 1) {
-                throw new Sk.builtin.TypeError("float expected at most 1 arguments, got " + args.length);
-            }
+            Sk.abstr.checkNoKwargs("float", kwargs);
+            Sk.abstr.checkArgsLen("float", args, 0, 1);
             const arg = args[0];
             let x;
             // is args always an empty list?
@@ -102,8 +104,8 @@ Sk.builtin.float_ = Sk.abstr.buildNativeClass("float", {
         nb$divmod: numberSlot((v, w) => new Sk.builtin.tuple([floordivide(v, w), remainder(v, w)])),
         nb$reflected_divmod: numberSlot((v, w) => new Sk.builtin.tuple([floordivide(w, v), remainder(w, v)])),
         
-        nb$power: numberSlot(power),
-        nb$reflected_power: numberSlot((v, w) => power(w, v)),
+        nb$power: ternarySlot(power),
+        nb$reflected_power: ternarySlot((v, w) => power(w, v)),
         
         nb$abs: function () {
             return new Sk.builtin.float_(Math.abs(this.v));
@@ -201,6 +203,11 @@ Sk.builtin.float_ = Sk.abstr.buildNativeClass("float", {
             $textsig: "($self, format_spec, /)",
             $doc: Sk.builtin.none.none$,
         },
+    },
+    proto: {
+        valueOf: function () {
+            return this.v;
+        }
     }
 });
 
@@ -264,8 +271,7 @@ Sk.builtin.float_.PyFloat_Check = function (op) {
  * @return {string}   The string representation of this instance's value.
  */
 Sk.builtin.float_.prototype.toFixed = function (x) {
-    x = Sk.builtin.asnum$(x);
-    return this.v.toFixed(x);
+    return this.v.toFixed(Sk.ffi.toNumber(x));
 };
 
 function numberSlot(f) {
@@ -280,6 +286,16 @@ function numberSlot(f) {
             return Sk.builtin.NotImplemented.NotImplemented$;
         }
         return f(v, w);
+    };
+}
+
+function ternarySlot(f) {
+    const binSlot = numberSlot(f);
+    return function (other, z) {
+        if (z !== undefined && !Sk.builtin.checkNone(z)) {
+            throw new Sk.builtin.TypeError("pow() 3rd argument not allowed unless all arguments are integers");
+        }
+        return binSlot.call(this, other);
     };
 }
 
@@ -374,10 +390,10 @@ function remainder(v, w) {
 
 function power(v, w) {
     if (v < 0 && w % 1 !== 0) {
-        throw new Sk.builtin.NegativePowerError("cannot raise a negative number to a fractional power");
+        throw new Sk.builtin.ValueError("negative number cannot be raised to a fractional power");
     }
     if (v === 0 && w < 0) {
-        throw new Sk.builtin.NegativePowerError("cannot raise zero to a negative power");
+        throw new Sk.builtin.ZeroDivisionError("0.0 cannot be raised to a negative power");
     }
 
     const result = Math.pow(v, w);
@@ -404,7 +420,7 @@ Sk.builtin.float_.prototype.round$ = function (ndigits) {
     if (ndigits !== undefined && !Sk.misceval.isIndex(ndigits)) {
         throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(ndigits) + "' object cannot be interpreted as an index");
     }
-    number = Sk.builtin.asnum$(this);
+    number = Sk.ffi.toNumber(this);
     if (ndigits === undefined) {
         ndigs = 0;
     } else {

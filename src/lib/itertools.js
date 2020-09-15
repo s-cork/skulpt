@@ -120,7 +120,7 @@ var $builtinmodule = function (name) {
         let iterable, r;
         [iterable, r] = Sk.abstr.copyKeywordsToNamedArgs(combinations_proto.tp$name, ["iterable", "r"], args, kwargs, []);
         const pool = Sk.misceval.arrayFromIterable(iterable);
-        r = Sk.misceval.asIndexOrThrow(r);
+        r = Sk.misceval.asIndexSized(r, Sk.builtin.OverFlowError);
         if (r < 0) {
             throw new Sk.builtin.ValueError("r must be non-negative");
         }
@@ -617,7 +617,7 @@ var $builtinmodule = function (name) {
                 let iterable, r;
                 [iterable, r] = Sk.abstr.copyKeywordsToNamedArgs("permutations", ["iterable", "r"], args, kwargs, [Sk.builtin.none.none$]);
                 const pool = Sk.misceval.arrayFromIterable(iterable);
-                r = Sk.builtin.checkNone(r) ? pool.length : Sk.misceval.asIndexOrThrow(r);
+                r = Sk.builtin.checkNone(r) ? pool.length : Sk.misceval.asIndexSized(r, Sk.builtin.OverFlowError);
                 if (r < 0) {
                     throw new Sk.builtin.ValueError("r must be non-negative");
                 }
@@ -672,7 +672,7 @@ var $builtinmodule = function (name) {
                 "product(*iterables, repeat=1) --> product object\n\nCartesian product of input iterables.  Equivalent to nested for-loops.\n\nFor example, product(A, B) returns the same as:  ((x,y) for x in A for y in B).\nThe leftmost iterators are in the outermost for-loop, so the output tuples\ncycle in a manner similar to an odometer (with the rightmost element changing\non every iteration).\n\nTo compute the product of an iterable with itself, specify the number\nof repetitions with the optional repeat keyword argument. For example,\nproduct(A, repeat=4) means the same as product(A, A, A, A).\n\nproduct('ab', range(3)) --> ('a',0) ('a',1) ('a',2) ('b',0) ('b',1) ('b',2)\nproduct((0,1), (0,1), (0,1)) --> (0,0,0) (0,0,1) (0,1,0) (0,1,1) (1,0,0) ...",
             tp$new: function (args, kwargs) {
                 let [repeat] = Sk.abstr.copyKeywordsToNamedArgs("product", ["repeat"], [], kwargs, [new Sk.builtin.int_(1)]);
-                repeat = Sk.misceval.asIndexOrThrow(repeat);
+                repeat = Sk.misceval.asIndexSized(repeat, Sk.builtin.OverFlowError);
                 if (repeat < 0) {
                     throw new Sk.builtin.ValueError("repeat argument cannot be negative");
                 }
@@ -712,7 +712,7 @@ var $builtinmodule = function (name) {
                 let object, times;
                 [object, times] = Sk.abstr.copyKeywordsToNamedArgs("repeat", ["object", "times"], args, kwargs, [null]);
                 if (times !== null) {
-                    times = Sk.misceval.asIndexOrThrow(times);
+                    times = Sk.misceval.asIndexSized(times, Sk.builtin.OverFlowError);
                 } else {
                     times = undefined;
                 }

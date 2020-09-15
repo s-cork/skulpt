@@ -333,7 +333,7 @@ function format(args, kwargs) {
         }
         // TODO "!a" I guess?
 
-        return Sk.abstr.objectFormat(value, new Sk.builtin.str(format_spec)).$jsstr();
+        return Sk.abstr.objectFormat(value, new Sk.builtin.str(format_spec)).toString();
     };
 
     const ret = this.v.replace(regex, replFunc);

@@ -6,7 +6,7 @@ Sk.builtin.print = function print(args, kwargs) {
     if (sep === undefined || Sk.builtin.checkNone(sep)) {
         sep = " ";
     } else if (Sk.builtin.checkString(sep)) {
-        sep = sep.$jsstr();
+        sep = String(sep);
     } else {
         throw new Sk.builtin.TypeError("sep must be None or a string, not " + Sk.abstr.typeName(sep));
     }
@@ -15,7 +15,7 @@ Sk.builtin.print = function print(args, kwargs) {
     if (end === undefined || Sk.builtin.checkNone(end)) {
         end = "\n";
     } else if (Sk.builtin.checkString(end)) {
-        end = end.$jsstr();
+        end = String(end);
     } else {
         throw new Sk.builtin.TypeError("end must be None or a string, not " + Sk.abstr.typeName(end));
     }
@@ -30,7 +30,7 @@ Sk.builtin.print = function print(args, kwargs) {
     }
 
     // loop through outputs and create output string
-    const output = new Sk.builtin.str(args.map((x) => x.tp$str().v).join(sep) + end);
+    const output = new Sk.builtin.str(args.map((x) => String(x)).join(sep) + end);
 
     if (file_write !== undefined) {
         // currently not tested, though it seems that we need to see how we should access the write function in a correct manner

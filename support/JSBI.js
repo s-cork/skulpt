@@ -10,11 +10,9 @@
  */
 if (Sk.global.BigInt === undefined) {
     Sk.global.JSBI = require("jsbi");
-    JSBI.__ZERO = JSBI.BigInt(0);
     // __isBigInt is not part of the public api so include it if this is ever removed
     JSBI.__isBigInt = JSBI.__isBigInt || ((x) => x instanceof JSBI);
-    JSBI.__MAX_SAFE = JSBI.BigInt(Number.MAX_SAFE_INTEGER);
-    JSBI.__MIN_SAFE = JSBI.BigInt(-Number.MAX_SAFE_INTEGER);
+
 } else {
     Sk.global.JSBI = Object.assign(Object.create(null), {
         BigInt: Sk.global.BigInt,
@@ -41,8 +39,9 @@ if (Sk.global.BigInt === undefined) {
         greaterThanOrEqual: (x, y) => x >= y,
         equal: (x, y) => x == y,
         notEqual: (x, y) => x != y,
-        __ZERO: Sk.global.BigInt(0),
-        __MAX_SAFE: Sk.global.BigInt(Number.MAX_SAFE_INTEGER),
-        __MIN_SAFE: Sk.global.BigInt(-Number.MAX_SAFE_INTEGER)
     });
 }
+JSBI.__ZERO = JSBI.BigInt(0);
+JSBI.__MAX_SAFE = JSBI.BigInt(Number.MAX_SAFE_INTEGER);
+JSBI.__MIN_SAFE = JSBI.BigInt(-Number.MAX_SAFE_INTEGER);
+JSBI.numberIfSafe = (val) =>  JSBI.lessThan(val, JSBI.__MAX_SAFE) && JSBI.greaterThan(val, JSBI.__MIN_SAFE) ? JSBI.toNumber(val) : val;

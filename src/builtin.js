@@ -1,13 +1,11 @@
 /** @typedef {Sk.builtin.object} */ var pyObject;
 
+
 /**
- * builtins are supposed to come from the __builtin__ module, but we don't do
- * that yet.
- * todo; these should all be func objects too, otherwise str() of them won't
- * work, etc.
+ * @deprecated
+ * 
+ * @param {*} a 
  */
-
-
 Sk.builtin.asnum$ = function (a) {
     if (a === undefined) {
         return a;
@@ -15,23 +13,13 @@ Sk.builtin.asnum$ = function (a) {
     if (a === null) {
         return a;
     }
-    if (typeof a === "number") {
-        return a;
-    }
-    if (a instanceof Sk.builtin.int_) {
-        if (typeof a.v === "number") {
-            return a.v;
-        }
-        return a.v.toString(); // then we have a BigInt
-    }
-    if (a instanceof Sk.builtin.float_) {
-        return a.v;
-    }
-    if (a === Sk.builtin.none.none$) {
+    const val = a.valueOf();
+    if (typeof val === "number") {
+        return val;
+    } else if (JSBI.__isBigInt(val)) {
+        return val.toString();
+    } else if (val === null) {
         return null;
-    }
-    if (typeof a === "string") {
-        return a;
     }
     return a;
 };
@@ -56,86 +44,25 @@ Sk.builtin.assk$ = function (a) {
 Sk.exportSymbol("Sk.builtin.assk$", Sk.builtin.assk$);
 
 Sk.builtin.asnum$nofloat = function (a) {
-    var decimal;
-    var mantissa;
-    var expon;
-    if (a === undefined) {
+    if (a === undefined || a === null) {
         return a;
+    }
+    a = a.valueOf();
+    if (typeof a === "number") {
+        a = a < 0 ? Math.ceil(a) : Math.floor(a);
+        if (Math.abs(a) < Number.MAX_SAFE_INTEGER) {
+            return a.toString();
+        } else if (Number.isFinite(a)) {
+            return JSBI.BigInt(a).toString();
+        }
+        return undefined;
+    } else if (JSBI.__isBigInt(a)) {
+        return a.toString();
     } else if (a === null) {
-        return a;
-    } else if (typeof a === "number") {
-        a = a.toString();
-    } else if (a instanceof Sk.builtin.int_) {
-        a = a.v.toString();
-    } else if (a instanceof Sk.builtin.float_) {
-        a = a.v.toString();
-    } else if (a === Sk.builtin.none.none$) {
         return null;
     } else {
         return undefined;
     }
-
-    //  Sk.debugout("INITIAL: " + a);
-
-    //  If not a float, great, just return this
-    if (a.indexOf(".") < 0 && a.indexOf("e") < 0 && a.indexOf("E") < 0) {
-        return a;
-    }
-
-    expon = 0;
-
-    if (a.indexOf("e") >= 0) {
-        mantissa = a.substr(0, a.indexOf("e"));
-        expon = a.substr(a.indexOf("e") + 1);
-    } else if (a.indexOf("E") >= 0) {
-        mantissa = a.substr(0, a.indexOf("e"));
-        expon = a.substr(a.indexOf("E") + 1);
-    } else {
-        mantissa = a;
-    }
-
-    expon = parseInt(expon, 10);
-
-    decimal = mantissa.indexOf(".");
-
-    //  Simplest case, no decimal
-    if (decimal < 0) {
-        if (expon >= 0) {
-            // Just add more zeroes and we're done
-            while (expon-- > 0) {
-                mantissa += "0";
-            }
-            return mantissa;
-        } else {
-            if (mantissa.length > -expon) {
-                return mantissa.substr(0, mantissa.length + expon);
-            } else {
-                return 0;
-            }
-        }
-    }
-
-    //  Negative exponent OR decimal (neg or pos exp)
-    if (decimal === 0) {
-        mantissa = mantissa.substr(1);
-    } else if (decimal < mantissa.length) {
-        mantissa = mantissa.substr(0, decimal) + mantissa.substr(decimal + 1);
-    } else {
-        mantissa = mantissa.substr(0, decimal);
-    }
-
-    decimal = decimal + expon;
-    while (decimal > mantissa.length) {
-        mantissa += "0";
-    }
-
-    if (decimal <= 0) {
-        mantissa = 0;
-    } else {
-        mantissa = mantissa.substr(0, decimal);
-    }
-
-    return mantissa;
 };
 Sk.exportSymbol("Sk.builtin.asnum$nofloat", Sk.builtin.asnum$nofloat);
 
@@ -177,8 +104,7 @@ Sk.builtin.len = function len(item) {
     let res;
     if (item.sq$length) {
         res = item.sq$length(true);
-    }
-    if (res === undefined) {
+    } else {
         throw new Sk.builtin.TypeError("object of type '" + Sk.abstr.typeName(item) + "' has no len()");
     }
     return Sk.misceval.chain(res, (r) => {
@@ -192,9 +118,7 @@ Sk.builtin.min = function min(args, kwargs) {
     if (!nargs) {
         throw new Sk.builtin.TypeError("min expected 1 argument, got 0");
     }
-    const default_key = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
-    const $default = default_key[0];
-    const key = default_key[1];
+    const [$default, key] = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
 
     // if args is not a single iterable then default should not be included as a kwarg
     if (nargs > 1 && $default !== null) {
@@ -258,9 +182,7 @@ Sk.builtin.max = function max(args, kwargs) {
     if (!nargs) {
         throw new Sk.builtin.TypeError("max expected 1 argument, got 0");
     }
-    const default_key = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
-    const $default = default_key[0];
-    const key = default_key[1];
+    const [$default, key] = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
 
     // if args is not a single iterable then default should not be included as a kwarg
     if (nargs > 1 && $default !== null) {
@@ -496,7 +418,7 @@ Sk.builtin.unichr = function unichr(x) {
     if (!Sk.builtin.checkInt(x)) {
         throw new Sk.builtin.TypeError("an integer is required");
     }
-    x = Sk.builtin.asnum$(x);
+    x = Sk.ffi.toNumber(x);
 
     try {
         return new Sk.builtin.str(String.fromCodePoint(x));
@@ -942,71 +864,21 @@ Sk.builtin.hasattr = function hasattr(obj, pyName) {
     return Sk.misceval.chain(res, (val) => (val === undefined ? Sk.builtin.bool.false$ : Sk.builtin.bool.true$));
 };
 
-Sk.builtin.pow = function pow(a, b, c) {
-    var ret;
-    var res;
-    var right;
-    var left;
-    var c_num;
-    var b_num;
-    var a_num;
-
-    if (c === Sk.builtin.none.none$) {
-        c = undefined;
+Sk.builtin.pow = function pow(v, w, z) {
+    // skulpt does support ternary slots
+    if (z === undefined || Sk.builtin.checkNone(z)) {
+        return Sk.abstr.numberBinOp(v, w, "Pow");
     }
-
-    // add complex type hook here, builtin is messed up anyways
-    if (Sk.builtin.checkComplex(a)) {
-        return a.nb$power(b, c); // call complex pow function
-    }
-
-    a_num = Sk.builtin.asnum$(a);
-    b_num = Sk.builtin.asnum$(b);
-    c_num = Sk.builtin.asnum$(c);
-
-    if (!Sk.builtin.checkNumber(a) || !Sk.builtin.checkNumber(b)) {
-        if (c === undefined) {
-            throw new Sk.builtin.TypeError(
-                "unsupported operand type(s) for pow(): '" + Sk.abstr.typeName(a) + "' and '" + Sk.abstr.typeName(b) + "'"
-            );
+    // only support a third argument if they're all the integers.
+    if (!(Sk.builtin.checkInt(v) && Sk.builtin.checkInt(w) && Sk.builtin.checkInt(z))) {
+        if (Sk.builtin.checkFloat(v) || Sk.builtin.checkComplex(v)) {
+            return v.nb$power(w, z); // these slots for float and complex throw the correct errors
         }
         throw new Sk.builtin.TypeError(
-            "unsupported operand type(s) for pow(): '" + Sk.abstr.typeName(a) + "', '" + Sk.abstr.typeName(b) + "', '" + Sk.abstr.typeName(c) + "'"
+            "unsupported operand type(s) for ** or pow(): '" + Sk.abstr.typeName(v) + "', '" + Sk.abstr.typeName(w) + "', '" + Sk.abstr.typeName(z) + "'"
         );
     }
-    if (a_num < 0 && b instanceof Sk.builtin.float_) {
-        throw new Sk.builtin.ValueError("negative number cannot be raised to a fractional power");
-    }
-
-    if (c === undefined) {
-        if (a instanceof Sk.builtin.float_ || b instanceof Sk.builtin.float_ || b_num < 0) {
-            return new Sk.builtin.float_(Math.pow(a_num, b_num));
-        }
-        left = new Sk.builtin.int_(a_num);
-        right = new Sk.builtin.int_(b_num);
-        res = left.nb$power(right);
-        return res;
-    } else {
-        if (!Sk.builtin.checkInt(a) || !Sk.builtin.checkInt(b) || !Sk.builtin.checkInt(c)) {
-            throw new Sk.builtin.TypeError("pow() 3rd argument not allowed unless all arguments are integers");
-        }
-        if (b_num < 0) {
-            if (Sk.__future__.exceptions) {
-                throw new Sk.builtin.ValueError("pow() 2nd argument cannot be negative when 3rd argument specified");
-            } else {
-                throw new Sk.builtin.TypeError("pow() 2nd argument cannot be negative when 3rd argument specified");
-            }
-        }
-        if (c_num === 0) {
-            throw new Sk.builtin.ValueError("pow() 3rd argument cannot be 0");
-        }
-        if (a instanceof Sk.builtin.lng || b instanceof Sk.builtin.lng || c instanceof Sk.builtin.lng || Math.pow(a_num, b_num) === Infinity) {
-            return a.nb$power(b, c);
-        } else {
-            ret = new Sk.builtin.int_(Math.pow(a_num, b_num));
-            return ret.nb$remainder(c);
-        }
-    }
+    return v.nb$power(w, z);
 };
 
 Sk.builtin.quit = function quit(msg) {
@@ -1035,13 +907,10 @@ Sk.builtin.issubclass = function issubclass(c1, c2) {
 };
 
 Sk.builtin.globals = function globals () {
-    var i, unmangled;
     var ret = new Sk.builtin.dict([]);
-    for (i in Sk["globals"]) {
-        unmangled = Sk.unfixReserved(i);
-        ret.mp$ass_subscript(new Sk.builtin.str(unmangled), Sk["globals"][i]);
-    }
-
+    Object.entries(Sk.globals).forEach(([global, value]) => {
+        ret.mp$ass_subscript(new Sk.builtin.str(Sk.unfixReserved(global)), value);
+    });
     return ret;
 };
 
@@ -1062,13 +931,15 @@ Sk.builtin.format = function format(value, format_spec) {
     return Sk.abstr.objectFormat(value, format_spec);
 };
 
+var id = 0;
+var idMap = new Map();
 Sk.builtin.id = function (obj) {
-    if (obj.__id === undefined) {
-        Sk.builtin.idCount += 1;
-        obj.__id = Sk.builtin.idCount;
+    let __id = idMap.get(obj);
+    if (__id !== undefined) {
+        return new Sk.builtin.int_(__id);
     }
-
-    return new Sk.builtin.int_(obj.__id);
+    idMap.set(obj, ++id);
+    return new Sk.builtin.int_(id);
 };
 
 Sk.builtin.bytearray = function bytearray() {

@@ -16,12 +16,8 @@ const int_proto = Sk.builtin.int_.prototype;
  * @return {Sk.builtin.bool} Sk.builtin.bool.true$ if x is true, Sk.builtin.bool.false$ otherwise
  */
 Sk.builtin.bool = Sk.abstr.buildNativeClass("bool", {
-    constructor: function bool (x) {
-        if (Sk.misceval.isTrue(x)) {
-            return Sk.builtin.bool.true$;
-        } else {
-            return Sk.builtin.bool.false$;
-        }
+    constructor: function bool(x) {
+        return Sk.misceval.isTrue(x) ? pyTrue : pyFalse;
     },
     base: Sk.builtin.int_,
     slots: {
@@ -30,29 +26,29 @@ Sk.builtin.bool = Sk.abstr.buildNativeClass("bool", {
         tp$new: function (args, kwargs) {
             Sk.abstr.checkNoKwargs("bool", kwargs);
             Sk.abstr.checkArgsLen("bool", args, 0, 1);
-            return new Sk.builtin.bool(args[0]); //technically we don't need new but easier to keep consistent
+            return Sk.ffi.isTrue(args[0]) ? pyTrue : pyFalse;
+            // a little quicker than misceval.isTrue for py objects which we'd expect here
         },
         $r: function () {
             return this.v ? this.str$True : this.str$False;
         },
-
         tp$as_number: true,
         nb$and: function (other) {
-            if (other.ob$type === Sk.builtin.bool) {
-                return new Sk.builtin.bool(this.v & other.v);
-            } 
+            if (other === pyTrue || other === pyFalse) {
+                return this.v & other.v ? pyTrue : pyFalse;
+            }
             return int_proto.nb$and.call(this, other);
         },
         nb$or: function (other) {
-            if (other.ob$type === Sk.builtin.bool) {
-                return new Sk.builtin.bool(this.v | other.v);
-            } 
+            if (other === pyTrue || other === pyFalse) {
+                return this.v | other.v ? pyTrue : pyFalse;
+            }
             return int_proto.nb$or.call(this, other);
         },
         nb$xor: function (other) {
-            if (other.ob$type === Sk.builtin.bool) {
-                return new Sk.builtin.bool(this.v ^ other.v);
-            } 
+            if (other === pyTrue || other === pyFalse) {
+                return this.v ^ other.v ? pyTrue : pyFalse;
+            }
             return int_proto.nb$xor.call(this, other);
         },
     },
@@ -64,13 +60,16 @@ Sk.builtin.bool = Sk.abstr.buildNativeClass("bool", {
             $meth: function () {
                 return this.$r();
             },
-            $flags: {OneArg: true},
-        }
+            $flags: { OneArg: true },
+        },
     },
     proto: {
         str$False: new Sk.builtin.str("False"),
         str$True: new Sk.builtin.str("True"),
-    }
+        valueOf: function () {
+            return Boolean(this.v);
+        },
+    },
 });
 Sk.exportSymbol("Sk.builtin.bool", Sk.builtin.bool);
 
@@ -79,15 +78,15 @@ Sk.exportSymbol("Sk.builtin.bool", Sk.builtin.bool);
  * @type {Sk.builtin.bool}
  * @member {Sk.builtin.bool}
  */
-Sk.builtin.bool.true$ = /** @type {Sk.builtin.bool} */ (Object.create(Sk.builtin.bool.prototype, {
+const pyTrue = (Sk.builtin.bool.true$ = /** @type {Sk.builtin.bool} */ (Object.create(Sk.builtin.bool.prototype, {
     v: { value: 1, enumerable: true },
-}));
+})));
 
 /**
  * Python bool False constant.
  * @type {Sk.builtin.bool}
  * @member {Sk.builtin.bool}
  */
-Sk.builtin.bool.false$ = /** @type {Sk.builtin.bool} */ (Object.create(Sk.builtin.bool.prototype, {
+const pyFalse = (Sk.builtin.bool.false$ = /** @type {Sk.builtin.bool} */ (Object.create(Sk.builtin.bool.prototype, {
     v: { value: 0, enumerable: true },
-}));
+})));

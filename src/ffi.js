@@ -1,9 +1,47 @@
+class pyWrapped {
+    constructor(obj) {
+        this.v = obj;
+        this.$wrapped = true;
+    }
+    unWrap() {
+        return this.v;
+    }
+}
+
 /**
  * @namespace Sk.ffi
  *
  */
+Sk.ffi = {
+    remapToPy: remapToPy,
+    remapToJs: remapToJs,
+    toPy: remapToPy,
+    toJs: remapToJs,
 
-Sk.ffi = Sk.ffi || {};
+    isTrue: toBoolean,
+
+    toBoolean: toBoolean,
+    toString: toString,
+    toNumber: toNumber,
+    toArray: toArray,
+
+    dictToHashMap: dictToHashMap,
+
+    toPyDict: toPyDict,
+    toPyFloat: toPyFloat,
+    toPyInt: toPyInt,
+    toPyNumber: toPyNumber,
+    toPyString: toPyString,
+    toPyList: toPyList,
+    toPyTuple: toPyTuple,
+    toPySet: toPySet,
+
+    numberToPy: numberToPy,
+
+    pyWrapped: pyWrapped,
+    wrapPyObj: wrapPyObj,
+
+};
 
 /**
  * maps from Javascript Object/Array/string to Python dict/list/str.
@@ -11,13 +49,8 @@ Sk.ffi = Sk.ffi || {};
  * only works on basic objects that are being used as storage, doesn't handle
  * functions, etc.
  */
-Sk.ffi.remapToPy = function (obj) {
-    var k;
-    var kvs;
-    var i;
-    var arr;
-
-    if (obj === null || typeof obj === "undefined") {
+function remapToPy(obj) {
+    if (obj === null || obj === undefined) {
         return Sk.builtin.none.none$;
     }
 
@@ -25,47 +58,48 @@ Sk.ffi.remapToPy = function (obj) {
         return obj;
     }
 
-    if (obj instanceof Sk.misceval.Suspension) {
-        return obj;
-    }
+    const type = typeof obj;
 
-    if (Object.prototype.toString.call(obj) === "[object Array]") {
-        arr = [];
-        for (i = 0; i < obj.length; ++i) {
-            arr.push(Sk.ffi.remapToPy(obj[i]));
+    if (obj.length !== undefined) {
+        if (type === "string") {
+            return new Sk.builtin.str(obj);
         }
-        return new Sk.builtin.list(arr);
-    }
-
-    if (typeof obj === "object") {
-        kvs = [];
-        for (k in obj) {
-            kvs.push(Sk.ffi.remapToPy(k));
-            kvs.push(Sk.ffi.remapToPy(obj[k]));
+        if (JSBI.__isBigInt(obj)) {
+            return new Sk.builtin.int_(JSBI.numberIfSafe(obj)); // JSBI polyfill uses arrays under the hood
         }
-        return new Sk.builtin.dict(kvs);
+        if (Array.isArray(obj)) {
+            return new Sk.builtin.list(obj.map((x) => remapToPy(x)));
+        }
+        if (obj instanceof Uint8Array) {
+            return new Sk.builtin.bytes(obj);
+        }
     }
-
-    if (typeof obj === "string") {
-        return new Sk.builtin.str(obj);
+    if (type === "object") {
+        if (obj.$wrapped !== undefined) {
+            return obj.unWrap();
+        }
+        if (obj.$isSuspension !== undefined) {
+            return obj;
+        }
+        return toPyDict(obj);
     }
-
-    if (typeof obj === "number") {
-        return Sk.builtin.assk$(obj);
+    
+    if (type === "number") {
+        return numberToPy(obj);
     }
-
-    if (typeof obj === "boolean") {
+    if (type === "boolean") {
         return new Sk.builtin.bool(obj);
-    } else if (typeof obj === "undefined") {
-        return Sk.builtin.none.none$;
     }
-
-    if (typeof obj === "function") {
+    if (type === "function") {
         return new Sk.builtin.func(obj);
     }
+    if (type === "bigint") {
+        // we know BigInt is defined - let int take care of conversion here.
+        new Sk.builtin.int_(obj.toString());
+    }
 
-    Sk.asserts.fail("unhandled remap type " + typeof(obj));
-};
+    Sk.asserts.fail("unhandled remap type " + typeof obj);
+}
 Sk.exportSymbol("Sk.ffi.remapToPy", Sk.ffi.remapToPy);
 
 /**
@@ -76,47 +110,127 @@ Sk.exportSymbol("Sk.ffi.remapToPy", Sk.ffi.remapToPy);
  * @param obj {Object}  Any Python object (except a function)
  *
  */
-Sk.ffi.remapToJs = function (obj) {
-    var i;
-    var kAsJs;
-    var v;
-    var k;
-    var ret;
-    if (obj instanceof Sk.builtin.dict) {
-        ret = {};
-        let item;
-        for (let entry_hash in obj.entries) {
-            item = obj.entries[entry_hash];
-            k = item.lhs;
-            v = item.rhs;
-            kAsJs = Sk.ffi.remapToJs(k);
-            // todo; assert that this is a reasonble lhs?
-            ret[kAsJs] = Sk.ffi.remapToJs(v);
-        }
-        return ret;
-    } else if (obj instanceof Sk.builtin.list || obj instanceof Sk.builtin.tuple) {
-        ret = [];
-        for (i = 0; i < obj.v.length; ++i) {
-            ret.push(Sk.ffi.remapToJs(obj.v[i]));
-        }
-        return ret;
-    } else if (obj instanceof Sk.builtin.bool) {
-        return obj.v ? true : false;
-    } else if (obj instanceof Sk.builtin.int_) {
-        return Sk.builtin.asnum$(obj);
-    } else if (obj instanceof Sk.builtin.float_) {
-        return Sk.builtin.asnum$(obj);
-    } else if (obj instanceof Sk.builtin.lng) {
-        return Sk.builtin.asnum$(obj);
-    } else if (typeof obj === "number" || typeof obj === "boolean" || typeof obj === "string") {
+function remapToJs(obj, wrap) {
+    if (obj === undefined || obj === null) {
         return obj;
-    } else if (obj === undefined) {
-        return undefined;
-    } else {
-        return obj.v;
     }
-};
+    const val = obj.valueOf();
+    // for str/bool/int/float/tuple/list this returns the obvious: this.v;
+    if (val === null) {
+        return val;
+    }
+    if (typeof val !== "object") {
+        return val;
+    }
+    if (Array.isArray(val)) {
+        return val.map((x) => remapToJs(x));
+    }
+    if (obj instanceof Sk.builtin.dict) {
+        return dictToHashMap(obj);
+    }
+    if (val instanceof Uint8Array) {
+        return val;
+    }
+    return wrapPyObj(obj);
+}
 Sk.exportSymbol("Sk.ffi.remapToJs", Sk.ffi.remapToJs);
+
+function toBoolean(obj) {
+    // basically the logic for Sk.misceva.isTrue
+    return obj != null && obj.nb$bool ? obj.nb$bool() : obj.sq$length ? obj.sq$length() !== 0 : Boolean(obj);
+}
+
+function toNumber(obj) {
+    return Number(obj);
+}
+function toString(obj) {
+    return String(obj);
+}
+
+function toArray(obj) {
+    return Array.from(obj, (x) => remapToJs(x));
+}
+
+function dictToHashMap(dict) {
+    const obj = {};
+    dict.$items().forEach(([key, val]) => {
+        obj[key] = remapToJs(val);
+    });
+    return obj;
+}
+
+function numberToPy(val) {
+    if (Number.isInteger(val)) {
+        if (Math.abs(val) < Number.MAX_SAFE_INTEGER) {
+            return new Sk.builtin.int_(val);
+        }
+        return new Sk.builtin.int_(JSBI.BigInt(val));
+    }
+    return new Sk.builtin.float_(val);
+}
+
+const isInteger = /^-?\d+$/;
+
+function toPyNumber(obj) {
+    const type = typeof obj;
+    if (type === "number") {
+        return numberToPy(obj);
+    }
+    if (type === "string") {
+        if (obj.match(isInteger)) {
+            return new Sk.builtin.int_(obj);
+        }
+        return new Sk.builtin.float_(parseFloat(obj));
+    }
+    if (type === "bigint" || JSBI.__isBigInt(obj)) {
+        return new Sk.builtin.int_(JSBI.numberIfSafe(obj));
+    }
+    return new Sk.builtin.float_(Number(obj));
+}
+
+function toPyFloat(num) {
+    return new Sk.builtin.float_(Number(num));
+}
+
+function toPyString(obj) {
+    return new Sk.builtin.str(obj);
+}
+
+function toPyList(obj) {
+    return new Sk.builtin.list(Array.from(obj, (x) => remapToPy(x)));
+}
+
+function toPySet(obj) {
+    return new Sk.builtin.set(Array.from(obj, (x) => remapToPy(x)));
+}
+
+function toPyTuple(obj) {
+    return new Sk.builtin.tuple(Array.from(obj, (x) => remapToPy(x)));
+}
+
+function toPyInt(num) {
+    if (typeof num === "number") {
+        num = Math.trunc(num);
+    } else if (JSBI.__isBigInt(num)) {
+        return new Sk.builtin.int_(JSBI.numberIfSafe(num));
+    } else {
+        num = Math.trunc(parseInt(num, 10));
+    }
+    return Math.abs(num) < Number.MAX_SAFE_INTEGER ? new Sk.builtin.int_(num) : new Sk.builtin.int_(JSBI.BigInt(num));
+}
+
+function toPyDict(obj) {
+    const arr = [];
+    Object.entries(obj).forEach(([key, val]) => {
+        arr.push(new Sk.builtin.str(key));
+        arr.push(remapToPy(val));
+    });
+    return new Sk.builtin.dict(arr);
+}
+
+function wrapPyObj(obj) {
+    return new pyWrapped(obj);
+}
 
 Sk.ffi.callback = function (fn) {
     if (fn === undefined) {
@@ -140,20 +254,10 @@ Sk.exportSymbol("Sk.ffi.stdwrap", Sk.ffi.stdwrap);
  * number|string, etc.
  */
 Sk.ffi.basicwrap = function (obj) {
-    if (obj instanceof Sk.builtin.int_) {
-        return Sk.builtin.asnum$(obj);
-    }
-    if (obj instanceof Sk.builtin.float_) {
-        return Sk.builtin.asnum$(obj);
-    }
-    if (obj instanceof Sk.builtin.lng) {
-        return Sk.builtin.asnum$(obj);
-    }
-    if (typeof obj === "number" || typeof obj === "boolean") {
+    obj === obj.valueOf();
+    const type = typeof obj;
+    if (type === "number" || type === "boolean" || type === "string") {
         return obj;
-    }
-    if (typeof obj === "string") {
-        return new Sk.builtin.str(obj);
     }
     Sk.asserts.fail("unexpected type for basicwrap");
 };
@@ -174,3 +278,4 @@ Sk.ffi.unwrapn = function (obj) {
     return obj["v"];
 };
 Sk.exportSymbol("Sk.ffi.unwrapn", Sk.ffi.unwrapn);
+

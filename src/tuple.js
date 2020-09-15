@@ -79,7 +79,7 @@ Sk.builtin.tuple = Sk.abstr.buildNativeClass("tuple", {
         // sequence and mapping slots
         mp$subscript: function (index) {
             if (Sk.misceval.isIndex(index)) {
-                let i = Sk.misceval.asIndexSized(index);
+                let i = Sk.misceval.asIndexSized(index, Sk.builtin.IndexError);
                 if (i < 0) {
                     i = this.v.length + i;
                 }
@@ -137,6 +137,9 @@ Sk.builtin.tuple = Sk.abstr.buildNativeClass("tuple", {
         },
         sk$asarray: function () {
             return this.v.slice(0);
+        },
+        valueOf: function () {
+            return this.v;
         },
     },
     methods: /**@lends {Sk.builtin.tuple.prototype}*/ {
