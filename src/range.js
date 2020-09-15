@@ -20,7 +20,7 @@ Sk.builtin.range_ = Sk.abstr.buildNativeClass("range", {
         tp$new(args, kwargs) {
             Sk.abstr.checkNoKwargs("range", kwargs);
             Sk.abstr.checkArgsLen("range", args, 1, 3);
-            return rangeFromPy(args[0], args[1], args[2]);
+            return rangeFromPy(...args);
         },
         $r() {
             let repr = "range(" + this.start + ", " + this.stop;
@@ -72,7 +72,7 @@ Sk.builtin.range_ = Sk.abstr.buildNativeClass("range", {
                 index.sssiter$(lst.length, (i) => {
                     ret.push(lst[i]);
                 });
-                let { start, stop, step } = index.slice$indices(lst.length);
+                let { start, stop, step } = index.slice$indices(lst.length, true);
                 start = Sk.misceval.asIndex(lst[start]) || this.start;
                 stop = Sk.misceval.asIndex(lst[stop]) || this.stop;
                 if (typeof this.step === "number") {
@@ -186,18 +186,18 @@ function rangeFromPy(start, stop, step) {
         stop = JSBI.BigInt(stop);
         if (JSBI.greaterThan(step, JSBI.__ZERO)) {
             while (JSBI.lessThan(i, stop)) {
-                ret.push(new Sk.builtin.int_(convertIfSafe(i)));
+                ret.push(new Sk.builtin.int_(JSBI.numberIfSafe(i)));
                 i = JSBI.add(i, step);
             }
         } else {
             while (JSBI.greaterThan(i, stop)) {
-                ret.push(new Sk.builtin.int_(convertIfSafe(i)));
+                ret.push(new Sk.builtin.int_(JSBI.numberIfSafe(i)));
                 i = JSBI.add(i, step);
             }
         }
-        start = convertIfSafe(start);
-        step = convertIfSafe(step);
-        stop = convertIfSafe(stop);
+        start = JSBI.numberIfSafe(start);
+        step = JSBI.numberIfSafe(step);
+        stop = JSBI.numberIfSafe(stop);
     }
     return new Sk.builtin.range_(start, stop, step, ret);
 }
@@ -231,13 +231,6 @@ var reverserange_iter_ = Sk.abstr.buildIteratorClass("range_reverseiterator", {
     },
     flags: { sk$acceptable_as_base_class: false },
 });
-
-function convertIfSafe(v) {
-    if (JSBI.lessThan(v, JSBI.__MAX_SAFE) && JSBI.greaterThan(v, JSBI.__MIN_SAFE)) {
-        return JSBI.toNumber(v);
-    }
-    return v;
-}
 
 /**
  *

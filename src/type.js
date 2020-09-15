@@ -122,7 +122,7 @@ function tp$new(args, kwargs) {
     if (!Sk.builtin.checkString($name)) {
         throw new Sk.builtin.TypeError("type() argument 1 must be str, not " + Sk.abstr.typeName($name));
     }
-    $name = $name.$jsstr();
+    $name = $name.toString();
     // argument bases must be of type tuple
     if (bases.tp$name !== "tuple") {
         throw new Sk.builtin.TypeError("type() argument 2 must be tuple, not " + Sk.abstr.typeName(bases));
@@ -258,7 +258,7 @@ function tp$setattr(pyName, value, canSuspend) {
     if (value === undefined) {
         const proto = this.prototype;
         if (!proto.hasOwnProperty(jsName)) {
-            throw new Sk.builtin.AttributeError("type object '" + this.prototype.tp$name + "' has no attribute '" + pyName.$jsstr() + "'");
+            throw new Sk.builtin.AttributeError("type object '" + this.prototype.tp$name + "' has no attribute '" + pyName.toString() + "'");
         } else {
             delete proto[jsName];
             // delete the slot_func
@@ -701,9 +701,9 @@ function get_dict_descr_of_builtn_base(type) {
 
 function check_special_type_attr(type, value, pyName) {
     if (type.sk$klass === undefined) {
-        throw new Sk.builtin.TypeError("can't set " + type.prototype.tp$name + "." + pyName.$jsstr());
+        throw new Sk.builtin.TypeError("can't set " + type.prototype.tp$name + "." + pyName);
     }
     if (value === undefined) {
-        throw new Sk.builtin.TypeError("can't delete " + type.prototype.tp$name + "." + pyName.$jsstr());
+        throw new Sk.builtin.TypeError("can't delete " + type.prototype.tp$name + "." + pyName);
     }
 }

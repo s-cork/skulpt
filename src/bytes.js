@@ -911,7 +911,7 @@ Sk.builtin.bytes = Sk.abstr.buildNativeClass("bytes", {
                 if (!Sk.builtin.checkString(string)) {
                     throw new Sk.builtin.TypeError("fromhex() argument must be str, not " + Sk.abstr.typeName(string));
                 }
-                string = string.$jsstr();
+                string = String(string);
                 const spaces = /\s+/g;
                 const ishex = /^[abcdefABCDEF0123456789]{2}$/;
                 const final = [];
@@ -1181,7 +1181,7 @@ function mkJust(funcname, isRight, isCenter) {
             fillbyte = fillbyte.v[0];
         }
         const mylen = this.v.length;
-        width = Sk.misceval.asIndexSized(width, Sk.builtin.OverflowError);
+        width = Sk.misceval.asIndexSized(width, Sk.builtin.IndexError);
         if (width <= mylen) {
             return new Sk.builtin.bytes(this.v);
         }

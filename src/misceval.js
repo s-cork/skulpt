@@ -1334,19 +1334,8 @@ Sk.misceval.buildClass = function (globals, func, name, bases, cell) {
     }
     var _name = new Sk.builtin.str(name);
     var _bases = new Sk.builtin.tuple(bases);
-    var _locals = [];
-    var key;
-
     // build array for python dict
-    for (key in locals) {
-        if (!locals.hasOwnProperty(key)) {
-            //The current property key not a direct property of p
-            continue;
-        }
-        _locals.push(new Sk.builtin.str(key)); // push key
-        _locals.push(locals[key]); // push associated value
-    }
-    _locals = new Sk.builtin.dict(_locals);
+    _locals = Sk.ffi.toPyDict(locals);
 
     klass = Sk.misceval.callsimArray(meta, [_name, _bases, _locals]);
 

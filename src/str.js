@@ -287,6 +287,12 @@ Sk.builtin.str = Sk.abstr.buildNativeClass("str", {
             }
             throw new Sk.builtin.TypeError("a str instance is required not '" + Sk.abstr.typeName(tgt) + "'");
         },
+        toString: function () {
+            return this.v;
+        },
+        valueOf: function () {
+            return this.v;
+        }
     },
     methods: /**@lends {Sk.builtin.str.prototype} */ {
         encode: {

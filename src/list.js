@@ -314,7 +314,7 @@ Sk.builtin.list = Sk.abstr.buildNativeClass("list", {
             if (Sk.misceval.isIndex(index)) {
                 this.ass$index(index, value);
             } else if (index instanceof Sk.builtin.slice) {
-                const { start, stop, step } = index.slice$indices(this.v.length);
+                const { start, stop, step } = index.slice$indices(this.v.length, true);
                 if (step === 1) {
                     this.ass$slice(start, stop, value);
                 } else {
@@ -356,7 +356,7 @@ Sk.builtin.list = Sk.abstr.buildNativeClass("list", {
             if (Sk.misceval.isIndex(index)) {
                 this.del$index(index);
             } else if (index instanceof Sk.builtin.slice) {
-                const { start, stop, step } = index.slice$indices(this.v.length);
+                const { start, stop, step } = index.slice$indices(this.v.length, true);
                 if (step === 1) {
                     this.del$slice(start, stop);
                 } else {
@@ -381,8 +381,12 @@ Sk.builtin.list = Sk.abstr.buildNativeClass("list", {
                 dec += offdir;
             });
         },
+        valueOf: function () {
+            return this.v;
+        },
     },
 });
+
 
 Sk.exportSymbol("Sk.builtin.list", Sk.builtin.list);
 

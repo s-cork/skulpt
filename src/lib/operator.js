@@ -129,7 +129,7 @@ function $builtinmodule(name) {
                     if (attr.v.includes(".")) {
                         attrs.push(
                             attr
-                                .$jsstr()
+                                .toString()
                                 .split(".")
                                 .map((x) => new Sk.builtin.str(x))
                         );

@@ -224,6 +224,11 @@ Sk.builtin.float_ = Sk.abstr.buildNativeClass("float", {
             $doc: Sk.builtin.none.none$,
         },
     },
+    proto: {
+        valueOf: function () {
+            return this.v;
+        }
+    }
 });
 
 const invalidUnderscores = /_[eE]|[eE]_|\._|_\.|[+-]_|__/;
@@ -295,8 +300,7 @@ Sk.builtin.float_.PyFloat_Check = function (op) {
  * @return {string}   The string representation of this instance's value.
  */
 Sk.builtin.float_.prototype.toFixed = function (x) {
-    x = Sk.builtin.asnum$(x);
-    return this.v.toFixed(x);
+    return this.v.toFixed(Sk.ffi.toNumber(x));
 };
 
 function numberSlot(f) {
@@ -442,7 +446,10 @@ function power(v, w) {
  */
 Sk.builtin.float_.prototype.round$ = function (ndigits) {
     var result, multiplier, number, num10, rounded, bankRound, ndigs;
-    number = Sk.builtin.asnum$(this);
+    if (ndigits !== undefined && !Sk.misceval.isIndex(ndigits)) {
+        throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(ndigits) + "' object cannot be interpreted as an index");
+    }
+    number = Sk.ffi.toNumber(this);
     if (ndigits === undefined) {
         ndigs = 0;
     } else {

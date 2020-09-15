@@ -665,7 +665,7 @@ function getInt(x, base) {
         res = Sk.misceval.callsimArray(func, []);
         // check return type of magic methods
         if (!Sk.builtin.checkInt(res)) {
-            throw new Sk.builtin.TypeError(Sk.builtin.str.$trunc.$jsstr() + " returned non-Integral (type " + Sk.abstr.typeName(x) + ")");
+            throw new Sk.builtin.TypeError(Sk.builtin.str.$trunc + " returned non-Integral (type " + Sk.abstr.typeName(x) + ")");
         }
         return new Sk.builtin.int_(res.v);
     }
@@ -811,3 +811,4 @@ Sk.builtin.lng = Sk.abstr.buildNativeClass("long", {
 });
 
 const intProto = Sk.builtin.int_.prototype;
+

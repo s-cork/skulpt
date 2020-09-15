@@ -520,7 +520,7 @@ Sk.abstr.mappingUnpackIntoKeywordArray = function (jsArray, pyMapping, pyCodeObj
                 throw new Sk.builtin.TypeError((pyCodeObject.$qualname ? pyCodeObject.$qualname + "() " : "") + "keywords must be strings");
             }
             return Sk.misceval.chain(pyMapping.mp$subscript(key, true), (val) => {
-                jsArray.push(key.v);
+                jsArray.push(String(key));
                 jsArray.push(val);
             });
         })
@@ -803,11 +803,11 @@ Sk.abstr.gattr = function (obj, pyName, canSuspend) {
     // let the getattr and setattr's deal with reserved words - we don't want to pass a mangled pyName to tp$getattr!!
     const ret = obj.tp$getattr(pyName, canSuspend);
     if (ret === undefined) {
-        throw new Sk.builtin.AttributeError(obj.sk$attrError() + " has no attribute '" + pyName.$jsstr() + "'");
+        throw new Sk.builtin.AttributeError(obj.sk$attrError() + " has no attribute '" + pyName + "'");
     } else if (ret.$isSuspension) {
         return Sk.misceval.chain(ret, function (r) {
             if (r === undefined) {
-                throw new Sk.builtin.AttributeError(obj.sk$attrError() + " has no attribute '" + pyName.$jsstr() + "'");
+                throw new Sk.builtin.AttributeError(obj.sk$attrError() + " has no attribute '" + pyName + "'");
             }
             return r;
         });
@@ -1292,9 +1292,16 @@ Sk.abstr.buildNativeClass = function (typename, options) {
         }); 
     });
 
+    
+    if (typeobject.prototype.hasOwnProperty("tp$iter")) {
+        typeobject.prototype[Symbol.iterator] = function () {
+            return this.tp$iter()[Symbol.iterator]();
+        };
+    }
+
     // str might not have been created yet
-    if (Sk.builtin.str !== undefined && type_proto.hasOwnProperty("tp$doc") && !type_proto.hasOwnProperty("__doc__")) {
-        const docstr = type_proto.tp$doc || null;
+    if (Sk.builtin.str !== undefined && typeobject.prototype.hasOwnProperty("tp$doc") && !typeobject.prototype.hasOwnProperty("__doc__")) {
+        const docstr = typeobject.prototype.tp$doc || null;
         if (typeof docstr === "string") {
             type_proto.__doc__ = new Sk.builtin.str(docstr);
         } else {
@@ -1350,6 +1357,18 @@ Sk.abstr.buildIteratorClass = function (typename, iterator) {
     iterator.slots.tp$getattr = iterator.slots.tp$getattr || Sk.generic.getAttr;
     let ret = Sk.abstr.buildNativeClass(typename, iterator);
     Sk.abstr.built$iterators.push(ret);
+
+    ret.prototype[Symbol.iterator] = function () {
+        return  {
+            next: () => {
+                const nxt = this.tp$iternext();
+                if (nxt === undefined) {
+                    return {done: true};
+                }
+                return {value: nxt, done: false};
+            }
+        };
+    };
     return ret;
 };
 

@@ -1194,7 +1194,7 @@ function collections_mod(collections) {
         if (Sk.misceval.isTrue(Sk.misceval.callsimArray(collections._iskeyword, [name]))) {
             throw new Sk.builtin.ValueError("Type names and field names cannot be a keyword: '" + Sk.misceval.objectRepr(name) + "'");
         }
-        const js_name = name.$jsstr();
+        const js_name = name.toString();
         if (startsw.test(js_name) || !alnum.test(js_name) || !js_name) {
             throw new Sk.builtin.ValueError("Type names and field names must be valid identifiers: '" + js_name + "'");
         }
@@ -1202,7 +1202,7 @@ function collections_mod(collections) {
         let flds, field_names;
         // fields could be a string or an iterable of strings
         if (Sk.builtin.checkString(fields)) {
-            flds = fields.$jsstr().replace(comma, " ").split(spaces);
+            flds = fields.toString().replace(comma, " ").split(spaces);
             if (flds.length == 1 && flds[0] === "") {
                 flds = [];
             }
@@ -1213,7 +1213,7 @@ function collections_mod(collections) {
             for (let iter = Sk.abstr.iter(fields), i = iter.tp$iternext(); i !== undefined; i = iter.tp$iternext()) {
                 i = i.tp$str();
                 field_names.push(i);
-                flds.push(i.$jsstr());
+                flds.push(i.toString());
             }
         }
 
@@ -1296,7 +1296,7 @@ function collections_mod(collections) {
             const res = call(_make, [call(Sk.builtin.map_, [pop, _field_names, _self])]);
             if (kwargs.sq$length()) {
                 const keys = kwargs.sk$asarray();
-                throw new Sk.builtin.ValueError("Got unexpectd field names: [" + keys.map((x) => "'" + x.$jsstr() + "'") + "]");
+                throw new Sk.builtin.ValueError("Got unexpectd field names: [" + keys.map((x) => "'" + x.toString() + "'") + "]");
             }
             return res;
         }

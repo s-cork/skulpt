@@ -466,7 +466,7 @@ slots.__getattribute__ = {
         }
         const res = this.call(self, pyName);
         if (res === undefined) {
-            throw new Sk.builtin.AttributeError(Sk.abstr.typeName(self) + " has no attribute " + pyName.$jsstr());
+            throw new Sk.builtin.AttributeError(Sk.abstr.typeName(self) + " has no attribute " + pyName);
         }
         return res;
     },
