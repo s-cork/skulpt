@@ -171,6 +171,7 @@ Sk.builtin.int_ = Sk.abstr.buildNativeClass("int", {
                         }
                     }
                 }
+                
                 if (mod !== undefined) {
                     if (other.nb$isnegative()) {
                         throw new Sk.builtin.ValueError("pow() 2nd argument cannot be negative when 3rd argument specified");
