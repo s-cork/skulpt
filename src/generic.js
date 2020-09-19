@@ -1,38 +1,29 @@
-/**
- * @namespace Sk.generic
- * 
- * @description
- * Some useful default methods for native classes
- * 
- */
-Sk.generic = {};
+import { asserts, checkDataDescr, pyExc, pyNotImplemented, typeName, pyInt, pyDict, opAllowsEquality, objectRichCompare } from "./internal";
 
-/** @typedef {Sk.builtin.object} */ var pyObject;
-/** @typedef {Sk.builtin.type|Function} */ var typeObject;
 
 /**
  * @method
- * 
+ *
  * @param {Sk.builtin.str} pyName Python string name of the attribute
  * @param {boolean=} canSuspend Can we return a suspension?
- * 
+ *
  * @description
  * The default implementation of __getattribute__. This is used by most instances and will be inherited from object.
- * 
+ *
  * If undefined is returned by this method then the object has no attribute
- * It is the responsibility of the user to throw the error. 
+ * It is the responsibility of the user to throw the error.
  * Currently this is thrown in Sk.abstr.gattr or directly in compile code
- * 
+ *
  * @return {Sk.builtin.object|undefined}
  */
-Sk.generic.getAttr = function __getattribute__(pyName, canSuspend) {
+export function genericGetAttr(pyName, canSuspend) {
     let f;
     const type = this.ob$type;
     const descr = type.$typeLookup(pyName);
     // look in the type for a descriptor
     if (descr !== undefined) {
         f = descr.tp$descr_get;
-        if (f && Sk.builtin.checkDataDescr(descr)) {
+        if (f && checkDataDescr(descr)) {
             return f.call(descr, this, type, canSuspend);
         }
     }
@@ -52,26 +43,25 @@ Sk.generic.getAttr = function __getattribute__(pyName, canSuspend) {
         return descr;
     }
     return;
-};
-Sk.exportSymbol("Sk.generic.getAttr", Sk.generic.getAttr);
+}
 
 /**
  * @method
- * 
+ *
  * @description
  * The default implementation of __setattr__/__delattr__ used by most instance objects
  * There is no return value for this function
  * An error will be thrown if no attribute exists
- * 
+ *
  * A value=undefined signifies that the attribute is to be deleted
- * 
+ *
  * @param {Sk.builtin.str} pyName
  * @param {Sk.builtin.object|undefined} value
  * @param {boolean=} canSuspend ? can this function suspend
  * @return {undefined}
  */
-Sk.generic.setAttr = function __setattr__(pyName, value, canSuspend) {
-    const descr = this.ob$type.$typeLookup(pyName); 
+export function genericSetAttr(pyName, value, canSuspend) {
+    const descr = this.ob$type.$typeLookup(pyName);
     // otherwise, look in the type for a descr
     if (descr !== undefined && descr !== null) {
         const f = descr.tp$descr_set;
@@ -90,8 +80,8 @@ Sk.generic.setAttr = function __setattr__(pyName, value, canSuspend) {
                 try {
                     return dict.mp$ass_subscript(pyName);
                 } catch (e) {
-                    if (e instanceof Sk.builtin.KeyError) {
-                        throw new Sk.builtin.AttributeError("'" + Sk.abstr.typeName(this) + "' object has no attribute '" + pyName + "'");
+                    if (e instanceof pyExc.KeyError) {
+                        throw new pyExc.AttributeError("'" + typeName(this) + "' object has no attribute '" + pyName + "'");
                     }
                     throw e;
                 }
@@ -107,25 +97,23 @@ Sk.generic.setAttr = function __setattr__(pyName, value, canSuspend) {
             }
         }
     }
-    throw new Sk.builtin.AttributeError(this.sk$attrError() +  " has no attribute '" + pyName + "'");
-};
-Sk.exportSymbol("Sk.generic.setAttr", Sk.generic.setAttr);
-
+    throw new pyExc.AttributeError(this.sk$attrError() + " has no attribute '" + pyName + "'");
+}
 
 /**
  * @method
- * 
+ *
  * @description
  * The default implementation of tp$new for builtin type objects that are mutable
  * args and kwargs are ignored
  * either a new instance of the builtin is returned or an instance of a subtype
- * 
- * @see {Sk.builtin.type.prototype.tp$new}
- * 
- * @param {typeObject} builtin 
+ *
+ * @see {pyType.prototype.tp$new}
+ *
+ * @param {typeObject} builtin
  */
-Sk.generic.new =  function (builtin) {
-    const genericNew = function __new__(args, kwargs) {
+export function genericNew(builtin) {
+    function __new__(args, kwargs) {
         // this = prototype of an sk$type object.
         if (this.constructor === builtin) {
             return new this.constructor();
@@ -135,23 +123,23 @@ Sk.generic.new =  function (builtin) {
             builtin.call(instance);
             return instance;
         }
-    };
-    return genericNew;
-};
+    }
+    return __new__;
+}
 
 /**
  * @method
- * 
+ *
  * @description
  * method definitaion for __new__ that wraps tp$new
  * typically called by subtypes using super().__new__(args, kwargs)
- * 
+ *
  * the algorithm follows Cpython
- * 
+ *
  * @see {Sk.slots.__new__}
- * 
+ *
  */
-Sk.generic.newMethodDef = {
+export const genericNewMethodDef = {
     $meth: function (args, kwargs) {
         // this = a type object
         let this_name, subs_name;
@@ -159,20 +147,20 @@ Sk.generic.newMethodDef = {
 
         if (args.length < 1) {
             this_name = native_type_proto.tp$name;
-            throw new Sk.builtin.TypeError(this_name + ".__new__(): not enough arguments");
+            throw new pyExc.TypeError(this_name + ".__new__(): not enough arguments");
         }
 
         const subtype = args.shift();
 
         if (subtype.sk$type === undefined) {
             this_name = native_type_proto.tp$name;
-            throw new Sk.builtin.TypeError(this_name + "__new__(X): X is not a type object (" + Sk.abstr.typeName(subtype) + ")");
+            throw new pyExc.TypeError(this_name + "__new__(X): X is not a type object (" + typeName(subtype) + ")");
         }
 
         if (!subtype.$isSubType(this)) {
             this_name = native_type_proto.tp$name;
             subs_name = subtype.prototype.tp$name;
-            throw new Sk.builtin.TypeError(this_name + ".__new__(" + subs_name + "): " + subs_name + " is not a subtype of " + this_name);
+            throw new pyExc.TypeError(this_name + ".__new__(" + subs_name + "): " + subs_name + " is not a subtype of " + this_name);
         }
         /* from CPython: Check that the use doesn't do something silly and unsafe like
        object.__new__(dict).  To do this, we check that the
@@ -185,7 +173,7 @@ Sk.generic.newMethodDef = {
             this_name = native_type_proto.tp$name;
             subs_name = subtype.prototype.tp$name;
             const suitable = static_proto.tp$name;
-            throw new Sk.builtin.TypeError(this_name + ".__new__(" + subs_name + ") is not safe, use " + suitable + ".__new__()");
+            throw new pyExc.TypeError(this_name + ".__new__(" + subs_name + ") is not safe, use " + suitable + ".__new__()");
         }
         return native_type_proto.tp$new.call(subtype.prototype, args, kwargs);
     },
@@ -197,12 +185,12 @@ Sk.generic.newMethodDef = {
 /**
  * @description
  * used by most iterators that return self
- * 
+ *
  * @function
  */
-Sk.generic.selfIter = function __iter__() {
+export function genericSelfIter() {
     return this;
-};
+}
 
 /**
  * @method
@@ -211,18 +199,18 @@ Sk.generic.selfIter = function __iter__() {
  * the $seq of the iterator must be an array
  * $orig must be provided and must have a get$size private method
  * note we do not use sq$length since this can be override by subclasses
- * 
+ *
  * typically used by mutable iterators like dict_iter_ and set_iter_
  */
-Sk.generic.iterNextWithArrayCheckSize = function __next__() {
+export function genericIterNextWithArrayCheckSize() {
     if (this.$seq.length !== this.$orig.get$size()) {
         const error_name = this.tp$name.split("_")[0];
-        throw new Sk.builtin.RuntimeError(error_name + " changed size during iteration");
+        throw new pyExc.RuntimeError(error_name + " changed size during iteration");
     } else if (this.$index >= this.$seq.length) {
         return undefined;
-    } 
+    }
     return this.$seq[this.$index++];
-};
+}
 
 /**
  * @method
@@ -230,56 +218,55 @@ Sk.generic.iterNextWithArrayCheckSize = function __next__() {
  * @description
  * the $seq of the iterator must be an array
  */
-Sk.generic.iterNextWithArray = function __next__() {
-    const next = this.$seq[this.$index++];
-    if (next === undefined) {
+export function genericIterNextWithArray() {
+    const nxt = this.$seq[this.$index++];
+    if (nxt === undefined) {
         this.tp$iternext = () => undefined; // consumed iterator
     }
-    return next;
-};
+    return nxt;
+}
 
 /**
  * @method
- * 
+ *
  * @description
  * compares the $seq.length to the $index
  */
-Sk.generic.iterLengthHintWithArrayMethodDef = {
+export const genericIterLengthHintWithArrayMethodDef = {
     $meth: function __length_hint__() {
-        return new Sk.builtin.int_(this.$seq.length - this.$index);
+        return new pyInt(this.$seq.length - this.$index);
     },
     $flags: { NoArgs: true },
 };
 
 /**
  * @method
- * 
+ *
  * @description
  * returns the current index
  */
-Sk.generic.iterReverseLengthHintMethodDef = {
+export const genericIterReverseLengthHintMethodDef = {
     $meth: function __length_hint__() {
-        return new Sk.builtin.int_(this.$index);
+        return new pyInt(this.$index);
     },
     $flags: { NoArgs: true },
 };
-
 
 /**
  * @description
  * typical implementation of `__dict__` for type objects that support it
  */
-Sk.generic.getSetDict = {
+export const genericGetSetDict = {
     $get: function () {
         return this.$d;
     },
     $set: function (value) {
         if (value === undefined) {
-            this.$d = new Sk.builtin.dict();
-        } else if (value instanceof Sk.builtin.dict) {
+            this.$d = new pyDict();
+        } else if (value instanceof pyDict) {
             this.$d = value;
         } else {
-            throw new Sk.builtin.TypeError("__dict__ must be set to a dictionary, not a '" + Sk.abstr.typeName(value) + "'");
+            throw new pyExc.TypeError("__dict__ must be set to a dictionary, not a '" + typeName(value) + "'");
         }
     },
     $doc: "dictionary for instance variables (if defined)",
@@ -289,13 +276,13 @@ Sk.generic.getSetDict = {
 /**
  * Logic used by seq and tuple to do rich comparisons
  */
-Sk.generic.seqCompare = function (other, op) {
-    if (this === other && Sk.misceval.opAllowsEquality(op)) {
+export function genericSeqCompare(other, op) {
+    if (this === other && opAllowsEquality(op)) {
         return true;
     }
     // w not a tuple
     if (!(other instanceof this.sk$builtinBase)) {
-        return Sk.builtin.NotImplemented.NotImplemented$;
+        return pyNotImplemented;
     }
     const v = this.v;
     const w = other.v;
@@ -305,7 +292,7 @@ Sk.generic.seqCompare = function (other, op) {
         return op === "Eq" ? false : true;
     }
     for (i = 0; i < v.length && i < w.length; ++i) {
-        if (!(v[i] === w[i] || Sk.misceval.richCompareBool(v[i], w[i], "Eq"))) {
+        if (!(v[i] === w[i] || objectRichCompare(v[i], w[i], "Eq"))) {
             break;
         }
     }
@@ -327,7 +314,7 @@ Sk.generic.seqCompare = function (other, op) {
             case "GtE":
                 return vl >= wl;
             default:
-                Sk.asserts.fail();
+                asserts.fail();
         }
     }
 
@@ -341,5 +328,5 @@ Sk.generic.seqCompare = function (other, op) {
     }
 
     // or, compare the differing element using the proper operator
-    return Sk.misceval.richCompareBool(v[i], w[i], op);
-};
+    return objectRichCompare(v[i], w[i], op);
+}

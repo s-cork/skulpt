@@ -1,57 +1,13 @@
-class pyWrapped {
-    constructor(obj) {
-        this.v = obj;
-        this.$wrapped = true;
-    }
-    unWrap() {
-        return this.v;
-    }
-}
+
+import { JSBI, pyNone, pyStr, pyBool, pyList, pyTuple, pySet, pyDict, pyInt, pyFloat, pyFunc, pyBytes, asserts } from "./internal";
 
 /**
- * @namespace Sk.ffi
- *
+ * 
+ * @param {*} obj 
  */
-Sk.ffi = {
-    remapToPy: remapToPy,
-    remapToJs: remapToJs,
-    toPy: remapToPy,
-    toJs: remapToJs,
-
-    isTrue: toBoolean,
-
-    toBoolean: toBoolean,
-    toString: toString,
-    toNumber: toNumber,
-    toArray: toArray,
-
-    dictToHashMap: dictToHashMap,
-
-    toPyDict: toPyDict,
-    toPyFloat: toPyFloat,
-    toPyInt: toPyInt,
-    toPyNumber: toPyNumber,
-    toPyString: toPyString,
-    toPyList: toPyList,
-    toPyTuple: toPyTuple,
-    toPySet: toPySet,
-
-    numberToPy: numberToPy,
-
-    pyWrapped: pyWrapped,
-    wrapPyObj: wrapPyObj,
-
-};
-
-/**
- * maps from Javascript Object/Array/string to Python dict/list/str.
- *
- * only works on basic objects that are being used as storage, doesn't handle
- * functions, etc.
- */
-function remapToPy(obj) {
+export function remapToPy(obj) {
     if (obj === null || obj === undefined) {
-        return Sk.builtin.none.none$;
+        return pyNone;
     }
 
     if (obj.ob$type) {
@@ -59,23 +15,22 @@ function remapToPy(obj) {
     }
 
     const type = typeof obj;
-
     if (obj.length !== undefined) {
         if (type === "string") {
-            return new Sk.builtin.str(obj);
+            return new pyStr(obj);
         }
         if (JSBI.__isBigInt(obj)) {
-            return new Sk.builtin.int_(JSBI.numberIfSafe(obj)); // JSBI polyfill uses arrays under the hood
+            return new pyInt(JSBI.numberIfSafe(obj)); // JSBI polyfill uses arrays under the hood
         }
         if (Array.isArray(obj)) {
-            return new Sk.builtin.list(obj.map((x) => remapToPy(x)));
+            return new pyList(obj.map((x) => remapToPy(x)));
         }
-        if (obj instanceof Uint8Array) {
-            return new Sk.builtin.bytes(obj);
+        if (obj.byteLength !== undefined && obj instanceof Uint8Array) {
+            return new pyBytes(obj);
         }
     }
     if (type === "object") {
-        if (obj.$wrapped !== undefined) {
+        if (obj.$isWrapped !== undefined) {
             return obj.unWrap();
         }
         if (obj.$isSuspension !== undefined) {
@@ -88,19 +43,19 @@ function remapToPy(obj) {
         return numberToPy(obj);
     }
     if (type === "boolean") {
-        return new Sk.builtin.bool(obj);
+        return new pyBool(obj);
     }
     if (type === "function") {
-        return new Sk.builtin.func(obj);
+        return new pyFunc(obj);
     }
     if (type === "bigint") {
         // we know BigInt is defined - let int take care of conversion here.
-        new Sk.builtin.int_(obj.toString());
+        new pyInt(obj.toString());
     }
 
-    Sk.asserts.fail("unhandled remap type " + typeof obj);
+    asserts.fail("unhandled remap type " + typeof obj);
 }
-Sk.exportSymbol("Sk.ffi.remapToPy", Sk.ffi.remapToPy);
+export let toPy = remapToPy;
 
 /**
  * Maps from Python dict/list/str/number to Javascript Object/Array/string/number.
@@ -110,7 +65,7 @@ Sk.exportSymbol("Sk.ffi.remapToPy", Sk.ffi.remapToPy);
  * @param obj {Object}  Any Python object (except a function)
  *
  */
-function remapToJs(obj, wrap) {
+export function remapToJs(obj, wrap) {
     if (obj === undefined || obj === null) {
         return obj;
     }
@@ -125,33 +80,37 @@ function remapToJs(obj, wrap) {
     if (Array.isArray(val)) {
         return val.map((x) => remapToJs(x));
     }
-    if (obj instanceof Sk.builtin.dict) {
-        return dictToHashMap(obj);
+    if (obj instanceof pyDict) {
+        return toJsHashMap(obj);
     }
-    if (val instanceof Uint8Array) {
+    if (obj.byteLength !== undefined && val instanceof Uint8Array) {
         return val;
     }
     return wrapPyObj(obj);
 }
-Sk.exportSymbol("Sk.ffi.remapToJs", Sk.ffi.remapToJs);
 
-function toBoolean(obj) {
+export let toJs = remapToJs;
+
+
+export function toJsBool(obj) {
     // basically the logic for Sk.misceva.isTrue
     return obj != null && obj.nb$bool ? obj.nb$bool() : obj.sq$length ? obj.sq$length() !== 0 : Boolean(obj);
 }
+export let isTrue = toJsBool;
 
-function toNumber(obj) {
+export function toJsNumber(obj) {
     return Number(obj);
 }
-function toString(obj) {
+
+export function toJsString(obj) {
     return String(obj);
 }
 
-function toArray(obj) {
+export function toJsArray(obj) {
     return Array.from(obj, (x) => remapToJs(x));
 }
 
-function dictToHashMap(dict) {
+export function toJsHashMap(dict) {
     const obj = {};
     dict.$items().forEach(([key, val]) => {
         obj[key] = remapToJs(val);
@@ -159,123 +118,110 @@ function dictToHashMap(dict) {
     return obj;
 }
 
-function numberToPy(val) {
+export function numberToPy(val) {
     if (Number.isInteger(val)) {
         if (Math.abs(val) < Number.MAX_SAFE_INTEGER) {
-            return new Sk.builtin.int_(val);
+            return new pyInt(val);
         }
-        return new Sk.builtin.int_(JSBI.BigInt(val));
+        return new pyInt(JSBI.BigInt(val));
     }
-    return new Sk.builtin.float_(val);
+    return new pyInt(val);
 }
 
 const isInteger = /^-?\d+$/;
 
-function toPyNumber(obj) {
+export function toPyNumber(obj) {
     const type = typeof obj;
     if (type === "number") {
         return numberToPy(obj);
     }
     if (type === "string") {
         if (obj.match(isInteger)) {
-            return new Sk.builtin.int_(obj);
+            return new pyInt(obj);
         }
-        return new Sk.builtin.float_(parseFloat(obj));
+        return new pyFloat(parseFloat(obj));
     }
     if (type === "bigint" || JSBI.__isBigInt(obj)) {
-        return new Sk.builtin.int_(JSBI.numberIfSafe(obj));
+        return new pyInt(JSBI.numberIfSafe(obj));
     }
-    return new Sk.builtin.float_(Number(obj));
+    return new pyFloat(Number(obj));
 }
 
-function toPyFloat(num) {
-    return new Sk.builtin.float_(Number(num));
+export function toPyFloat(num) {
+    return new pyFloat(Number(num));
 }
 
-function toPyString(obj) {
-    return new Sk.builtin.str(obj);
+export function toPyStr(obj) {
+    return new pyStr(obj);
 }
 
-function toPyList(obj) {
-    return new Sk.builtin.list(Array.from(obj, (x) => remapToPy(x)));
+export function toPyList(obj) {
+    return new pyList(Array.from(obj, (x) => remapToPy(x)));
 }
 
-function toPySet(obj) {
-    return new Sk.builtin.set(Array.from(obj, (x) => remapToPy(x)));
+export function toPySet(obj) {
+    return new pySet(Array.from(obj, (x) => remapToPy(x)));
 }
 
-function toPyTuple(obj) {
-    return new Sk.builtin.tuple(Array.from(obj, (x) => remapToPy(x)));
+export function toPyTuple(obj) {
+    return new pyTuple(Array.from(obj, (x) => remapToPy(x)));
 }
 
-function toPyInt(num) {
+export function toPyInt(num) {
     if (typeof num === "number") {
         num = Math.trunc(num);
     } else if (JSBI.__isBigInt(num)) {
-        return new Sk.builtin.int_(JSBI.numberIfSafe(num));
+        return new pyInt(JSBI.numberIfSafe(num));
     } else {
         num = Math.trunc(parseInt(num, 10));
     }
-    return Math.abs(num) < Number.MAX_SAFE_INTEGER ? new Sk.builtin.int_(num) : new Sk.builtin.int_(JSBI.BigInt(num));
+    return Math.abs(num) < Number.MAX_SAFE_INTEGER ? new pyInt(num) : new pyInt(JSBI.BigInt(num));
 }
 
-function toPyDict(obj) {
+export function toPyDict(obj) {
     const arr = [];
-    Object.entries(obj).forEach(([key, val]) => {
-        arr.push(new Sk.builtin.str(key));
-        arr.push(remapToPy(val));
-    });
-    return new Sk.builtin.dict(arr);
+    for (let key in obj) {
+        arr.push(new pyStr(key));
+        arr.push(remapToPy(obj[key]));
+    }
+    return new pyDict(arr);
 }
 
-function wrapPyObj(obj) {
+export class pyWrapped {
+    constructor(obj) {
+        this.v = obj;
+        this.$isWrapped = true;
+    }
+    unWrap() {
+        return this.v;
+    }
+}
+
+export function wrapPyObj(obj) {
     return new pyWrapped(obj);
 }
 
-Sk.ffi.callback = function (fn) {
-    if (fn === undefined) {
-        return fn;
-    }
-    return function () {
-        return Sk.misceval.apply(fn, undefined, undefined, undefined, Array.prototype.slice.call(arguments, 0));
-    };
-};
-Sk.exportSymbol("Sk.ffi.callback", Sk.ffi.callback);
 
-Sk.ffi.stdwrap = function (type, towrap) {
-    var inst = new type();
-    inst["v"] = towrap;
-    return inst;
-};
-Sk.exportSymbol("Sk.ffi.stdwrap", Sk.ffi.stdwrap);
+export const ffi = {
+    remapToPy: remapToPy,
+    remapToJs: remapToJs,
+    toPy: toPy,
+    toJs: toJs,
 
-/**
- * for when the return type might be one of a variety of basic types.
- * number|string, etc.
- */
-Sk.ffi.basicwrap = function (obj) {
-    obj === obj.valueOf();
-    const type = typeof obj;
-    if (type === "number" || type === "boolean" || type === "string") {
-        return obj;
-    }
-    Sk.asserts.fail("unexpected type for basicwrap");
-};
-Sk.exportSymbol("Sk.ffi.basicwrap", Sk.ffi.basicwrap);
+    toPyDict: toPyDict,
+    toPyFloat: toPyFloat,
+    toPyInt: toPyInt,
+    toPyNumber: toPyNumber,
+    toPyStr: toPyStr,
+    toPyList: toPyList,
+    toPyTuple: toPyTuple,
+    toPySet: toPySet,
 
-Sk.ffi.unwrapo = function (obj) {
-    if (obj === undefined) {
-        return undefined;
-    }
-    return obj["v"];
-};
-Sk.exportSymbol("Sk.ffi.unwrapo", Sk.ffi.unwrapo);
+    numberToPy: numberToPy,
 
-Sk.ffi.unwrapn = function (obj) {
-    if (obj === null) {
-        return null;
-    }
-    return obj["v"];
+    pyWrapped: pyWrapped,
+    wrapPyObj: wrapPyObj,
+
 };
-Sk.exportSymbol("Sk.ffi.unwrapn", Sk.ffi.unwrapn);
+
 

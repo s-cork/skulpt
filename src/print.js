@@ -1,44 +1,58 @@
-Sk.builtin.print = function print(args, kwargs) {
+import {
+    pyExc,
+    pyStr,
+    pyCall,
+    keywordArrayToNamedArgs,
+    checkNone,
+    checkString,
+    typeName,
+    objectLookupSpecial,
+    pyCallOrSuspend,
+    chainOrSuspend,
+    // importModule,
+} from "./internal";
+
+export function print(args, kwargs) {
     /** @todo flush is allowed but has no effect */
-    let [sep, end, file] = Sk.abstr.copyKeywordsToNamedArgs("print", ["sep", "end", "file", "flush"], [], kwargs);
+    let [sep, end, file] = keywordArrayToNamedArgs("print", ["sep", "end", "file", "flush"], [], kwargs);
 
     // check for sep; string or None
-    if (sep === undefined || Sk.builtin.checkNone(sep)) {
+    if (sep === undefined || checkNone(sep)) {
         sep = " ";
-    } else if (Sk.builtin.checkString(sep)) {
-        sep = String(sep);
+    } else if (checkString(sep)) {
+        sep = sep.toString();
     } else {
-        throw new Sk.builtin.TypeError("sep must be None or a string, not " + Sk.abstr.typeName(sep));
+        throw new pyExc.TypeError("sep must be None or a string, not " + typeName(sep));
     }
 
     // check for end; string or None
-    if (end === undefined || Sk.builtin.checkNone(end)) {
+    if (end === undefined || checkNone(end)) {
         end = "\n";
-    } else if (Sk.builtin.checkString(end)) {
-        end = String(end);
+    } else if (checkString(end)) {
+        end = end.toString();
     } else {
-        throw new Sk.builtin.TypeError("end must be None or a string, not " + Sk.abstr.typeName(end));
+        throw new pyExc.TypeError("end must be None or a string, not " + typeName(end));
     }
 
     // check for file and get the file_write function if it exists
     let file_write;
-    if (file !== undefined && !Sk.builtin.checkNone(file)) {
-        file_write = Sk.abstr.lookupSpecial(file, Sk.builtin.str.$write);
+    if (file !== undefined && !checkNone(file)) {
+        file_write = objectLookupSpecial(file, pyStr.$write);
         if (file_write === undefined) {
-            throw new Sk.builtin.AttributeError("'" + Sk.abstr.typeName(file) + "' object has no attribute 'write'");
+            throw new pyExc.AttributeError("'" + typeName(file) + "' object has no attribute 'write'");
         }
     }
 
     // loop through outputs and create output string
-    const output = new Sk.builtin.str(args.map((x) => String(x)).join(sep) + end);
+    const output = new pyStr(args.map((x) => x.toString()).join(sep) + end);
 
     if (file_write !== undefined) {
         // currently not tested, though it seems that we need to see how we should access the write function in a correct manner
-        Sk.misceval.callsimArray(file_write, [output]);
+        pyCall(file_write, [output]);
     } else {
-        return Sk.misceval.chain(Sk.importModule("sys", false, true), (sys) => {
-            file_write = Sk.abstr.lookupSpecial(sys.$d.stdout, Sk.builtin.str.$write);
-            return file_write && Sk.misceval.callsimOrSuspendArray(file_write, [output]);
+        return chainOrSuspend(importModule("sys", false, true), (sys) => {
+            file_write = objectLookupSpecial(sys.$d.stdout, pyStr.$write);
+            return file_write && pyCallOrSuspend(file_write, [output]);
         });
     }
 };

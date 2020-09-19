@@ -1,0 +1,33 @@
+export const asserts = {ENABLE_ASSERTS: true};
+
+/**
+ * Cause assertion failure when condition is false.
+ * 
+ * @param {*} condition condition to check
+ * @param {string=} message error message
+ */
+asserts.assert = function (condition, message) {
+    if (asserts.ENABLE_ASSERTS && !condition) {
+        var msg = "Assertion failure";
+        if (message) {
+            msg = msg + ": " + message;
+        }
+        throw new Error(msg);
+    }
+    return condition;
+};
+
+/**
+ * Cause assertion failure.
+ * 
+ * @param {string=} message error message
+ */
+asserts.fail = function (message) {
+    if (asserts.ENABLE_ASSERTS) {
+        var msg = "Assertion failure";
+        if (message) {
+            msg = msg + ": " + message;
+        }
+        throw new Error(msg);
+    }
+};

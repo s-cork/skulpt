@@ -1,8 +1,47 @@
+import {
+    pyType,
+    pyObject,
+    pyNone,
+    pyFalse,
+    pyTrue,
+    pyNotImplemented,
+    pyStr,
+    pyExc,
+    pyTuple,
+    pyList,
+    pySet,
+    pyFrozenSet,
+    pyBytes,
+    pyInt,
+    pyFloat,
+    pySlice,
+    pyComplex,
+    pyDict,
+    pyBool,
+    pyLong,
+    pyFunc,
+    pyGenerator,
+    pyMethod,
+    pyClassMethod,
+    pyStaticMethod,
+    pySuper,
+    pyProperty,
+    pyFile,
+    pyMap,
+    pyZip,
+    pyFilter,
+    pyReversed,
+    pyEnumerate,
+    pyRange,
+    pyBuiltinFuncOrMethod,
+    builtinFuncs,
+    setUpModuleMethods,
+} from "./internal";
 // Note: the hacky names on int, long, float have to correspond with the
 // uniquization that the compiler does for words that are reserved in
 // Javascript. This is a bit hokey.
 
-Sk.builtins = {
+export const builtins = {
     "round"     : null,
     "len"       : null,
     "min"       : null,
@@ -24,73 +63,73 @@ Sk.builtins = {
     "hasattr"   : null,
     "id"        : null,
     
-    "reduce"    : new Sk.builtin.func(Sk.builtin.reduce),
+    "reduce"    : new pyFunc(builtinFuncs.reduce),
     "sorted"    : null,
     "any"       : null,
     "all"       : null,
     
     // iterator objects if py2 mode we replace these with sk_methods
-    "enumerate" : Sk.builtin.enumerate,
-    "filter"    : Sk.builtin.filter_,
-    "map"       : Sk.builtin.map_,
-    "range"     : Sk.builtin.range_,
-    "reversed"  : Sk.builtin.reversed,
-    "zip"       : Sk.builtin.zip_,
+    "enumerate" : pyEnumerate,
+    "filter"    : pyFilter,
+    "map"       : pyMap,
+    "range"     : pyRange,
+    "reversed"  : pyReversed,
+    "zip"       : pyZip,
 
-    "BaseException"      : Sk.builtin.BaseException, 
-    "AttributeError"     : Sk.builtin.AttributeError,
-    "ValueError"         : Sk.builtin.ValueError,
-    "Exception"          : Sk.builtin.Exception,
-    "ZeroDivisionError"  : Sk.builtin.ZeroDivisionError,
-    "AssertionError"     : Sk.builtin.AssertionError,
-    "ImportError"        : Sk.builtin.ImportError,
-    "IndentationError"   : Sk.builtin.IndentationError,
-    "IndexError"         : Sk.builtin.IndexError,
-    "LookupError"        : Sk.builtin.LookupError,
-    "KeyError"           : Sk.builtin.KeyError,
-    "TypeError"          : Sk.builtin.TypeError,
-    "UnicodeDecodeError" : Sk.builtin.UnicodeDecodeError,
-    "UnicodeEncodeError" : Sk.builtin.UnicodeEncodeError,
-    "NameError"          : Sk.builtin.NameError,
-    "IOError"            : Sk.builtin.IOError,
-    "NotImplementedError": Sk.builtin.NotImplementedError,
-    "SystemExit"         : Sk.builtin.SystemExit,
-    "OverflowError"      : Sk.builtin.OverflowError,
-    "OperationError"     : Sk.builtin.OperationError,
-    "NegativePowerError" : Sk.builtin.NegativePowerError,
-    "RuntimeError"       : Sk.builtin.RuntimeError,
-    "RecursionError"     : Sk.builtin.RecursionError,
-    "StopIteration"      : Sk.builtin.StopIteration,
-    "SyntaxError"        : Sk.builtin.SyntaxError,
-    "SystemError"        : Sk.builtin.SystemError,
+    "BaseException"      : pyExc.BaseException, 
+    "AttributeError"     : pyExc.AttributeError,
+    "ValueError"         : pyExc.ValueError,
+    "Exception"          : pyExc.Exception,
+    "ZeroDivisionError"  : pyExc.ZeroDivisionError,
+    "AssertionError"     : pyExc.AssertionError,
+    "ImportError"        : pyExc.ImportError,
+    "IndentationError"   : pyExc.IndentationError,
+    "IndexError"         : pyExc.IndexError,
+    "LookupError"        : pyExc.LookupError,
+    "KeyError"           : pyExc.KeyError,
+    "TypeError"          : pyExc.TypeError,
+    "UnicodeDecodeError" : pyExc.UnicodeDecodeError,
+    "UnicodeEncodeError" : pyExc.UnicodeEncodeError,
+    "NameError"          : pyExc.NameError,
+    "IOError"            : pyExc.IOError,
+    "NotImplementedError": pyExc.NotImplementedError,
+    "SystemExit"         : pyExc.SystemExit,
+    "OverflowError"      : pyExc.OverflowError,
+    "OperationError"     : pyExc.OperationError,
+    "NegativePowerError" : pyExc.NegativePowerError,
+    "RuntimeError"       : pyExc.RuntimeError,
+    "RecursionError"     : pyExc.RecursionError,
+    "StopIteration"      : pyExc.StopIteration,
+    "SyntaxError"        : pyExc.SyntaxError,
+    "SystemError"        : pyExc.SystemError,
 
-    "float_$rw$": Sk.builtin.float_,
-    "int_$rw$"  : Sk.builtin.int_,
-    "bool"      : Sk.builtin.bool,
-    "complex"   : Sk.builtin.complex,
-    "dict"      : Sk.builtin.dict,
-    "file"      : Sk.builtin.file,
-    "frozenset" : Sk.builtin.frozenset,
-    "function"  : Sk.builtin.func,
-    "generator" : Sk.builtin.generator,
-    "list"      : Sk.builtin.list,
-    "long_$rw$" : Sk.builtin.lng,
-    "method"    : Sk.builtin.method,
-    "object"    : Sk.builtin.object,
-    "slice"     : Sk.builtin.slice,
-    "str"       : Sk.builtin.str,
-    "set"       : Sk.builtin.set,
-    "tuple"     : Sk.builtin.tuple,
-    "type"      : Sk.builtin.type,
+    "float_$rw$": pyFloat,
+    "int_$rw$"  : pyInt,
+    "bool"      : pyBool,
+    "complex"   : pyComplex,
+    "dict"      : pyDict,
+    "file"      : pyFile,
+    "frozenset" : pyFrozenSet,
+    "function"  : pyFunc,
+    "generator" : pyGenerator,
+    "list"      : pyList,
+    "long_$rw$" : pyLong,
+    "method"    : pyMethod,
+    "object"    : pyObject,
+    "slice"     : pySlice,
+    "str"       : pyStr,
+    "set"       : pySet,
+    "tuple"     : pyTuple,
+    "type"      : pyType,
 
     "input"     : null,
-    "raw_input" : new Sk.builtin.func(Sk.builtin.raw_input),
+    "raw_input" : new pyFunc(builtinFuncs.raw_input),
     "setattr"   : null,
-    /*'read': Sk.builtin.read,*/
-    "jseval"    : Sk.builtin.jseval,
-    "jsmillis"  : Sk.builtin.jsmillis,
-    "quit"      : new Sk.builtin.func(Sk.builtin.quit),
-    "exit"      : new Sk.builtin.func(Sk.builtin.quit),
+    /*'read': builtinFuncs.read,*/
+    "jseval"    : builtinFuncs.jseval,
+    "jsmillis"  : builtinFuncs.jsmillis,
+    "quit"      : new pyFunc(builtinFuncs.quit),
+    "exit"      : new pyFunc(builtinFuncs.quit),
     "print"     : null,
     "divmod"    : null,
     "format"    : null,
@@ -99,93 +138,93 @@ Sk.builtins = {
     "iter"      : null,
 
     // Functions below are not implemented
-    // "bytearray" : Sk.builtin.bytearray,
-    // "callable"  : Sk.builtin.callable,
-    // "delattr"   : Sk.builtin.delattr,
-    // "eval_$rw$" : Sk.builtin.eval_,
-    "execfile"  : Sk.builtin.execfile,
+    // "bytearray" : builtinFuncs.bytearray,
+    // "callable"  : builtinFuncs.callable,
+    // "delattr"   : builtinFuncs.delattr,
+    // "eval_$rw$" : builtinFuncs.eval_,
+    "execfile"  : builtinFuncs.execfile,
     
-    "help"      : Sk.builtin.help,
-    // "locals"    : Sk.builtin.locals,
-    "memoryview": Sk.builtin.memoryview,
-    // "next"      : Sk.builtin.next_,
-    // "pow"       : Sk.builtin.pow,
-    "reload"    : Sk.builtin.reload,
-    "super_$rw$"     : Sk.builtin.super_,
-    "unichr"    : Sk.builtin.unichr,
-    "vars"      : Sk.builtin.vars,
-    "apply_$rw$": Sk.builtin.apply_,
-    "buffer"    : Sk.builtin.buffer,
-    "coerce"    : Sk.builtin.coerce,
-    "intern"    : Sk.builtin.intern,
+    "help"      : builtinFuncs.help,
+    // "locals"    : builtinFuncs.locals,
+    "memoryview": builtinFuncs.memoryview,
+    // "next"      : builtinFuncs.next_,
+    // "pow"       : builtinFuncs.pow,
+    "reload"    : builtinFuncs.reload,
+    "super_$rw$"     : pySuper,
+    "unichr"    : builtinFuncs.unichr,
+    "vars"      : builtinFuncs.vars,
+    "apply_$rw$": builtinFuncs.apply_,
+    "buffer"    : builtinFuncs.buffer,
+    "coerce"    : builtinFuncs.coerce,
+    "intern"    : builtinFuncs.intern,
 
 
-    "property"     : Sk.builtin.property,
-    "classmethod"  : Sk.builtin.classmethod,
-    "staticmethod" : Sk.builtin.staticmethod,
+    "property"     : pyProperty,
+    "classmethod"  : pyClassMethod,
+    "staticmethod" : pyStaticMethod,
 };
 
 
-Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
+setUpModuleMethods("builtins", builtins, {
     // __build_class__: {
-    //     $meth: Sk.builtin.__build_class__,
+    //     $meth: builtinFuncs.__build_class__,
     //     $flags: {},
     //     $textsig: null,
     //     $doc: "__build_class__(func, name, *bases, metaclass=None, **kwds) -> class\n\nInternal helper function used by the class statement."
     // },
 
-    __import__: {
-        $meth: Sk.builtin.__import__,
-        $flags: { NamedArgs: ["name", "globals", "locals", "fromlist", "level"] },
-        $textsig: null,
-        $doc:
-            "__import__(name, globals=None, locals=None, fromlist=(), level=0) -> module\n\nImport a module. Because this function is meant for use by the Python\ninterpreter and not for general use, it is better to use\nimportlib.import_module() to programmatically import a module.\n\nThe globals argument is only used to determine the context;\nthey are not modified.  The locals argument is unused.  The fromlist\nshould be a list of names to emulate ``from name import ...'', or an\nempty list to emulate ``import name''.\nWhen importing a module from a package, note that __import__('A.B', ...)\nreturns package A when fromlist is empty, but its submodule B when\nfromlist is not empty.  The level argument is used to determine whether to\nperform absolute or relative imports: 0 is absolute, while a positive number\nis the number of parent directories to search relative to the current module.",
-    },
+    // __import__: {
+    //     $meth: builtinFuncs.__import__,
+    //     $flags: { NamedArgs: ["name", "globals", "locals", "fromlist", "level"] },
+    //     $textsig: null,
+    //     $doc:
+    //         "__import__(name, globals=None, locals=None, fromlist=(), level=0) -> module\n\nImport a module. Because this function is meant for use by the Python\ninterpreter and not for general use, it is better to use\nimportlib.import_module() to programmatically import a module.\n\nThe globals argument is only used to determine the context;\nthey are not modified.  The locals argument is unused.  The fromlist\nshould be a list of names to emulate ``from name import ...'', or an\nempty list to emulate ``import name''.\nWhen importing a module from a package, note that __import__('A.B', ...)\nreturns package A when fromlist is empty, but its submodule B when\nfromlist is not empty.  The level argument is used to determine whether to\nperform absolute or relative imports: 0 is absolute, while a positive number\nis the number of parent directories to search relative to the current module.",
+    // },
 
     abs: {
-        $meth: Sk.builtin.abs,
+        $meth: builtinFuncs.abs,
         $flags: { OneArg: true },
         $textsig: "($module, x, /)",
         $doc: "Return the absolute value of the argument.",
     },
 
     all: {
-        $meth: Sk.builtin.all,
+        $meth: builtinFuncs.all,
         $flags: { OneArg: true },
         $textsig: "($module, iterable, /)",
         $doc: "Return True if bool(x) is True for all values x in the iterable.\n\nIf the iterable is empty, return True.",
     },
 
     any: {
-        $meth: Sk.builtin.any,
+        $meth: builtinFuncs.any,
         $flags: { OneArg: true },
         $textsig: "($module, iterable, /)",
         $doc: "Return True if bool(x) is True for any x in the iterable.\n\nIf the iterable is empty, return False.",
     },
 
     ascii: {
-        $meth: Sk.builtin.ascii,
+        $meth: builtinFuncs.ascii,
         $flags: {OneArg: true},
         $textsig: "($module, obj, /)",
         $doc: "Return an ASCII-only representation of an object.\n\nAs repr(), return a string containing a printable representation of an\nobject, but escape the non-ASCII characters in the string returned by\nrepr() using \\\\x, \\\\u or \\\\U escapes. This generates a string similar\nto that returned by repr() in Python 2."
     },
 
     bin: {
-        $meth: Sk.builtin.bin,
+        $meth: builtinFuncs.bin,
         $flags: { OneArg: true },
         $textsig: "($module, number, /)",
         $doc: "Return the binary representation of an integer.\n\n   >>> bin(2796202)\n   '0b1010101010101010101010'",
     },
 
     // breakpoint: {
-    //     $meth: Sk.builtin.breakpoint,
+    //     $meth: builtinFuncs.breakpoint,
     //     $flags: {},
     //     $textsig: null,
     //     $doc: "breakpoint(*args, **kws)\n\nCall sys.breakpointhook(*args, **kws).  sys.breakpointhook() must accept\nwhatever arguments are passed.\n\nBy default, this drops you into the pdb debugger."
     // },
 
     callable: {
-        $meth: Sk.builtin.callable,
+        $meth: builtinFuncs.callable,
         $flags: { OneArg: true },
         $textsig: "($module, obj, /)",
         $doc:
@@ -193,28 +232,28 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     chr: {
-        $meth: Sk.builtin.chr,
+        $meth: builtinFuncs.chr,
         $flags: { OneArg: true },
         $textsig: "($module, i, /)",
         $doc: "Return a Unicode string of one character with ordinal i; 0 <= i <= 0x10ffff.",
     },
 
     // compile: {
-    //     $meth: Sk.builtin.compile,
+    //     $meth: builtinFuncs.compile,
     //     $flags: {},
     //     $textsig: "($module, /, source, filename, mode, flags=0,\n        dont_inherit=False, optimize=-1)",
     //     $doc: "Compile source into a code object that can be executed by exec() or eval().\n\nThe source code may represent a Python module, statement or expression.\nThe filename will be used for run-time error messages.\nThe mode must be 'exec' to compile a module, 'single' to compile a\nsingle (interactive) statement, or 'eval' to compile an expression.\nThe flags argument, if present, controls which future statements influence\nthe compilation of the code.\nThe dont_inherit argument, if true, stops the compilation inheriting\nthe effects of any future statements in effect in the code calling\ncompile; if absent or false these statements do influence the compilation,\nin addition to any features explicitly specified."
     // },
 
     delattr: {
-        $meth: Sk.builtin.delattr,
+        $meth: builtinFuncs.delattr,
         $flags: { MinArgs: 2, MaxArgs: 2 },
         $textsig: "($module, obj, name, /)",
         $doc: "Deletes the named attribute from the given object.\n\ndelattr(x, 'y') is equivalent to ``del x.y''",
     },
 
     dir: {
-        $meth: Sk.builtin.dir,
+        $meth: builtinFuncs.dir,
         $flags: { MinArgs: 0, MaxArgs: 1 },
         $textsig: null,
         $doc:
@@ -222,7 +261,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     divmod: {
-        $meth: Sk.builtin.divmod,
+        $meth: builtinFuncs.divmod,
         $flags: { MinArgs: 2, MaxArgs: 2 },
         $textsig: "($module, x, y, /)",
         $doc: "Return the tuple (x//y, x%y).  Invariant: div*y + mod == x.",
@@ -230,7 +269,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
 
     eval_$rw$: {
         $name: "eval",
-        $meth: Sk.builtin.eval_,
+        $meth: builtinFuncs.eval_,
         $flags: { MinArgs: 1, MaxArgs: 3 },
         $textsig: "($module, source, globals=None, locals=None, /)",
         $doc:
@@ -238,14 +277,14 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     // exec: {
-    //     $meth: Sk.builtin.exec,
+    //     $meth: builtinFuncs.exec,
     //     $flags: {MinArgs:2, MaxArgs: 3},
     //     $textsig: "($module, source, globals=None, locals=None, /)",
     //     $doc: "Execute the given source in the context of globals and locals.\n\nThe source may be a string representing one or more Python statements\nor a code object as returned by compile().\nThe globals must be a dictionary and locals can be any mapping,\ndefaulting to the current globals and locals.\nIf only globals is given, locals defaults to it."
     // },
 
     format: {
-        $meth: Sk.builtin.format,
+        $meth: builtinFuncs.format,
         $flags: { MinArgs: 1, MaxArgs: 2 },
         $textsig: "($module, value, format_spec='', /)",
         $doc:
@@ -253,7 +292,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     getattr: {
-        $meth: Sk.builtin.getattr,
+        $meth: builtinFuncs.getattr,
         $flags: { MinArgs: 2, MaxArgs: 3 },
         $textsig: null,
         $doc:
@@ -261,7 +300,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     globals: {
-        $meth: Sk.builtin.globals,
+        $meth: builtinFuncs.globals,
         $flags: { NoArgs: true },
         $textsig: "($module, /)",
         $doc:
@@ -269,7 +308,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     hasattr: {
-        $meth: Sk.builtin.hasattr,
+        $meth: builtinFuncs.hasattr,
         $flags: { MinArgs: 2, MaxArgs: 2 },
         $textsig: "($module, obj, name, /)",
         $doc:
@@ -277,7 +316,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     hash: {
-        $meth: Sk.builtin.hash,
+        $meth: builtinFuncs.hash,
         $flags: { OneArg: true },
         $textsig: "($module, obj, /)",
         $doc:
@@ -285,14 +324,14 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     hex: {
-        $meth: Sk.builtin.hex,
+        $meth: builtinFuncs.hex,
         $flags: { OneArg: true },
         $textsig: "($module, number, /)",
         $doc: "Return the hexadecimal representation of an integer.\n\n   >>> hex(12648430)\n   '0xc0ffee'",
     },
 
     id: {
-        $meth: Sk.builtin.id,
+        $meth: builtinFuncs.id,
         $flags: { OneArg: true },
         $textsig: "($module, obj, /)",
         $doc:
@@ -300,7 +339,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     input: {
-        $meth: Sk.builtin.input,
+        $meth: builtinFuncs.input,
         $flags: { MinArgs: 0, MaxArgs: 1 },
         $textsig: "($module, prompt=None, /)",
         $doc:
@@ -308,7 +347,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     isinstance: {
-        $meth: Sk.builtin.isinstance,
+        $meth: builtinFuncs.isinstance,
         $flags: { MinArgs: 2, MaxArgs: 2 },
         $textsig: "($module, obj, class_or_tuple, /)",
         $doc:
@@ -316,7 +355,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     issubclass: {
-        $meth: Sk.builtin.issubclass,
+        $meth: builtinFuncs.issubclass,
         $flags: { MinArgs: 2, MaxArgs: 2 },
         $textsig: "($module, cls, class_or_tuple, /)",
         $doc:
@@ -324,7 +363,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     iter: {
-        $meth: Sk.builtin.iter,
+        $meth: builtinFuncs.iter,
         $flags: { MinArgs: 1, MaxArgs: 2 },
         $textsig: "($module, iterable /)",
         $doc:
@@ -332,14 +371,14 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     len: {
-        $meth: Sk.builtin.len,
+        $meth: builtinFuncs.len,
         $flags: { OneArg: true },
         $textsig: "($module, obj, /)",
         $doc: "Return the number of items in a container.",
     },
 
     locals: {
-        $meth: Sk.builtin.locals,
+        $meth: builtinFuncs.locals,
         $flags: { NoArgs: true },
         $textsig: "($module, /)",
         $doc:
@@ -347,7 +386,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     max: {
-        $meth: Sk.builtin.max,
+        $meth: builtinFuncs.max,
         $flags: { FastCall: true },
         $textsig: null,
         $doc:
@@ -355,7 +394,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     min: {
-        $meth: Sk.builtin.min,
+        $meth: builtinFuncs.min,
         $flags: { FastCall: true },
         $textsig: null,
         $doc:
@@ -364,7 +403,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
 
     next: {
         $name: "next",
-        $meth: Sk.builtin.next_,
+        $meth: builtinFuncs.next_,
         $flags: { MinArgs: 1, MaxArgs: 2 },
         $textsig: null,
         $doc:
@@ -372,19 +411,19 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     oct: {
-        $meth: Sk.builtin.oct,
+        $meth: builtinFuncs.oct,
         $flags: { OneArg: true },
         $textsig: "($module, number, /)",
         $doc: "Return the octal representation of an integer.\n\n   >>> oct(342391)\n   '0o1234567'",
     },
 
     open: {
-        $meth: Sk.builtin.open,
+        $meth: builtinFuncs.open,
         $flags: {
             MinArgs: 1,
             MaxArgs: 3,
             //NamedArgs: ["file, mode, buffering, encoding, errors, newline, closefd, opener"],
-            //Defaults: [new Sk.builtin.str("r"), new Sk.builtin.int_(-1), Sk.builtin.none.none$, Sk.builtin.none.none$, Sk.builtin.none.none$, Sk.builtin.bool.true$, Sk.builtin.none.none$]
+            //Defaults: [new builtinFuncs.str("r"), new pyInt(-1), pyNone, pyNone, pyNone, pyTrue, pyNone]
         },
         $textsig: null,
         // $textsig: "($module, /, file, mode='r', buffering=-1, encoding=None,\n     errors=None, newline=None, closefd=True, opener=None)",
@@ -394,14 +433,14 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     ord: {
-        $meth: Sk.builtin.ord,
+        $meth: builtinFuncs.ord,
         $flags: { OneArg: true },
         $textsig: "($module, c, /)",
         $doc: "Return the Unicode code point for a one-character string.",
     },
 
     pow: {
-        $meth: Sk.builtin.pow,
+        $meth: builtinFuncs.pow,
         $flags: { MinArgs: 2, MaxArgs: 3 },
         $textsig: "($module, x, y, z=None, /)",
         $doc:
@@ -409,7 +448,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     print: {
-        $meth: Sk.builtin.print,
+        $meth: builtinFuncs.print,
         $flags: { FastCall: true },
         $textsig: null,
         $doc:
@@ -417,14 +456,14 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     repr: {
-        $meth: Sk.builtin.repr,
+        $meth: builtinFuncs.repr,
         $flags: { OneArg: true },
         $textsig: "($module, obj, /)",
         $doc: "Return the canonical string representation of the object.\n\nFor many object types, including most builtins, eval(repr(obj)) == obj.",
     },
 
     round: {
-        $meth: Sk.builtin.round,
+        $meth: builtinFuncs.round,
         $flags: {
             NamedArgs: ["number", "ndigits"],
         },
@@ -434,17 +473,17 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     setattr: {
-        $meth: Sk.builtin.setattr,
+        $meth: builtinFuncs.setattr,
         $flags: { MinArgs: 3, MaxArgs: 3 },
         $textsig: "($module, obj, name, value, /)",
         $doc: "Sets the named attribute on the given object to the specified value.\n\nsetattr(x, 'y', v) is equivalent to ``x.y = v''",
     },
 
     sorted: {
-        $meth: Sk.builtin.sorted,
+        $meth: builtinFuncs.sorted,
         $flags: {
             NamedArgs: [null, "cmp", "key", "reverse"],
-            Defaults: [Sk.builtin.none.none$, Sk.builtin.none.none$, Sk.builtin.bool.false$],
+            Defaults: [pyNone, pyNone, pyFalse],
         }, // should be fast call leave for now
         $textsig: "($module, iterable, /, *, key=None, reverse=False)",
         $doc:
@@ -452,10 +491,10 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     sum: {
-        $meth: Sk.builtin.sum,
+        $meth: builtinFuncs.sum,
         $flags: {
             NamedArgs: [null, "start"],
-            Defaults: [new Sk.builtin.int_(0)],
+            Defaults: [new pyInt(0)],
         },
         $textsig: "($module, iterable, /, start=0)", //changed in python 3.8 start
         $doc:
@@ -463,7 +502,7 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
     },
 
     vars: {
-        $meth: Sk.builtin.vars,
+        $meth: builtinFuncs.vars,
         $flags: { MinArgs: 0, MaxArgs: 1 },
         $textsig: null,
         $doc: "vars([object]) -> dictionary\n\nWithout arguments, equivalent to locals().\nWith an argument, equivalent to object.__dict__.",
@@ -471,27 +510,27 @@ Sk.abstr.setUpModuleMethods("builtins", Sk.builtins, {
 });
 
 
-Sk.setupObjects = function (py3) {
+export function setupObjects(py3) {
     if (py3) {
-        Sk.builtins["filter"] = Sk.builtin.filter_;
-        Sk.builtins["map"] = Sk.builtin.map_;
-        Sk.builtins["zip"] = Sk.builtin.zip_;
-        Sk.builtins["range"] = Sk.builtin.range_;
-        delete Sk.builtins["xrange"];
-        delete Sk.builtins["StandardError"];
-        delete Sk.builtins["unicode"];
-        delete Sk.builtins["basestring"];
-        delete Sk.builtins["long_$rw$"];
-        Sk.builtin.int_.prototype.$r = function () {
-            return new Sk.builtin.str(this.v.toString());
+        builtins["filter"] = pyFilter;
+        builtins["map"] = pyMap;
+        builtins["zip"] = pyZip;
+        builtins["range"] = pyRange;
+        delete builtins["xrange"];
+        delete builtins["StandardError"];
+        delete builtins["unicode"];
+        delete builtins["basestring"];
+        delete builtins["long_$rw$"];
+        pyInt.prototype.$r = function () {
+            return new pyStr(this.v.toString());
         };
-        delete Sk.builtin.int_.prototype.tp$str;
-        delete Sk.builtin.bool.prototype.tp$str;
-        delete Sk.builtin.str.prototype.decode;
-        Sk.builtins["bytes"] = Sk.builtin.bytes;
-        Sk.builtins["ascii"] = new Sk.builtin.sk_method(
+        delete pyInt.prototype.tp$str;
+        delete pyBool.prototype.tp$str;
+        delete pyStr.prototype.decode;
+        builtins["bytes"] = pyBytes;
+        builtins["ascii"] = new pyBuiltinFuncOrMethod(
             {
-                $meth: Sk.builtin.ascii,
+                $meth: builtinFuncs.ascii,
                 $flags: { OneArg: true },
                 $textsig: "($module, obj, /)",
                 $doc:
@@ -501,50 +540,48 @@ Sk.setupObjects = function (py3) {
             "builtins"
         );
     } else {
-        Sk.builtins["range"] = new Sk.builtin.sk_method(
+        builtins["range"] = new pyBuiltinFuncOrMethod(
             {
-                $meth: Sk.builtin.range,
+                $meth: builtinFuncs.range,
                 $name: "range",
                 $flags: { MinArgs: 1, MaxArgs: 3 },
             },
             undefined,
             "builtins"
         );
-        Sk.builtins["xrange"] = new Sk.builtin.sk_method(
+        builtins["xrange"] = new pyBuiltinFuncOrMethod(
             {
-                $meth: Sk.builtin.xrange,
+                $meth: builtinFuncs.xrange,
                 $name: "xrange",
                 $flags: { MinArgs: 1, MaxArgs: 3 },
             },
             undefined,
             "builtins"
         );
-        Sk.builtins["filter"] = new Sk.builtin.func(Sk.builtin.filter);
-        Sk.builtins["map"] = new Sk.builtin.func(Sk.builtin.map);
-        Sk.builtins["zip"] = new Sk.builtin.func(Sk.builtin.zip);
-        Sk.builtins["StandardError"] = Sk.builtin.Exception;
-        Sk.builtins["unicode"] = Sk.builtin.str;
-        Sk.builtins["basestring"] = Sk.builtin.str;
-        Sk.builtins["long_$rw$"] = Sk.builtin.lng;
-        Sk.builtin.int_.prototype.$r = function () {
+        builtins["filter"] = new pyFunc(builtinFuncs.filter);
+        builtins["map"] = new pyFunc(builtinFuncs.map);
+        builtins["zip"] = new pyFunc(builtinFuncs.zip);
+        builtins["StandardError"] = pyExc.Exception;
+        builtins["unicode"] = pyStr;
+        builtins["basestring"] = pyStr;
+        builtins["long_$rw$"] = pyLong;
+        pyInt.prototype.$r = function () {
             const v = this.v;
             if (typeof v === "number") {
-                return new Sk.builtin.str(v.toString());
+                return new pyStr(v.toString());
             } else {
-                return new Sk.builtin.str(v.toString() + "L");
+                return new pyStr(v.toString() + "L");
             }
         };
-        Sk.builtin.int_.prototype.tp$str = function () {
-            return new Sk.builtin.str(this.v.toString());
+        pyInt.prototype.tp$str = function () {
+            return new builtinFuncs.str(this.v.toString());
         };
-        Sk.builtin.bool.prototype.tp$str = function () {
+        pyBool.prototype.tp$str = function () {
             return this.$r();
         };
-        Sk.builtin.str.prototype.decode = Sk.builtin.str.$py2decode;
-        delete Sk.builtins["bytes"];
-        delete Sk.builtins["ascii"];
+        pyStr.prototype.decode = pyStr.$py2decode;
+        delete builtins["bytes"];
+        delete builtins["ascii"];
     }
 };
 
-Sk.exportSymbol("Sk.setupObjects", Sk.setupObjects);
-Sk.exportSymbol("Sk.builtins", Sk.builtins);

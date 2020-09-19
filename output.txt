@@ -1,0 +1,152 @@
+
+> skulpt@1.0.0 prebuild /Users/scork/Desktop/PythonProjects/Skulpt/skulpt
+> node support/build/wrapmodules.js internal
+
+Updated src/internalpython.js.
+
+> skulpt@1.0.0 build /Users/scork/Desktop/PythonProjects/Skulpt/skulpt
+> webpack --mode production
+
+WARNING: Working directory is not clean.
+Hash: a555861302a9e5d0b73a
+Version: webpack 4.44.1
+Time: 6556ms
+Built at: 09/18/2020 22:54:57
+ 2 assets
+Entrypoint main = skulpt.min.js skulpt.min.js.map
+[1] ./support/polyfills/fromcodepoint.js 2.55 KiB {0} [built]
+[3] (webpack)/buildin/global.js 472 bytes {0} [built]
+[4] ./src/index.js + 62 modules 678 KiB {0} [built]
+    | ./src/index.js 4.03 KiB [built]
+    | ./src/internal.js 5.77 KiB [built]
+    | ./src/utils/asserts/assert-dev.js 804 bytes [built]
+    | ./support/polyfills/JSBI.js 1.84 KiB [built]
+    | ./src/types/type.js 23.2 KiB [built]
+    | ./src/generic.js 10 KiB [built]
+    | ./src/ffi.js 5.54 KiB [built]
+    | ./src/checks/typeChecks.js 4.27 KiB [built]
+    | ./src/checks/argChecks.js 4.59 KiB [built]
+    | ./src/abstract/buildNative.js 15.9 KiB [built]
+    | ./src/abstract/keywordArray.js 4.67 KiB [built]
+    | ./src/abstract/objectMethods.js 6.57 KiB [built]
+    | ./src/abstract/numberMethods.js 8.68 KiB [built]
+    | ./src/abstract/objectRichCompare.js 9.66 KiB [built]
+    | ./src/types/object.js 10.6 KiB [built]
+    |     + 48 hidden modules
+    + 2 hidden modules
+
+WARNING in skulpt.min.js:8193 (originally at ./node_modules/eslint-loader!./src/misceval/suspensions.js:30) from closure-compiler: Misplaced function annotation. This JSDoc is not attached to a function node. Are you missing parentheses?
+class Suspension {
+^^^^^^^^^^^^^^^^^^^
+
+WARNING in skulpt.min.js:8558 (originally at ./node_modules/eslint-loader!./src/misceval/iterMethods.js:12) from closure-compiler: Misplaced function annotation. This JSDoc is not attached to a function node. Are you missing parentheses?
+class Break {
+^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:460 (originally at ./node_modules/eslint-loader!./src/types/type.js:164) from closure-compiler: variable Sk is undeclared
+    klass.prototype.__module__ = Sk.globals["__name__"];
+                                 ^^
+
+ERROR in skulpt.min.js:611 (originally at ./node_modules/eslint-loader!./src/types/type.js:315) from closure-compiler: variable pyExcAttributeError is undeclared
+            throw new pyExcAttributeError("type object '" + this.prototype.tp$name + "' has no attribute '" + pyName.toString() + "'");
+                      ^^^^^^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:1363 (originally at ./node_modules/eslint-loader!./src/ffi.js:29) from closure-compiler: variable pyBytes is undeclared
+            return new pyBytes(obj);
+                       ^^^^^^^
+
+ERROR in skulpt.min.js:2497 (originally at ./node_modules/eslint-loader!./src/abstract/objectMethods.js:23) from closure-compiler: variable pyStr is undeclared
+    const meth = objectMethods_objectLookupSpecial(obj, pyStr.$format); // inherited from object so guaranteed to exist
+                                                        ^^^^^
+
+ERROR in skulpt.min.js:3115 (originally at ./node_modules/eslint-loader!./src/abstract/objectRichCompare.js:123) from closure-compiler: variable typeName is undeclared
+    const vname = typeName(v);
+                  ^^^^^^^^
+
+ERROR in skulpt.min.js:3117 (originally at ./node_modules/eslint-loader!./src/abstract/objectRichCompare.js:125) from closure-compiler: variable pyExc is undeclared
+    throw new pyExc.TypeError("'" + opSymbols[op] + "' not supported between instances of '" + vname + "' and '" + wname + "'");
+              ^^^^^
+
+ERROR in skulpt.min.js:3158 (originally at ./node_modules/eslint-loader!./src/abstract/objectRichCompare.js:166) from closure-compiler: variable pyLong is undeclared
+    const numeric_types = [pyFloat, pyInt, pyLong, bool_pyBool];
+                                           ^^^^^^
+
+ERROR in skulpt.min.js:3159 (originally at ./node_modules/eslint-loader!./src/abstract/objectRichCompare.js:167) from closure-compiler: variable pyList is undeclared
+    const sequence_types = [pyDict, pyList, str_pyStr, tuple_pyTuple];
+                                    ^^^^^^
+
+ERROR in skulpt.min.js:3239 (originally at ./node_modules/eslint-loader!./src/abstract/objectRichCompare.js:247) from closure-compiler: variable objectLookupSpecial is undeclared
+    const vcmp = objectLookupSpecial(v, str_pyStr.$cmp);
+                 ^^^^^^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:3242 (originally at ./node_modules/eslint-loader!./src/abstract/objectRichCompare.js:250) from closure-compiler: variable ret is undeclared
+            ret = pyCall(vcmp, [w]);
+            ^^^
+
+ERROR in skulpt.min.js:3245 (originally at ./node_modules/eslint-loader!./src/abstract/objectRichCompare.js:253) from closure-compiler: variable op is undeclared
+                if (op === "Eq") {
+                    ^^
+
+ERROR in skulpt.min.js:3549 (originally at ./node_modules/eslint-loader!./src/types/object.js:244) from closure-compiler: variable pyNotImplementedTypeError is undeclared
+                    throw new pyNotImplementedTypeError("format spec is not yet implemented");
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:6742 (originally at ./node_modules/eslint-loader!./src/print.js:53) from closure-compiler: variable importModule is undeclared
+        return chainOrSuspend(importModule("sys", false, true), (sys) => {
+                              ^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:7161 (originally at ./node_modules/eslint-loader!./src/builtinFuncs.js:458) from closure-compiler: variable JSBI is undeclared
+    if (radix !== 2 && !Sk.__future__.python3 && (x instanceof int_pyLong || JSBI.__isBigInt(v))) {
+                                                                             ^^^^
+
+ERROR in skulpt.min.js:7302 (originally at ./node_modules/eslint-loader!./src/builtinFuncs.js:599) from closure-compiler: variable objectHash is undeclared
+    return new pyInt(objectHash(obj));
+                     ^^^^^^^^^^
+
+ERROR in skulpt.min.js:8104 (originally at ./node_modules/eslint-loader!./src/types/method.js:49) from closure-compiler: variable objectcheckNoKwargs is undeclared
+            objectcheckNoKwargs("method", kwargs);
+            ^^^^^^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:8105 (originally at ./node_modules/eslint-loader!./src/types/method.js:50) from closure-compiler: variable objectcheckArgsLen is undeclared
+            objectcheckArgsLen("method", args, 2, 2);
+            ^^^^^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:8487 (originally at ./node_modules/eslint-loader!./src/misceval/callMethods.js:22) from closure-compiler: variable asyncToPromise is undeclared
+    return asyncToPromise(() => pyCallOrSuspend(callable, args, kwargs), suspHandlers);
+           ^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:8709 (originally at ./node_modules/eslint-loader!./src/types/iters/enumerate.js:34) from closure-compiler: variable pyTule is undeclared
+            return new pyTule([new pyInt(this.$index++), i]);
+                       ^^^^^^
+
+ERROR in skulpt.min.js:10758 (originally at ./node_modules/eslint-loader!./src/types/bytes.js:150) from closure-compiler: variable chainOrSupsend is undeclared
+                return chainOrSupsend(r, () => new bytes_pyBytes(source));
+                       ^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:15573 (originally at ./node_modules/eslint-loader!./src/types/complex.js:181) from closure-compiler: variable pyTuple is undeclared
+                return new pyTuple([new pyFloat(this.real), new pyFloat(this.imag)]);
+                           ^^^^^^^
+
+ERROR in skulpt.min.js:16520 (originally at ./node_modules/eslint-loader!./src/types/set.js:243) from closure-compiler: variable pyFalse is undeclared
+                            return new Break(pyFalse);
+                                             ^^^^^^^
+
+ERROR in skulpt.min.js:16523 (originally at ./node_modules/eslint-loader!./src/types/set.js:246) from closure-compiler: variable pyTrue is undeclared
+                    (res) => res || pyTrue
+                                    ^^^^^^
+
+ERROR in skulpt.min.js:17399 (originally at ./node_modules/eslint-loader!./src/types/module.js:60) from closure-compiler: variable pyCheckType is undeclared
+            pyCheckType("module", "string", checkString(name));
+            ^^^^^^^^^^^
+
+ERROR in skulpt.min.js:18057 (originally at ./node_modules/eslint-loader!./src/types/structseq.js:30) from closure-compiler: variable structseq is undeclared
+            asserts.assert((Array.isArray(v) || v === undefined) && this instanceof structseq);
+                                                                                    ^^^^^^^^^
+
+ERROR in skulpt.min.js:18134 (originally at ./node_modules/eslint-loader!./src/env.js:23) from closure-compiler: variable sysKillableWhile is undeclared
+    sysKillableWhile = chooseOptionBool(options.killablewhile, sysKillableWhile);
+    ^^^^^^^^^^^^^^^^
+
+ERROR in skulpt.min.js:18146 (originally at ./node_modules/eslint-loader!./src/env.js:35) from closure-compiler: variable option is undeclared
+    sysCanvas = chooseOptionString(option.canvas, sysCanvas);
+                                   ^^^^^^

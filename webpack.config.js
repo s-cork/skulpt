@@ -43,7 +43,7 @@ module.exports = (env, argv) => {
                                    'unknownDefines', 'visibility'],
                     jscomp_off: ['fileoverviewTags', 'deprecated', 'uselessCode', 'suspiciousCode', 'checkTypes',],
                     languageOut: (env && env.languageOut) ? env.languageOut : 'ECMASCRIPT_2015',
-                    externs: 'support/externs/sk.js',
+                    // externs: 'support/externs/sk.js',
                     // warningLevel: "QUIET",
                 })
             ]
@@ -63,10 +63,13 @@ module.exports = (env, argv) => {
     }
 
     var config = {
-        entry: './src/main.js',
+        entry: './src/index.js',
         output: {
             path: path.resolve(__dirname, 'dist'),
-            filename: outfile
+            filename: outfile,
+            library: "Sk",
+            libraryTarget: 'umd',
+            umdNamedDefine: true,
         },
         devtool: 'source-map',
         plugins: [
