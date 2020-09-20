@@ -8,14 +8,20 @@
  * but use BigInt as the primitive type
  * 
  */
-if (window.BigInt === undefined) {
-    window.JSBI = require("jsbi");
+
+const { default: __JSBI } = require("jsbi/dist/jsbi.mjs");
+
+export const JSBI = globalThis.BigInt ? Object.create(null) : __JSBI;
+globalThis.JSBI = JSBI;
+
+
+if (globalThis.BigInt === undefined) {
     // __isBigInt is not part of the public api so include it if this is ever removed
-    window.JSBI.__isBigInt = window.JSBI.__isBigInt || ((x) => x instanceof JSBI);
+    JSBI.__isBigInt = globalThis.JSBI.__isBigInt || ((x) => x instanceof JSBI);
 
 } else {
-    window.JSBI = Object.assign(Object.create(null), {
-        BigInt: window.BigInt,
+    Object.assign(JSBI, {
+        BigInt: globalThis.BigInt,
         toNumber: (x) => Number(x),
         toString: (x) => x.toString(),
         __isBigInt: (x) => typeof x === "bigint",
@@ -42,7 +48,7 @@ if (window.BigInt === undefined) {
     });
 }
 
-export const JSBI = window.JSBI;
+// export const JSBI = globalThis.JSBI;
 
 JSBI.__ZERO = JSBI.BigInt(0);
 JSBI.__MAX_SAFE = JSBI.BigInt(Number.MAX_SAFE_INTEGER);
