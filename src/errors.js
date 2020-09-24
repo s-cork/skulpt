@@ -7,77 +7,73 @@
  * skulpt wrapper (i.e., runit) to present the exception message.
  */
 
-
-
 /**
  * @constructor
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
 Sk.builtin.BaseException = Sk.abstr.buildNativeClass("BaseException", {
-    constructor: function Exception (...args) {
+    constructor: function Exception(...args) {
         // internally args is either a string
-        Sk.asserts.assert(this instanceof Sk.builtin.BaseException);
-        // hackage to allow shorter throws
-        // let msg = args[0];
-        // if (typeof msg === "string" ) {
-        //     msg = new Sk.builtin.str(msg);
-        // }
-        this.args = new Sk.builtin.tuple([new Sk.builtin.str(args[0])]);
+        Sk.asserts.assert(this instanceof Sk.builtin.BaseException, "bad call to exception constructor, use 'new'");
+
+        // for all internal calls only the first argument is included in args
+        let arg = args[0];
+        if (typeof arg === "string") {
+            arg = new Sk.builtin.str(arg);
+        }
+        this.args = new Sk.builtin.tuple(arg ? [arg] : []);
         this.traceback = [];
+        this.$d = new Sk.builtin.dict();
 
-        // For errors occurring during normal execution, the line/col/etc
-        // of the error are populated by each stack frame of the runtime code,
-        // but we can seed it with the supplied parameters.
         if (args.length >= 3) {
-
-            // if !this.args[1].v, this is an error, and the exception that causes it
-            // probably needs to be fixed, but we mark as "<unknown>" for now
+            // For errors occurring during normal execution, the line/col/etc
+            // of the error are populated by each stack frame of the runtime code,
+            // but we can seed it with the supplied parameters.
             this.traceback.push({
                 lineno: args[2],
-                filename: args[1] || "<unknown>"
+                filename: args[1] || "<unknown>",
             });
         }
     },
-    slots: /**@lends {Sk.builtin.BaseException}*/{
+    slots: /**@lends {Sk.builtin.BaseException}*/ {
         tp$getattr: Sk.generic.getAttr,
         tp$doc: "Common base class for all exceptions",
-        tp$new: function (args, kwargs) {
+        tp$new(args, kwargs) {
             if (!this.hp$type) {
                 // then we have a builtin constructor so just return it as new this
-                return new this.constructor;
+                return new this.constructor();
             } else {
-                const instance = new this.constructor;
+                const instance = new this.constructor();
                 Sk.builtin.BaseException.call(instance);
                 return instance;
             }
         },
-        tp$init: function (args, kwargs) {
+        tp$init(args, kwargs) {
             Sk.abstr.checkNoKwargs(Sk.abstr.typeName(this), kwargs);
-            if (this.args.v !== args) {
-                // we only initiate the args if they are not identical to the args from tp$new;
-                this.args.v = args;
-            }
-            return Sk.builtin.none.none$;
+            this.args = new Sk.builtin.tuple(args); // reset args in __init__ method
         },
-        $r: function () {
+        $r() {
             let ret = this.tp$name;
             ret += "(" + this.args.v.map((x) => Sk.misceval.objectRepr(x)).join(", ") + ")";
             return new Sk.builtin.str(ret);
         },
-        tp$str: function () {
+        tp$str() {
             if (this.args.v.length <= 1) {
                 return new Sk.builtin.str(this.args.v[0]);
             }
             return this.args.$r();
-        }
+        },
     },
-    getsets: /**@lends {Sk.builtin.BaseException}*/{
+    getsets: /**@lends {Sk.builtin.BaseException}*/ {
         args: {
-            $get: function () { return this.args; }
-        }
+            $get() {
+                return this.args;
+            },
+        },
+        __dict__: Sk.generic.getSetDict,
     },
-    proto: /**@lends {Sk.builtin.BaseException}*/{
-        toString: function () { 
+    proto: /**@lends {Sk.builtin.BaseException}*/ {
+        toString() {
             let ret = this.tp$name;
             ret += ": " + this.tp$str().v;
 
@@ -103,8 +99,8 @@ Sk.builtin.BaseException = Sk.abstr.buildNativeClass("BaseException", {
             }*/
 
             return ret;
-        }
-    }
+        },
+    },
 });
 
 Sk.exportSymbol("Sk.builtin.BaseException", Sk.builtin.BaseException);
@@ -112,277 +108,375 @@ Sk.exportSymbol("Sk.builtin.BaseException", Sk.builtin.BaseException);
 /**
  * @constructor
  * @extends Sk.builtin.BaseException
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.Exception = function (...args) {
-    Sk.builtin.BaseException.apply(this, args);
-};
-Sk.abstr.setUpInheritance("Exception", Sk.builtin.Exception, Sk.builtin.BaseException);
+Sk.builtin.Exception = Sk.abstr.buildNativeClass("Exception", {
+    constructor: function Exception(...args) {
+        Sk.builtin.BaseException.apply(this, args);
+    },
+    base: Sk.builtin.BaseException,
+});
 Sk.exportSymbol("Sk.builtin.Exception", Sk.builtin.Exception);
-
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.AssertionError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("AssertionError", Sk.builtin.AssertionError, Sk.builtin.Exception);
+Sk.builtin.AssertionError = Sk.abstr.buildNativeClass("AssertionError", {
+    constructor: function AssertionError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.AssertionError", Sk.builtin.AssertionError);
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.AttributeError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("AttributeError", Sk.builtin.AttributeError, Sk.builtin.Exception);
+Sk.builtin.AttributeError = Sk.abstr.buildNativeClass("AttributeError", {
+    constructor: function AttributeError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.ImportError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("ImportError", Sk.builtin.ImportError, Sk.builtin.Exception);
+Sk.builtin.ImportError = Sk.abstr.buildNativeClass("ImportError", {
+    constructor: function ImportError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.IndentationError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("IndentationError", Sk.builtin.IndentationError, Sk.builtin.Exception);
+Sk.builtin.IndentationError = Sk.abstr.buildNativeClass("IndentationError", {
+    constructor: function IndentationError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.IndexError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("IndexError", Sk.builtin.IndexError, Sk.builtin.Exception);
+Sk.builtin.IndexError = Sk.abstr.buildNativeClass("IndexError", {
+    constructor: function IndexError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.KeyError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("KeyError", Sk.builtin.KeyError, Sk.builtin.Exception);
+Sk.builtin.LookupError = Sk.abstr.buildNativeClass("LookupError", {
+    constructor: function LookupError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
+
+/**
+ * @constructor
+ * @extends Sk.builtin.LookupError
+ * @param {...} args Typically called with a single string argument
+ */
+Sk.builtin.KeyError = Sk.abstr.buildNativeClass("KeyError", {
+    constructor: function KeyError(...args) {
+        Sk.builtin.LookupError.apply(this, args);
+    },
+    base: Sk.builtin.LookupError,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.NameError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("NameError", Sk.builtin.NameError, Sk.builtin.Exception);
+Sk.builtin.NameError = Sk.abstr.buildNativeClass("NameError", {
+    constructor: function NameError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.UnboundLocalError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("UnboundLocalError", Sk.builtin.UnboundLocalError, Sk.builtin.Exception);
+Sk.builtin.UnboundLocalError = Sk.abstr.buildNativeClass("UnboundLocalError", {
+    constructor: function UnboundLocalError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.OverflowError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("OverflowError", Sk.builtin.OverflowError, Sk.builtin.Exception);
-
-
-/**
- * @constructor
- * @extends Sk.builtin.Exception
- * @param {*} args
- */
-Sk.builtin.SyntaxError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("SyntaxError", Sk.builtin.SyntaxError, Sk.builtin.Exception);
+Sk.builtin.OverflowError = Sk.abstr.buildNativeClass("OverflowError", {
+    constructor: function OverflowError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args
  */
-Sk.builtin.RuntimeError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("RuntimeError", Sk.builtin.RuntimeError, Sk.builtin.Exception);
+Sk.builtin.SyntaxError = Sk.abstr.buildNativeClass("SyntaxError", {
+    constructor: function SyntaxError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
+
+/**
+ * @constructor
+ * @extends Sk.builtin.Exception
+ * @param {...} args Typically called with a single string argument
+ */
+Sk.builtin.RuntimeError = Sk.abstr.buildNativeClass("RuntimeError", {
+    constructor: function RuntimeError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.RuntimeError", Sk.builtin.RuntimeError);
 
-
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.SuspensionError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("SuspensionError", Sk.builtin.SuspensionError, Sk.builtin.Exception);
+Sk.builtin.SuspensionError = Sk.abstr.buildNativeClass("SuspensionError", {
+    constructor: function SuspensionError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.SuspensionError", Sk.builtin.SuspensionError);
-
 
 /**
  * @constructor
  * @extends Sk.builtin.BaseException
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.SystemExit = function (...args) {
-    Sk.builtin.BaseException.apply(this, args);
-};
-Sk.abstr.setUpInheritance("SystemExit", Sk.builtin.SystemExit, Sk.builtin.BaseException);
+Sk.builtin.SystemExit = Sk.abstr.buildNativeClass("SystemExit", {
+    constructor: function SystemExit(...args) {
+        Sk.builtin.BaseException.apply(this, args);
+    },
+    base: Sk.builtin.BaseException,
+});
 Sk.exportSymbol("Sk.builtin.SystemExit", Sk.builtin.SystemExit);
-
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.TypeError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("TypeError", Sk.builtin.TypeError, Sk.builtin.Exception);
+Sk.builtin.TypeError = Sk.abstr.buildNativeClass("TypeError", {
+    constructor: function TypeError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.TypeError", Sk.builtin.TypeError);
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.ValueError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("ValueError", Sk.builtin.ValueError, Sk.builtin.Exception);
+Sk.builtin.ValueError = Sk.abstr.buildNativeClass("ValueError", {
+    constructor: function ValueError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.ValueError", Sk.builtin.ValueError);
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.ZeroDivisionError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("ZeroDivisionError", Sk.builtin.ZeroDivisionError, Sk.builtin.Exception);
+Sk.builtin.ZeroDivisionError = Sk.abstr.buildNativeClass("ZeroDivisionError", {
+    constructor: function ZeroDivisionError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.TimeLimitError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("TimeLimitError", Sk.builtin.TimeLimitError, Sk.builtin.Exception);
+Sk.builtin.TimeLimitError = Sk.abstr.buildNativeClass("TimeLimitError", {
+    constructor: function TimeLimitError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.TimeLimitError", Sk.builtin.TimeLimitError);
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.IOError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("IOError", Sk.builtin.IOError, Sk.builtin.Exception);
+Sk.builtin.IOError = Sk.abstr.buildNativeClass("IOError", {
+    constructor: function IOError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.IOError", Sk.builtin.IOError);
-
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.NotImplementedError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("NotImplementedError", Sk.builtin.NotImplementedError, Sk.builtin.Exception);
+Sk.builtin.NotImplementedError = Sk.abstr.buildNativeClass("NotImplementedError", {
+    constructor: function NotImplementedError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.NotImplementedError", Sk.builtin.NotImplementedError);
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.NegativePowerError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("NegativePowerError", Sk.builtin.NegativePowerError, Sk.builtin.Exception);
+Sk.builtin.NegativePowerError = Sk.abstr.buildNativeClass("NegativePowerError", {
+    constructor: function NegativePowerError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.NegativePowerError", Sk.builtin.NegativePowerError);
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args
+ * @param {...} args
  */
-Sk.builtin.ExternalError = function (...args) {
-    this.nativeError = args[0];
-    if (!Sk.builtin.checkString(this.nativeError)) {
-        args[0] = this.nativeError.toString();
-    }
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("ExternalError", Sk.builtin.ExternalError, Sk.builtin.Exception);
+Sk.builtin.ExternalError = Sk.abstr.buildNativeClass("ExternalError", {
+    constructor: function ExternalError(...args) {
+        this.nativeError = args[0];
+        if (!Sk.builtin.checkString(this.nativeError)) {
+            args[0] = this.nativeError.toString();
+            if (args[0].startsWith("RangeError: Maximum call")) {
+                args[0] = "Maximum call stack size exceeded";
+                return new Sk.builtin.RecursionError(...args);
+            }
+        }
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.ExternalError", Sk.builtin.ExternalError);
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.OperationError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("OperationError", Sk.builtin.OperationError, Sk.builtin.Exception);
+Sk.builtin.RecursionError = Sk.abstr.buildNativeClass("RecursionError", {
+    constructor: function RecursionError(...args) {
+        Sk.builtin.RuntimeError.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
+Sk.exportSymbol("Sk.builtin.RecursionError", Sk.builtin.RecursionError);
+
+/**
+ * @constructor
+ * @extends Sk.builtin.Exception
+ * @param {...} args Typically called with a single string argument
+ */
+Sk.builtin.OperationError = Sk.abstr.buildNativeClass("OperationError", {
+    constructor: function OperationError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.OperationError", Sk.builtin.OperationError);
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.SystemError = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("SystemError", Sk.builtin.SystemError, Sk.builtin.Exception);
+Sk.builtin.SystemError = Sk.abstr.buildNativeClass("SystemError", {
+    constructor: function SystemError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
 Sk.exportSymbol("Sk.builtin.SystemError", Sk.builtin.SystemError);
 
 /**
  * @constructor
  * @extends Sk.builtin.Exception
- * @param {*=} args Typically called with a single string argument
+ * @param {...} args Typically called with a single string argument
  */
-Sk.builtin.StopIteration = function (...args) {
-    Sk.builtin.Exception.apply(this, args);
-};
-Sk.abstr.setUpInheritance("StopIteration", Sk.builtin.StopIteration, Sk.builtin.Exception);
-Sk.exportSymbol("Sk.builtin.StopIteration", Sk.builtin.StopIteration);
+Sk.builtin.UnicodeDecodeError = Sk.abstr.buildNativeClass("UnicodeDecodeError", {
+    constructor: function UnicodeDecodeError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
+Sk.exportSymbol("Sk.builtin.UnicodeDecodeError", Sk.builtin.UnicodeDecodeError);
 
+/**
+ * @constructor
+ * @extends Sk.builtin.Exception
+ * @param {...} args
+ */
+Sk.builtin.UnicodeEncodeError = Sk.abstr.buildNativeClass("UnicodeEncodeError", {
+    constructor: function UnicodeEncodeError(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
+Sk.exportSymbol("Sk.builtin.UnicodeEncodeError", Sk.builtin.UnicodeEncodeError);
+
+/**
+ * @constructor
+ * @extends Sk.builtin.Exception
+ * @param {...} args Typically called with a single string argument
+ */
+Sk.builtin.StopIteration = Sk.abstr.buildNativeClass("StopIteration", {
+    constructor: function StopIteration(...args) {
+        Sk.builtin.Exception.apply(this, args);
+    },
+    base: Sk.builtin.Exception,
+});
+Sk.exportSymbol("Sk.builtin.StopIteration", Sk.builtin.StopIteration);
 
 // TODO: Extract into sys.exc_info(). Work out how the heck
 // to find out what exceptions are being processed by parent stack frames...

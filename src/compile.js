@@ -325,20 +325,41 @@ Compiler.prototype.ctuplelistorset = function(e, data, tuporlist) {
     Sk.asserts.assert(tuporlist === "tuple" || tuporlist === "list" || tuporlist === "set");
 
     let hasStars = false;
-    for (let elt of e.elts) {
-        if (elt.constructor === Sk.astnodes.Starred) { hasStars = true; break; }
+    let starIdx;
+    for (i = 0; i < e.elts.length; i++) {
+        if (e.elts[i].constructor === Sk.astnodes.Starred) {
+            hasStars = true;
+            starIdx = i;
+            break;
+        }
     }
 
     if (e.ctx === Sk.astnodes.Store) {
         if (hasStars) {
-            // TODO support this in Python 3 mode
-            throw new Sk.builtin.SyntaxError("Tuple unpacking with stars is not supported");
+            if (!Sk.__future__.python3) {
+                throw new Sk.builtin.SyntaxError("assignment unpacking with stars is not supported in Python 2", this.filename, e.lineno);
+            }
+            for (i = starIdx + 1; i < e.elts.length; i++) {
+                if (e.elts[i].constructor === Sk.astnodes.Starred) {
+                    throw new Sk.builtin.SyntaxError("multiple starred expressions in assignment", this.filename, e.lineno);
+                }
+            }
         }
-        items = this._gr("items", "Sk.abstr.sequenceUnpack(" + data + "," + e.elts.length + ")");
+        const breakIdx = hasStars ? starIdx : e.elts.length;
+        const numvals = hasStars ? e.elts.length - 1 : breakIdx;
+        out("$ret = Sk.abstr.sequenceUnpack(" + data + "," + breakIdx + "," + numvals + ", " + hasStars + ");");
+        this._checkSuspension();
+        items = this._gr("items", "$ret");
+        
         for (i = 0; i < e.elts.length; ++i) {
-            this.vexpr(e.elts[i], items + "[" + i + "]");
+            if (i === starIdx) {
+                this.vexpr(e.elts[i].value, items + "[" + i + "]");
+            } else {
+                this.vexpr(e.elts[i], items + "[" + i + "]");
+            }
         }
-    } else if (e.ctx === Sk.astnodes.Load || tuporlist === "set") { //because set's can't be assigned to.
+    } else if (e.ctx === Sk.astnodes.Load || tuporlist === "set") {
+        //because set's can't be assigned to.
 
         if (hasStars) {
             if (!Sk.__future__.python3) {
@@ -477,7 +498,7 @@ Compiler.prototype.cyield = function(e) {
     if (this.u.ste.blockType !== Sk.SYMTAB_CONSTS.FunctionBlock) {
         throw new Sk.builtin.SyntaxError("'yield' outside function", this.filename, e.lineno);
     }
-    var val = "null",
+    var val = "Sk.builtin.none.none$",
         nextBlock;
     if (e.value) {
         val = this.vexpr(e.value);
@@ -486,7 +507,7 @@ Compiler.prototype.cyield = function(e) {
     // return a pair: resume target block and yielded value
     out("return [/*resume*/", nextBlock, ",/*ret*/", val, "];");
     this.setBlock(nextBlock);
-    return "$gen.gi$sentvalue"; // will either be null if none sent, or the value from gen.send(value)
+    return "$gen.gi$sentvalue"; // will either be none if none sent, or the value from gen.send(value)
 };
 
 Compiler.prototype.ccompare = function (e) {
@@ -700,9 +721,8 @@ Compiler.prototype.cformattedvalue = function(e) {
             value = this._gr("value", "new Sk.builtin.str(",value,")");
             break;
         case "a":
-            // TODO when repr() becomes more unicode-aware,
-            // we'll want to handle repr() and ascii() differently.
-            // For now, they're the same
+            value = this._gr("value", "Sk.builtin.ascii(",value,")");
+            break;
         case "r":
             value = this._gr("value", "Sk.builtin.repr(",value,")");
             break;
@@ -711,6 +731,26 @@ Compiler.prototype.cformattedvalue = function(e) {
     return this._gr("formatted", "Sk.abstr.objectFormat("+value+","+formatSpec+")");
 };
 
+function getJsLiteralForString(s) {
+    let r = "\"";
+    for (let i = 0; i < s.length; i++) {
+        let c = s.charCodeAt(i);
+        // Escape quotes, anything before space, and anything non-ASCII
+        if (c == 0x0a) {
+            r += "\\n";
+        } else if (c == 92) {
+            r += "\\\\";
+        } else if (c == 34 || c < 32 || c >= 0x7f && c < 0x100) {
+            r += "\\x" + ("0" + c.toString(16)).substr(-2);
+        } else if (c >= 0x100) {
+            r += "\\u" + ("000" + c.toString(16)).substr(-4);
+        } else {
+            r += s.charAt(i);
+        }
+    }
+    r += "\"";
+    return r;
+}
 
 /**
  *
@@ -786,8 +826,18 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
                 return this.makeConstant("new Sk.builtin.complex(" + real_val + ", " + imag_val + ")");
             }
             Sk.asserts.fail("unhandled Num type");
+        case Sk.astnodes.Bytes:
+            if (Sk.__future__.python3) {
+                const source = [];
+                const str = e.s.$jsstr();
+                for (let i = 0; i < str.length; i++) {
+                    source.push(str.charCodeAt(i));
+                }
+                return this.makeConstant("new Sk.builtin.bytes([", source.join(", "), "])");
+            }
+            // else fall through and make a string instead
         case Sk.astnodes.Str:
-            return this.makeConstant("new Sk.builtin.str(", e.s["$r"]().v, ")");
+            return this.makeConstant("new Sk.builtin.str(", getJsLiteralForString(e.s.$jsstr()), ")");
         case Sk.astnodes.Attribute:
             if (e.ctx !== Sk.astnodes.AugLoad && e.ctx !== Sk.astnodes.AugStore) {
                 val = this.vexpr(e.value);
@@ -800,16 +850,14 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
                 case Sk.astnodes.AugLoad:
                     out("$ret = ", augvar, ".tp$getattr(", mname, ", true);");
                     out("\nif ($ret === undefined) {");
-                    out("\nconst error_name =", augvar,".sk$type ? \"type object '\" +", augvar,".prototype.tp$name + \"'\" : \"'\" + Sk.abstr.typeName(",augvar,") + \"' object\";");
-                    out("\nthrow new Sk.builtin.AttributeError(error_name + \" has no attribute '\" + ", mname,".$jsstr() + \"'\");");
+                    out("\nthrow new Sk.builtin.AttributeError(", augvar, ".sk$attrError() + \" has no attribute '\" + ", mname,".$jsstr() + \"'\");");
                     out("\n};");
                     this._checkSuspension(e);
                     return this._gr("lattr", "$ret");
                 case Sk.astnodes.Load:
                     out("$ret = ", val, ".tp$getattr(", mname, ", true);");
                     out("\nif ($ret === undefined) {");
-                    out("\nconst error_name =", val,".sk$type ? \"type object '\" +", val,".prototype.tp$name + \"'\" : \"'\" + Sk.abstr.typeName(",val,") + \"' object\";");
-                    out("\nthrow new Sk.builtin.AttributeError(error_name + \" has no attribute '\" + ", mname,".$jsstr() + \"'\");");
+                    out("\nthrow new Sk.builtin.AttributeError(", val, ".sk$attrError() + \" has no attribute '\" + ", mname,".$jsstr() + \"'\");");
                     out("\n};");
                     this._checkSuspension(e);
                     return this._gr("lattr", "$ret");
@@ -828,7 +876,8 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
                     this._checkSuspension(e);
                     break;
                 case Sk.astnodes.Del:
-                    Sk.asserts.fail("todo Del;");
+                    out("$ret = ", val, ".tp$setattr(", mname, ", undefined, true);");
+                    this._checkSuspension(e);
                     break;
                 case Sk.astnodes.Param:
                 default:
@@ -886,7 +935,14 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
         case Sk.astnodes.Set:
             return this.ctuplelistorset(e, data, "set");
         case Sk.astnodes.Starred:
-            break;
+            switch (e.ctx) {
+                case Sk.astnodes.Store:
+                    /* In all legitimate cases, the Starred node was already replaced
+                     * by compiler_list/compiler_tuple. XXX: is that okay? */
+                    throw new Sk.builtin.SyntaxError("starred assignment target must be in a list or tuple", this.filename, e.lineno);
+                default:
+                    throw new Sk.builtin.SyntaxError("can't use starred expression here", this.filename, e.lineno);
+            }
         case Sk.astnodes.JoinedStr:
             return this.cjoinedstr(e);
         case Sk.astnodes.FormattedValue:
@@ -1320,7 +1376,7 @@ Compiler.prototype.craise = function (s) {
         // for the Python version you're using.
 
         var instantiatedException = this.newBlock("exception now instantiated");
-        var isClass = this._gr("isclass", exc + " instanceof Sk.builtin.type || " + exc + ".prototype instanceof Sk.builtin.BaseException");
+        var isClass = this._gr("isclass", exc + ".prototype instanceof Sk.builtin.BaseException");
         this._jumpfalse(isClass, instantiatedException);
         //this._jumpfalse(instantiatedException, isClass);
 
@@ -1344,7 +1400,7 @@ Compiler.prototype.craise = function (s) {
         // TODO TODO TODO set cause appropriately
         // (and perhaps traceback for py2 if we care before it gets fully deprecated)
 
-        out("throw ",exc,";");
+        out("if (", exc, " instanceof Sk.builtin.BaseException) {throw ",exc,";} else {throw new Sk.builtin.TypeError('exceptions must derive from BaseException');};");
     } else {
         // re-raise
         out("throw $err;");
@@ -1515,13 +1571,13 @@ Compiler.prototype.cwith = function (s, itemIdx) {
     mgr = this._gr("mgr", this.vexpr(s.items[itemIdx].context_expr));
 
     // exit = mgr.__exit__
-    out("$ret = Sk.abstr.gattr(",mgr,",Sk.builtin.str.$exit, true);");
+    out("$ret = Sk.abstr.lookupSpecial(",mgr,",Sk.builtin.str.$exit);");
     this._checkSuspension(s);
     exit = this._gr("exit", "$ret");
     this.u.tempsToSave.push(exit);
 
     // value = mgr.__enter__()
-    out("$ret = Sk.abstr.gattr(",mgr,",Sk.builtin.str.$enter, true);");
+    out("$ret = Sk.abstr.lookupSpecial(",mgr,",Sk.builtin.str.$enter);");
     this._checkSuspension(s);
     out("$ret = Sk.misceval.callsimOrSuspendArray($ret);");
     this._checkSuspension(s);
@@ -2062,7 +2118,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
         var res;
         if (decos.length > 0) {
             out("$ret = new Sk.builtins['function'](", scopename, ",$gbl", frees, ");");
-            for (let decorator of decos) {
+            for (let decorator of decos.reverse()) {
                 out("$ret = Sk.misceval.callsimOrSuspendArray(", decorator, ",[$ret]);");
                 this._checkSuspension();
             }

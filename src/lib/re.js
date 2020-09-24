@@ -1,5 +1,5 @@
 var $builtinmodule = function (name) {
-    var mod = {};
+    var mod = {__name__: new Sk.builtin.str("re")};
 
     var validGroups, convert, getFlags, _split, _findall, matchobj, _search, _match, regexobj;
 
@@ -325,7 +325,7 @@ var $builtinmodule = function (name) {
         });
 
         _repr = new Sk.builtin.func( function (self) {
-            var ret = "re.compile('" + Sk.ffi.remapToPy(self.re) + "')";
+            var ret = "re.compile('" + Sk.ffi.remapToJs(self.re) + "')";
             return Sk.ffi.remapToPy(ret.substring(0,212));
         });
 
@@ -344,7 +344,7 @@ var $builtinmodule = function (name) {
             if (start == "^") {
                 start = str.indexOf("\n") + 1;
             }
-            if (end == Sk.builtin.none.none$) {
+            if (end === null) {
                 end = str.length;
             }
             return Sk.ffi.remapToPy(str.substring(start, end));

@@ -7,7 +7,7 @@
  *
  */
 Sk.misceval = {};
-const JSBI = require("jsbi");
+
 /** @typedef {Sk.builtin.object}*/ var pyObject;
 
 /*
@@ -72,64 +72,62 @@ Sk.exportSymbol("Sk.misceval.retryOptionalSuspensionOrThrow", Sk.misceval.retryO
  * @returns {boolean}
  */
 Sk.misceval.isIndex = function (o) {
-    return o.nb$index !== undefined || typeof o === "number";
+    return o !== null && o !== undefined && (o.nb$index !== undefined || (typeof o === "number" && Number.isInteger(o)));
 };
 Sk.exportSymbol("Sk.misceval.isIndex", Sk.misceval.isIndex);
+
+
+function asIndex(index) {
+    if (index === null || index === undefined) {
+        return;
+    } else if (index.nb$index) {
+        return index.nb$index(); // this slot will check the return value is a number / JSBI.BigInt.
+    } else if (typeof index === "number" && Number.isInteger(index)) {
+        return index;
+    }
+};
+
+function asIndexOrThrow(index, msg) {
+    const i = asIndex(index);
+    if (i !== undefined) {
+        return i;
+    }
+    msg = msg || "'{tp$name}' object cannot be interpreted as an integer";
+    msg = msg.replace("{tp$name}", Sk.abstr.typeName(index));
+    throw new Sk.builtin.TypeError(msg);
+}
+
+Sk.misceval.asIndex = asIndex;
+
+Sk.misceval.asIndexSized = function (index, Err, msg) {
+    const i = asIndexOrThrow(index, msg);
+    if (typeof i === "number") {
+        return i; // integer v property will by a javascript number if it is index sized
+    }
+    if (Err == null) {
+        return JSBI.lessThan(i, JSBI.__ZERO) ? -Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+    }
+    throw new Err("cannot fit '" + Sk.abstr.typeName(index) + "' into an index-sized integer");
+};
 
 /**
  * @function
  * 
- * @param {pyObject|number} obj - typically an {@link Sk.builtin.int_} legacy code might use a js number 
+ * @param {pyObject|number} index - typically an {@link Sk.builtin.int_} legacy code might use a js number 
  * @param {string=} msg - an optional message when throwing the TypeError
  * @throws {Sk.builtin.TypeError}
  *
  * @description
  * requires a pyObject - returns a string or integer depending on the size.
- * throws a generic error that the object cannot be interpreted as an index
+ * throws a TypeError that the object cannot be interpreted as an index
+ * can provide a custom message
+ * include {tp$name} in the custom message which will be replaced by the typeName of the object
+ * 
  * - converts the `Sk.builtin.int_` 
  * - if the number is too large to be safe returns a string
- * @returns {number|string} 
+ * @returns {number|BigInt|JSBI} 
  */
-Sk.misceval.asIndexOrThrow = function (obj, msg) {
-    let res;
-    if (obj.constructor === Sk.builtin.int_) {
-        // the fast case
-        res = obj.v;
-    } else if (typeof obj === "number") {
-        return obj;
-    } else if (obj.nb$index) {
-        res = obj.nb$index().v;
-    } else {
-        msg = msg || "'" + Sk.abstr.typeName(obj) + "' object cannot be interpreted as an index";
-        throw new Sk.builtin.TypeError(msg);
-    }
-    if (typeof res === "number") {
-        return res;
-    }
-    return res.toString(); // then we definitely have a JSBI.BigInt so return it as a string.
-};
-
-
-Sk.misceval.asIndex = function (o) {
-    if (o === null || o === undefined) {
-        return undefined;
-    }
-    if (typeof o === "number") {
-        return o;
-    }
-    let res;
-    if (o.constructor === Sk.builtin.int_) {
-        res = o.v;
-    } else if (o.nb$index) {
-        res = o.nb$index().v; // this slot will check the return value is an int.
-    }
-    if (typeof res === "number") {
-        return res;
-    } else if (res instanceof JSBI) {
-        return res.toString();
-    }
-    return res;
-};
+Sk.misceval.asIndexOrThrow = asIndexOrThrow;
 
 /**
  * return u[v:w]
@@ -190,21 +188,56 @@ Sk.misceval.arrayFromArguments = function (args) {
 };
 Sk.exportSymbol("Sk.misceval.arrayFromArguments", Sk.misceval.arrayFromArguments);
 
+
+/**
+ * 
+ * @constructor
+ * 
+ * @param {Function} fn
+ * @param {boolean=} [handlesOwnSuspensions=false] - Does it handle its own suspension?
+ * 
+ * @description
+ * Create a generic Python iterator that repeatedly calls a given JS function
+ * until it returns 'undefined'. This function is useful for user defined Native classes
+ * 
+ * @example
+ * // some immutable tuple like class where the v property is an array
+ * MyClass.prototype.tp$iter = function() {
+ *   let i = 0;
+ *   const len = this.v.length;
+ *   return new Sk.miscival.iterator(() => i >= len ? this.v[i++] : undefined);
+ * }
+ * @extends {Sk.builtin.object}
+ * 
+ */
+Sk.misceval.iterator = Sk.abstr.buildIteratorClass("iterator", {
+    constructor : function iterator (fn, handlesOwnSuspensions) {
+        this.tp$iternext = handlesOwnSuspensions ? fn : function (canSuspend) {
+            let x = fn();
+            if (canSuspend || !x.$isSuspension) {
+                return x;
+            } else {
+                return Sk.misceval.retryOptionalSuspensionOrThrow(x);
+            }
+        };
+    }, 
+    iternext: function (canSuspend) { /* keep slot __next__ happy */
+        return this.tp$iternext(canSuspend);
+    },
+    flags: { sk$acceptable_as_base_class: false },
+});
+
 /**
  * for reversed comparison: Gt -> Lt, etc.
  * @ignore
  */
 Sk.misceval.swappedOp_ = {
-    Eq: "Eq",
-    NotEq: "NotEq",
-    Lt: "GtE",
-    LtE: "Gt",
-    Gt: "LtE",
-    GtE: "Lt",
-    Is: "IsNot",
-    IsNot: "Is",
-    In_: "NotIn",
-    NotIn: "In_",
+    "Eq"   : "Eq",
+    "NotEq": "NotEq",
+    "Lt"   : "Gt",
+    "LtE"  : "GtE",
+    "Gt"   : "Lt",
+    "GtE"  : "LtE",
 };
 
 Sk.misceval.opSymbols = {
@@ -245,6 +278,7 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
 
     const v_type = v.ob$type;
     const w_type = w.ob$type;
+    const w_is_subclass = w_type !== v_type && w_type.sk$baseClass === undefined && w_type.$isSubType(v_type);
 
     // Python 2 has specific rules when comparing two different builtin types
     // currently, this code will execute even if the objects are not builtin types
@@ -346,7 +380,7 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
             if (v === w) {
                 return true;
             } else if (v_type === Sk.builtin.float_) {
-                return v.v - w.v === 0;
+                return v.v === w.v;
             } else if (v_type === Sk.builtin.int_) {
                 if (typeof v.v === "number" && typeof v.v === "number") {
                     return v.v === w.v;
@@ -361,7 +395,7 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
         if (v_type !== w_type) {
             return true;
         } else if (v_type === Sk.builtin.float_) {
-            return v.v - w.v !== 0;
+            return v.v !== w.v;
         } else if (v_type === Sk.builtin.int_) {
             if (typeof v.v === "number" && typeof v.v === "number") {
                 return v.v !== w.v;
@@ -383,32 +417,40 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
     // Call Javascript shortcut method if exists for either object
 
     var op2shortcut = {
-        Eq: "ob$eq",
-        NotEq: "ob$ne",
-        Gt: "ob$gt",
-        GtE: "ob$ge",
-        Lt: "ob$lt",
-        LtE: "ob$le",
+        "Eq"   : "ob$eq",
+        "NotEq": "ob$ne",
+        "Gt"   : "ob$gt",
+        "GtE"  : "ob$ge",
+        "Lt"   : "ob$lt",
+        "LtE"  : "ob$le"
     };
 
-    // tp richcompare and all respective shortcuts guaranteed because we inherit from object
     shortcut = op2shortcut[op];
+    // similar rules apply as with binops - prioritize the reflected ops of subtypes
+    if (w_is_subclass) {
+        swapped_shortcut = op2shortcut[Sk.misceval.swappedOp_[op]];
+        if (w[swapped_shortcut] !== v[swapped_shortcut] && (ret = w[swapped_shortcut](v)) !== Sk.builtin.NotImplemented.NotImplemented$) {
+            return Sk.misceval.isTrue(ret);
+        }
+    }
     if ((ret = v[shortcut](w)) !== Sk.builtin.NotImplemented.NotImplemented$) {
         return Sk.misceval.isTrue(ret); 
         // techincally this is not correct along with the compile code 
         // richcompare slots could return any pyObject ToDo - would require changing compile code
     }
 
-    swapped_shortcut = op2shortcut[Sk.misceval.swappedOp_[op]];
-    if ((ret = w[swapped_shortcut](v)) !== Sk.builtin.NotImplemented.NotImplemented$) {
-        return Sk.misceval.isTrue(ret);
+    if (!w_is_subclass) {
+        swapped_shortcut = op2shortcut[Sk.misceval.swappedOp_[op]];
+        if ((ret = w[swapped_shortcut](v)) !== Sk.builtin.NotImplemented.NotImplemented$) {
+            return Sk.misceval.isTrue(ret);
+        }
     }
 
     if (!Sk.__future__.python3) {
         const vcmp = Sk.abstr.lookupSpecial(v, Sk.builtin.str.$cmp);
         if (vcmp) {
             try {
-                ret = Sk.misceval.callsimArray(vcmp, [v, w]);
+                ret = Sk.misceval.callsimArray(vcmp, [w]);
                 if (Sk.builtin.checkNumber(ret)) {
                     ret = Sk.builtin.asnum$(ret);
                     if (op === "Eq") {
@@ -437,7 +479,7 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
         if (wcmp) {
             // note, flipped on return value and call
             try {
-                ret = Sk.misceval.callsimArray(wcmp, [w, v]);
+                ret = Sk.misceval.callsimArray(wcmp, [v]);
                 if (Sk.builtin.checkNumber(ret)) {
                     ret = Sk.builtin.asnum$(ret);
                     if (op === "Eq") {
@@ -462,11 +504,12 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
                 throw new Sk.builtin.TypeError("comparison did not return an int");
             }
         }
-        if ((v instanceof Sk.builtin.none && w instanceof Sk.builtin.none)) {
+        // handle special cases for comparing None with None or Bool with Bool
+        if (v === Sk.builtin.none.none$ && w === Sk.builtin.none.none$) {
             // Javascript happens to return the same values when comparing null
             // with null or true/false with true/false as Python does when
             // comparing None with None or True/False with True/False
-    
+
             if (op === "Eq") {
                 return v.v === w.v;
             }
@@ -551,39 +594,23 @@ Sk.exportSymbol("Sk.misceval.opAllowsEquality", Sk.misceval.opAllowsEquality);
  * @param {*} x 
  */
 Sk.misceval.isTrue = function (x) {
-    var ret;
-    if (x === true) {
+    if (x === true || x === Sk.builtin.bool.true$) {
         return true;
     }
-    if (x === false) {
+    if (x === false || x === Sk.builtin.bool.false$) {
         return false;
     }
-    if (x === null) {
+    if (x === null || x === undefined) {
         return false;
-    }
-    if (x === undefined) {
-        return false;
-    }
-    if (x.constructor === Sk.builtin.bool) {
-        return x.v !== 0;
-    }
-    if (x === Sk.builtin.none.none$) {
-        return false;
-    }
-    if (x === Sk.builtin.NotImplemented.NotImplemented$) {
-        return false;
-    }
-    if (typeof x === "number") {
-        return x !== 0;
     }
     if (x.nb$bool) {
-        return  x.nb$bool();
+        return x.nb$bool(); // the slot wrapper takes care of converting to js Boolean
     }
     if (x.sq$length) {
-        ret = x.sq$length(); // the slot wrapper takes care of the error message
-        return Sk.builtin.asnum$(ret) !== 0;
+        // the slot wrapper takes care of the error message and converting to js int
+        return x.sq$length() !== 0;
     }
-    return true;
+    return Boolean(x);
 };
 Sk.exportSymbol("Sk.misceval.isTrue", Sk.misceval.isTrue);
 
@@ -631,9 +658,6 @@ Sk.misceval.loadname = function (name, other) {
     var bi;
     var v = other[name];
     if (v !== undefined) {
-        if (typeof v === "function" && v.sk$object === undefined) {
-            return v();
-        }
         return v;
     }
 
@@ -1110,6 +1134,24 @@ Sk.misceval.iterFor = function (iter, forFn, initialValue) {
 };
 Sk.exportSymbol("Sk.misceval.iterFor", Sk.misceval.iterFor);
 
+
+/**
+ * @function
+ * @description
+ * 
+ * As per iterFor but with an array rather than a python iterable
+ * Useful for iterating over args where doing so could result in a suspension
+ *
+ * @param {Array} args
+ * @param {function(pyObject,*=)} forFn
+ * @param {*=} initialValue
+ */
+Sk.misceval.iterArray = function (args, forFn, initialValue) {
+    Sk.asserts.assert(Array.isArray(args), "iterArgs requires an array");
+    let i = 0;
+    return Sk.misceval.iterFor({tp$iternext: () => args[i++]}, forFn, initialValue);
+};
+
 /**
  * @function
  *
@@ -1125,8 +1167,7 @@ Sk.misceval.arrayFromIterable = function (iterable, canSuspend) {
     if (iterable === undefined) {
         return [];
     }
-    const hptype = iterable.hp$type || undefined;
-    if (hptype === undefined && iterable.sk$asarray !== undefined) {
+    if (iterable.hp$type === undefined && iterable.sk$asarray !== undefined) {
         // use sk$asarray only if we're a builtin
         return iterable.sk$asarray();
     }
@@ -1139,7 +1180,6 @@ Sk.misceval.arrayFromIterable = function (iterable, canSuspend) {
     );
     return canSuspend ? ret : Sk.misceval.retryOptionalSuspensionOrThrow(ret);
 };
-Sk.exportSymbol("Sk.misceval.arrayFromIterable", Sk.misceval.arrayFromIterable);
 
 /**
  * A special value to return from an iterFor() function,

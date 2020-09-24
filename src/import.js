@@ -50,45 +50,7 @@ Sk.importSearchPathForName = function (name, ext, searchPath) {
     });
 };
 
-/**
- * Complete any initialization of Python classes which relies on internal
- * dependencies.
- *
- * type, object, super, nonetype, notimplemented
- * getset_descr, method_descr, wrapper_descr, method_wrapper
- * 
- * __doc__ for the above + classmethod, property, staticmethod
- * 
- */
-Sk.doOneTimeInitialization = function (canSuspend) {
-    function setUpClass (klass) {
-        const proto = klass.prototype;
-        if (!proto.hasOwnProperty("sk$slots")) {
-            // sk$slots was set to null during setUpSlots
-            // if this flag is not set then we setUpSlots using the klass prototype
-            Sk.abstr.setUpSlots(klass);
-        }
-        if (!proto.hasOwnProperty("tp$mro")) {
-            Sk.abstr.setUpBuiltinMro(klass);
-        }
-        if (proto.hasOwnProperty("tp$getsets") && proto.tp$getsets != null) {
-            Sk.abstr.setUpGetSets(klass);
-        }
-        if (proto.hasOwnProperty("tp$methods") && proto.tp$methods != null) {
-            Sk.abstr.setUpMethods(klass);
-        }
-        if (!proto.hasOwnProperty("__doc__") && proto.hasOwnProperty("tp$doc")) {
-            // a few klasses had slots setup before str was initialized so we add them here
-            proto.__doc__ = new Sk.builtin.str(proto.tp$doc);
-        } 
-    };
-    for (let x in Sk.builtins) {
-        const obj = Sk.builtins[x];
-        if (obj instanceof Sk.builtin.type) {
-            setUpClass(obj);
-        }
-    }
-};
+
 
 /**
  * currently only pull once from Sk.syspath. User might want to change
@@ -107,8 +69,6 @@ Sk.importSetUpPath = function (canSuspend) {
             paths.push(new Sk.builtin.str(Sk.syspath[i]));
         }
         Sk.realsyspath = new Sk.builtin.list(paths);
-
-        Sk.doOneTimeInitialization(canSuspend);
     }
 };
 
@@ -166,13 +126,12 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
         topLevelModuleToReturn = topLevelModuleToReturn_;
 
         // if leaf is already in sys.modules, early out
-        try {
-            prev = Sk.sysmodules.mp$subscript(new Sk.builtin.str(modname));
+        prev = Sk.sysmodules.quick$lookup(new Sk.builtin.str(modname));
+        if (prev !== undefined) {
             // if we're a dotted module, return the top level, otherwise ourselves
             return topLevelModuleToReturn || prev;
-        } catch (x) {
-            // not in sys.modules, continue
         }
+        // not in sys.modules, continue
 
         return Sk.misceval.chain(undefined, function() {
             var codeAndPath, co, googClosure;
@@ -453,11 +412,8 @@ Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
             relativeToPackageNames.length -= level-1;
             relativeToPackageName = relativeToPackageNames.join(".");
         }
-        try {
-            relativeToPackage = Sk.sysmodules.mp$subscript(new Sk.builtin.str(relativeToPackageName));
-        } catch(e) {
-            relativeToPackageName = undefined;
-        }
+
+        relativeToPackage = Sk.sysmodules.quick$lookup(new Sk.builtin.str(relativeToPackageName));
     }
 
     if (level > 0 && relativeToPackage === undefined) {

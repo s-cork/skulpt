@@ -45,7 +45,6 @@ Sk.python2 = {
     octal_number_literal: false,
     bankers_rounding: false,
     python_version: false,
-    dunder_next: false,
     dunder_round: false,
     exceptions: false,
     no_long_type: false,
@@ -66,7 +65,6 @@ Sk.python3 = {
     octal_number_literal: true,
     bankers_rounding: true,
     python_version: true,
-    dunder_next: true,
     dunder_round: true,
     exceptions: true,
     no_long_type: true,
@@ -115,7 +113,6 @@ Sk.configure = function (options) {
     Sk.bool_check(Sk.__future__.octal_number_literal, "Sk.__future__.octal_number_literal");
     Sk.bool_check(Sk.__future__.bankers_rounding, "Sk.__future__.bankers_rounding");
     Sk.bool_check(Sk.__future__.python_version, "Sk.__future__.python_version");
-    Sk.bool_check(Sk.__future__.dunder_next, "Sk.__future__.dunder_next");
     Sk.bool_check(Sk.__future__.dunder_round, "Sk.__future__.dunder_round");
     Sk.bool_check(Sk.__future__.exceptions, "Sk.__future__.exceptions");
     Sk.bool_check(Sk.__future__.no_long_type, "Sk.__future__.no_long_type");
@@ -133,7 +130,7 @@ Sk.configure = function (options) {
     Sk.inputfunTakesPrompt = options["inputfunTakesPrompt"] || false;
     Sk.asserts.assert(typeof Sk.inputfunTakesPrompt === "boolean");
 
-    Sk.retainGlobals = options["retainglobals"] || false;
+    Sk.retainGlobals = options["retainglobals"] || options["retainGlobals"] || false;
     Sk.asserts.assert(typeof Sk.retainGlobals === "boolean");
 
     Sk.debugging = options["debugging"] || false;
@@ -149,16 +146,16 @@ Sk.configure = function (options) {
     if (Sk.signals === true) {
         Sk.signals = {
             listeners: [],
-            addEventListener: function (handler) {
+            addEventListener(handler) {
                 Sk.signals.listeners.push(handler);
             },
-            removeEventListener: function (handler) {
+            removeEventListener(handler) {
                 var index = Sk.signals.listeners.indexOf(handler);
                 if (index >= 0) {
                     Sk.signals.listeners.splice(index, 1); // Remove items
                 }
             },
-            signal: function (signal, data) {
+            signal(signal, data) {
                 for (var i = 0; i < Sk.signals.listeners.length; i++) {
                     Sk.signals.listeners[i].call(null, signal, data);
                 }
@@ -211,9 +208,10 @@ Sk.configure = function (options) {
 
     Sk.switch_version(Sk.__future__.python3);
 
+    Sk.builtin.str.$next = Sk.__future__.python3 ? new Sk.builtin.str("__next__") : new Sk.builtin.str("next");
+
     Sk.setupOperators(Sk.__future__.python3);
     Sk.setupDunderMethods(Sk.__future__.python3);
-
     Sk.setupObjects(Sk.__future__.python3);
 };
 
@@ -258,11 +256,16 @@ Sk.yieldLimit = Number.POSITIVE_INFINITY;
 Sk.output = function (x) {};
 
 /*
- * Replacable function to load modules with (called via import, etc.)
+ * Replaceable function to load modules with (called via import, etc.)
  * todo; this should be an async api
  */
 Sk.read = function (x) {
-    throw "Sk.read has not been implemented";
+    if (Sk.builtinFiles === undefined) {
+        throw "skulpt-stdlib.js has not been loaded";
+    } else if (Sk.builtinFiles.files[x] === undefined) {
+        throw "File not found: '" + x + "'";
+    }
+    return Sk.builtinFiles.files[x];
 };
 
 /*

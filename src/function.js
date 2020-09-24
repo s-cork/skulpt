@@ -46,24 +46,25 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
         }
         this.func_closure = closure;
         this.$memoiseFlags();
-        this.memoised = code.co_fastcall || undefined;
+        this.memoised = code.co_fastcall || null;
         if (code.co_fastcall) {
-            this.tp$call = code;
+            this.tp$call = code.bind(this);
+        } else {
+            this.tp$call = Sk.builtin.func.prototype.tp$call.bind(this); // keep func the same shape
         }
-        
     },
     slots: {
         tp$getattr: Sk.generic.getAttr,
-        tp$descr_get: function (obj, objtype) {
+        tp$descr_get(obj, objtype) {
             if (obj === null) {
                 return this;
             }
             return new Sk.builtin.method(this, obj);
         },
-        $r: function () {
+        $r() {
             return new Sk.builtin.str("<function " + this.$qualname + ">");
         },
-        tp$call: function (posargs, kw) {
+        tp$call(posargs, kw) {
             // Property reads from func_code are slooow, but
             // the existing external API allows setup first, so as a
             // hack we delay this initialisation.
@@ -97,10 +98,10 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
     },
     getsets: {
         __name__: {
-            $get: function () {
+            $get() {
                 return new Sk.builtin.str(this.$name);
             },
-            $set: function (value) {
+            $set(value) {
                 if (!Sk.builtin.checkString(value)) {
                     throw new Sk.builtin.TypeError("__name__ must be set to a string object");
                 }
@@ -108,10 +109,10 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
             },
         },
         __qualname__: {
-            $get: function () {
+            $get() {
                 return new Sk.builtin.str(this.$qualname);
             },
-            $set: function (value) {
+            $set(value) {
                 if (!Sk.builtin.checkString(value)) {
                     throw new Sk.builtin.TypeError("__qualname__ must be set to a string object");
                 }
@@ -120,18 +121,18 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
         },
         __dict__: Sk.generic.getSetDict,
         __defaults__: {
-            $get: function () {
+            $get() {
                 return new Sk.builtin.tuple(this.$defaults);
             }, // technically this is a writable property but we'll leave it as read-only for now
         },
         __doc__: {
-            $get: function () {
+            $get() {
                 return new Sk.builtin.str(this.$doc);
             },
         },
     },
     proto: {
-        $memoiseFlags: function() {
+        $memoiseFlags() {
             this.co_varnames = this.func_code.co_varnames;
             this.co_argcount = this.func_code.co_argcount;
             if (this.co_argcount === undefined && this.co_varnames) {
@@ -143,12 +144,13 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
             this.$defaults = this.func_code.$defaults || [];
             this.$kwdefs = this.func_code.$kwdefs || [];
         },
+        $resolveArgs,
 
     }
 });
 
 
-Sk.builtin.func.prototype.$resolveArgs = function (posargs, kw) {
+function $resolveArgs(posargs, kw) {
     // The rest of this function is a logical Javascript port of
     // _PyEval_EvalCodeWithName, and follows its logic,
     // plus fast-paths imported from _PyFunction_FastCall* as marked

@@ -7,7 +7,6 @@
  * work, etc.
  */
 
-const JSBI = require("jsbi");
 
 Sk.builtin.asnum$ = function (a) {
     if (a === undefined) {
@@ -164,9 +163,9 @@ Sk.builtin.round = function round(number, ndigits) {
     if (special !== undefined) {
         // method on builtin, provide this arg
         if (ndigits !== undefined) {
-            return Sk.misceval.callsimArray(special, [number, ndigits]);
+            return Sk.misceval.callsimArray(special, [ndigits]);
         } else {
-            return Sk.misceval.callsimArray(special, [number]);
+            return Sk.misceval.callsimArray(special, []);
         }
     } else {
         throw new Sk.builtin.TypeError("a float is required");
@@ -178,8 +177,7 @@ Sk.builtin.len = function len(item) {
     let res;
     if (item.sq$length) {
         res = item.sq$length(true);
-    }
-    if (res === undefined) {
+    } else {
         throw new Sk.builtin.TypeError("object of type '" + Sk.abstr.typeName(item) + "' has no len()");
     }
     return Sk.misceval.chain(res, (r) => {
@@ -193,9 +191,7 @@ Sk.builtin.min = function min(args, kwargs) {
     if (!nargs) {
         throw new Sk.builtin.TypeError("min expected 1 argument, got 0");
     }
-    const default_key = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
-    const $default = default_key[0];
-    const key = default_key[1];
+    const [$default, key] = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
 
     // if args is not a single iterable then default should not be included as a kwarg
     if (nargs > 1 && $default !== null) {
@@ -259,9 +255,7 @@ Sk.builtin.max = function max(args, kwargs) {
     if (!nargs) {
         throw new Sk.builtin.TypeError("max expected 1 argument, got 0");
     }
-    const default_key = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
-    const $default = default_key[0];
-    const key = default_key[1];
+    const [$default, key] = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
 
     // if args is not a single iterable then default should not be included as a kwarg
     if (nargs > 1 && $default !== null) {
@@ -277,7 +271,6 @@ Sk.builtin.max = function max(args, kwargs) {
     if (!Sk.builtin.checkNone(key) && !Sk.builtin.checkCallable(key)) {
         throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(key) + "' object is not callable");
     }
-
     let highest;
     return Sk.misceval.chain(
         iter.tp$iternext(true),
@@ -357,7 +350,7 @@ Sk.builtin.sum = function sum(iter, start) {
             if (i.constructor === Sk.builtin.int_) {
                 tot = tot.nb$add(i);
             } else if (i.constructor === Sk.builtin.float_) {
-                tot = tot.nb$float_().nb$add(i);
+                tot = tot.nb$float().nb$add(i);
                 return new Sk.misceval.Break("float");
             } else {
                 tot = Sk.abstr.numberBinOp(tot, i, "Add");
@@ -383,27 +376,25 @@ Sk.builtin.sum = function sum(iter, start) {
         });
     }
 
-    let initValue;
-    if (start === undefined || tot.constructor === Sk.builtin.int_) {
-        initValue = fastSumInt();
-    } else if (tot.constructor === Sk.builtin.float_) {
-        initValue = "float";
+    let sumType;
+    if (start === undefined || start.constructor === Sk.builtin.int_) {
+        sumType = fastSumInt();
+    } else if (start.constructor === Sk.builtin.float_) {
+        sumType = "float";
     } else {
-        initValue = "slow";
+        sumType = "slow";
     }
 
     return Sk.misceval.chain(
-        initValue,
-        (brValue) => {
-            if (brValue === undefined) {
-                return;
-            } else if (brValue === "float") {
+        sumType,
+        (sumType) => {
+            if (sumType === "float") {
                 return fastSumFloat();
             }
-            return brValue;
+            return sumType;
         },
-        (brValue) => {
-            if (brValue !== undefined) {
+        (sumType) => {
+            if (sumType === "slow") {
                 return slowSum();
             }
         },
@@ -462,13 +453,20 @@ Sk.builtin.fabs = function fabs(x) {
     return Sk.builtin.abs(x);
 };
 
-Sk.builtin.ord = function ord(x) {
-    if (!Sk.builtin.checkString(x)) {
-        throw new Sk.builtin.TypeError("ord() expected a string of length 1, but " + Sk.abstr.typeName(x) + " found");
-    } else if (x.v.length !== 1) {
-        throw new Sk.builtin.TypeError("ord() expected a character, but string of length " + x.v.length + " found");
+Sk.builtin.ord = function ord (x) {
+    if (Sk.builtin.checkString(x)) {
+        if (x.v.length !== 1 && x.sq$length() !== 1) {
+            // ^^ avoid the astral check unless necessary ^^
+            throw new Sk.builtin.TypeError("ord() expected a character, but string of length " + x.v.length + " found");
+        }
+        return new Sk.builtin.int_(x.v.codePointAt(0));
+    } else if (Sk.builtin.checkBytes(x)) {
+        if (x.sq$length() !== 1) {
+            throw new Sk.builtin.TypeError("ord() expected a character, but string of length " + x.v.length + " found");
+        }
+        return new Sk.builtin.int_(x.v[0]);
     }
-    return new Sk.builtin.int_(x.v.charCodeAt(0));
+    throw new Sk.builtin.TypeError("ord() expected a string of length 1, but " + Sk.abstr.typeName(x) + " found");
 };
 
 Sk.builtin.chr = function chr(x) {
@@ -476,12 +474,17 @@ Sk.builtin.chr = function chr(x) {
         throw new Sk.builtin.TypeError("an integer is required");
     }
     x = Sk.builtin.asnum$(x);
-
-    if (x < 0 || x > 255) {
-        throw new Sk.builtin.ValueError("chr() arg not in range(256)");
+    if (Sk.__future__.python3) {
+        if ((x < 0) || (x >= 0x110000)) {
+            throw new Sk.builtin.ValueError("chr() arg not in range(0x110000)");
+        }
+    } else {
+        if ((x < 0) || (x >= 256)) {
+            throw new Sk.builtin.ValueError("chr() arg not in range(256)");
+        }
     }
 
-    return new Sk.builtin.str(String.fromCharCode(x));
+    return new Sk.builtin.str(String.fromCodePoint(x));
 };
 
 Sk.builtin.unichr = function unichr(x) {
@@ -517,7 +520,7 @@ Sk.builtin.int2str_ = function helper_(x, radix, prefix) {
     } else {
         str = prefix + str;
     }
-    if (radix !== 2 && !Sk.__future__.python3 && (x instanceof Sk.builtin.lng || v instanceof JSBI)) {
+    if (radix !== 2 && !Sk.__future__.python3 && (x instanceof Sk.builtin.lng || JSBI.__isBigInt(v))) {
         str += "L";
     }
     return new Sk.builtin.str(str);
@@ -552,8 +555,7 @@ Sk.builtin.bin = function bin(x) {
 Sk.builtin.dir = function dir(obj) {
     if (obj !== undefined) {
         const obj_dir_func = Sk.abstr.lookupSpecial(obj, Sk.builtin.str.$dir);
-        const dir = Sk.misceval.callsimArray(obj_dir_func, [obj]);
-        return Sk.builtin.sorted(dir);
+        return Sk.misceval.chain(Sk.misceval.callsimOrSuspendArray(obj_dir_func, []), (dir) => Sk.builtin.sorted(dir));
         // now iter through the keys and check they are all stings
     }
     // then we want all the objects in the global scope
@@ -565,7 +567,54 @@ Sk.builtin.repr = function repr(x) {
     return x.$r();
 };
 
-Sk.builtin.open = function open(filename, mode, bufsize) {
+Sk.builtin.ascii = function ascii (x) {
+    return Sk.misceval.chain(x.$r(), (r) => {
+        let ret;
+        let i;
+        // Fast path
+        for (i=0; i < r.v.length; i++) {
+            if (r.v.charCodeAt(i) >= 0x7f) {
+                ret = r.v.substr(0, i);
+                break;
+            }
+        }
+        if (!ret) {
+            return r;
+        }
+        for (; i < r.v.length; i++) {
+            let c = r.v.charAt(i);
+            let cc = r.v.charCodeAt(i);
+
+            if (cc > 0x7f && cc <= 0xff) {
+                let ashex = cc.toString(16);
+                if (ashex.length < 2) {
+                    ashex = "0" + ashex;
+                }
+                ret += "\\x" + ashex;
+            } else if (cc > 0x7f && cc < 0xd800 || cc >= 0xe000) {
+                // BMP
+                ret += "\\u" + ("000"+cc.toString(16)).slice(-4);
+            } else if (cc >= 0xd800) {
+                // Surrogate pair stuff
+                let val = r.v.codePointAt(i);
+                i++;
+
+                val = val.toString(16);
+                let s = ("0000000"+val.toString(16));
+                if (val.length > 4) {
+                    ret += "\\U" + s.slice(-8);
+                } else {
+                    ret += "\\u" + s.slice(-4);
+                }
+            } else {
+                ret += c;
+            }
+        }
+        return new Sk.builtin.str(ret);
+    });
+};
+
+Sk.builtin.open = function open (filename, mode, bufsize) {
     if (mode === undefined) {
         mode = new Sk.builtin.str("r");
     }
@@ -585,9 +634,24 @@ Sk.builtin.isinstance = function isinstance(obj, type) {
         throw new Sk.builtin.TypeError("isinstance() arg 2 must be a class, type, or tuple of classes and types");
     }
 
-    // Normal case
+    // Fast path
+    const act_type = obj.ob$type;
+    if (act_type === type) {
+        return Sk.builtin.bool.true$;
+    }
     if (!(type instanceof Sk.builtin.tuple)) {
-        return obj.ob$type.$isSubType(type) ? Sk.builtin.bool.true$ : Sk.builtin.bool.false$;
+        // attempt 1
+        if (act_type.$isSubType(type)) {
+            return Sk.builtin.bool.true$;
+        }
+        // fail so check if we have overriden __class__
+        const maybe_type = obj.tp$getattr(Sk.builtin.str.$class);
+        if (maybe_type == act_type) {
+            return Sk.builtin.bool.false$;
+        } else if (Sk.builtin.checkClass(maybe_type) && maybe_type.$isSubType(type)) {
+            return Sk.builtin.bool.true$;
+        }
+        return Sk.builtin.bool.false$;
     }
     // Handle tuple type argument
     for (let i = 0; i < type.v.length; ++i) {
@@ -598,39 +662,8 @@ Sk.builtin.isinstance = function isinstance(obj, type) {
     return Sk.builtin.bool.false$;
 };
 
-Sk.builtin.hash = function hash(value) {
-    var junk;
-
-    // Useless object to get compiler to allow check for __hash__ property
-    junk = {
-        __hash__: function () {
-            return 0;
-        },
-    };
-
-    if (value instanceof Object) {
-        if (Sk.builtin.checkNone(value.tp$hash)) {
-            // python sets the hash function to None , so we have to catch this case here
-            throw new Sk.builtin.TypeError("unhashable type: '" + Sk.abstr.typeName(value) + "'");
-        } else if (value.tp$hash !== undefined) {
-            if (value.$savedHash_) {
-                return value.$savedHash_;
-            }
-            value.$savedHash_ = value.tp$hash();
-            return value.$savedHash_;
-        } else {
-            if (value.__hash === undefined) {
-                Sk.builtin.hashCount += 1;
-                value.__hash = Sk.builtin.hashCount;
-            }
-            return new Sk.builtin.int_(value.__hash);
-        }
-    } else if (typeof value === "number" || value === null || value === true || value === false) {
-        throw new Sk.builtin.TypeError("unsupported Javascript type");
-    }
-
-    return new Sk.builtin.str(typeof value + " " + String(value));
-    // todo; throw properly for unhashable types
+Sk.builtin.hash = function hash(obj) {
+    return new Sk.builtin.int_(Sk.abstr.objectHash(obj));
 };
 
 Sk.builtin.getattr = function getattr(obj, pyName, default_) {
@@ -652,7 +685,7 @@ Sk.builtin.getattr = function getattr(obj, pyName, default_) {
             if (default_ !== undefined) {
                 return default_;
             }
-            throw new Sk.builtin.AttributeError("'" + Sk.abstr.typeName(obj) + "' object has no attribute " + pyName.$jsstr());
+            throw new Sk.builtin.AttributeError(obj.sk$attrError() + " has no attribute " + Sk.misceval.objectRepr(pyName));
         }
         return r;
     });
@@ -663,10 +696,7 @@ Sk.builtin.setattr = function setattr(obj, pyName, value) {
     if (!Sk.builtin.checkString(pyName)) {
         throw new Sk.builtin.TypeError("attribute name must be string");
     }
-    const res = obj.tp$setattr(pyName, value, true);
-    return Sk.misceval.chain(res, () => {
-        return Sk.builtin.none.none$;
-    });
+    return Sk.misceval.chain(obj.tp$setattr(pyName, value, true), () => Sk.builtin.none.none$);
 };
 
 Sk.builtin.raw_input = function (prompt) {
@@ -691,17 +721,9 @@ Sk.builtin.raw_input = function (prompt) {
 
 Sk.builtin.input = Sk.builtin.raw_input;
 
-Sk.builtin.jseval = function jseval(evalcode) {
-    var result = Sk.global["eval"](Sk.ffi.remapToJs(evalcode));
-    try {
-        return Sk.ffi.remapToPy(result);
-    } catch (err) {
-        if (err.constructor === Sk.asserts.AssertionError) {
-            return Sk.builtin.none.none$;
-        }
-
-        throw err;
-    }
+Sk.builtin.jseval = function jseval (evalcode) {
+    const result = Sk.global["eval"](Sk.ffi.remapToJs(evalcode));
+    return Sk.ffi.remapToPy(result);
 };
 
 /**
@@ -828,7 +850,7 @@ Sk.builtin.sorted = function sorted(iterable, cmp, key, reverse) {
     const lst = Sk.misceval.arrayFromIterable(iterable, true);
     return Sk.misceval.chain(lst, (L) => {
         L = new Sk.builtin.list(L);
-        L.$list_sort(cmp, key, reverse);
+        L.list$sort(cmp, key, reverse);
         return L;
     });
 };
@@ -905,71 +927,21 @@ Sk.builtin.hasattr = function hasattr(obj, pyName) {
     return Sk.misceval.chain(res, (val) => (val === undefined ? Sk.builtin.bool.false$ : Sk.builtin.bool.true$));
 };
 
-Sk.builtin.pow = function pow(a, b, c) {
-    var ret;
-    var res;
-    var right;
-    var left;
-    var c_num;
-    var b_num;
-    var a_num;
-
-    if (c instanceof Sk.builtin.none) {
-        c = undefined;
+Sk.builtin.pow = function pow(v, w, z) {
+    // skulpt does support ternary slots
+    if (z === undefined || Sk.builtin.checkNone(z)) {
+        return Sk.abstr.numberBinOp(v, w, "Pow");
     }
-
-    // add complex type hook here, builtin is messed up anyways
-    if (Sk.builtin.checkComplex(a)) {
-        return a.nb$power(b, c); // call complex pow function
-    }
-
-    a_num = Sk.builtin.asnum$(a);
-    b_num = Sk.builtin.asnum$(b);
-    c_num = Sk.builtin.asnum$(c);
-
-    if (!Sk.builtin.checkNumber(a) || !Sk.builtin.checkNumber(b)) {
-        if (c === undefined) {
-            throw new Sk.builtin.TypeError(
-                "unsupported operand type(s) for pow(): '" + Sk.abstr.typeName(a) + "' and '" + Sk.abstr.typeName(b) + "'"
-            );
+    // only support a third argument if they're all the integers.
+    if (!(Sk.builtin.checkInt(v) && Sk.builtin.checkInt(w) && Sk.builtin.checkInt(z))) {
+        if (Sk.builtin.checkFloat(v) || Sk.builtin.checkComplex(v)) {
+            return v.nb$power(w, z); // these slots for float and complex throw the correct errors
         }
         throw new Sk.builtin.TypeError(
-            "unsupported operand type(s) for pow(): '" + Sk.abstr.typeName(a) + "', '" + Sk.abstr.typeName(b) + "', '" + Sk.abstr.typeName(c) + "'"
+            "unsupported operand type(s) for ** or pow(): '" + Sk.abstr.typeName(v) + "', '" + Sk.abstr.typeName(w) + "', '" + Sk.abstr.typeName(z) + "'"
         );
     }
-    if (a_num < 0 && b instanceof Sk.builtin.float_) {
-        throw new Sk.builtin.ValueError("negative number cannot be raised to a fractional power");
-    }
-
-    if (c === undefined) {
-        if (a instanceof Sk.builtin.float_ || b instanceof Sk.builtin.float_ || b_num < 0) {
-            return new Sk.builtin.float_(Math.pow(a_num, b_num));
-        }
-        left = new Sk.builtin.int_(a_num);
-        right = new Sk.builtin.int_(b_num);
-        res = left.nb$power(right);
-        return res;
-    } else {
-        if (!Sk.builtin.checkInt(a) || !Sk.builtin.checkInt(b) || !Sk.builtin.checkInt(c)) {
-            throw new Sk.builtin.TypeError("pow() 3rd argument not allowed unless all arguments are integers");
-        }
-        if (b_num < 0) {
-            if (Sk.__future__.exceptions) {
-                throw new Sk.builtin.ValueError("pow() 2nd argument cannot be negative when 3rd argument specified");
-            } else {
-                throw new Sk.builtin.TypeError("pow() 2nd argument cannot be negative when 3rd argument specified");
-            }
-        }
-        if (c_num === 0) {
-            throw new Sk.builtin.ValueError("pow() 3rd argument cannot be 0");
-        }
-        if (a instanceof Sk.builtin.lng || b instanceof Sk.builtin.lng || c instanceof Sk.builtin.lng || Math.pow(a_num, b_num) === Infinity) {
-            return a.nb$power(b, c);
-        } else {
-            ret = new Sk.builtin.int_(Math.pow(a_num, b_num));
-            return ret.nb$remainder(c);
-        }
-    }
+    return v.nb$power(w, z);
 };
 
 Sk.builtin.quit = function quit(msg) {
@@ -997,11 +969,12 @@ Sk.builtin.issubclass = function issubclass(c1, c2) {
     return Sk.misceval.bool.false$;
 };
 
-Sk.builtin.globals = function globals() {
-    var i;
+Sk.builtin.globals = function globals () {
+    var i, unmangled;
     var ret = new Sk.builtin.dict([]);
     for (i in Sk["globals"]) {
-        ret.mp$ass_subscript(new Sk.builtin.str(i), Sk["globals"][i]);
+        unmangled = Sk.unfixReserved(i);
+        ret.mp$ass_subscript(new Sk.builtin.str(unmangled), Sk["globals"][i]);
     }
 
     return ret;
@@ -1024,13 +997,15 @@ Sk.builtin.format = function format(value, format_spec) {
     return Sk.abstr.objectFormat(value, format_spec);
 };
 
+const idMap = new Map();
+let _id = 0;
 Sk.builtin.id = function (obj) {
-    if (obj.__id === undefined) {
-        Sk.builtin.idCount += 1;
-        obj.__id = Sk.builtin.idCount;
+    const id = idMap.get(obj);
+    if (id !== undefined) {
+        return new Sk.builtin.int_(id);
     }
-
-    return new Sk.builtin.int_(obj.__id);
+    idMap.set(obj, _id);
+    return new Sk.builtin.int_(_id++);
 };
 
 Sk.builtin.bytearray = function bytearray() {

@@ -39,7 +39,14 @@ function processDirectories(dirs, recursive, exts, ret, minifyjs, excludes) {
                     if (exts.includes(ext)) {
                         let contents = fs.readFileSync(fullname, 'utf8');
                         if (minifyjs && (ext == ".js")) {
-                            let result = minify(contents);
+                            let result = minify(contents, {
+                                mangle: {
+                                    keepFnName: true,
+                                },
+                                deadcode: {
+                                    keepFnName: true,
+                                },
+                            });
                             contents = result.code;
                         }
                         ret.files[fullname] = contents;
@@ -69,7 +76,7 @@ function buildJsonFile(name, dirs, exts, outfile, options) {
 }
 
 if (process.argv.includes("internal")) {
-    buildJsonFile("internalPy", ["src"], [".py"], "src/internalpython.js");
+    // buildJsonFile("internalPy", ["src"], [".py"], "src/internalpython.js");
 } else if (process.argv.includes("builtin")) {
     let excludes = [];
     if (fs.existsSync(excludeFileName)) {
