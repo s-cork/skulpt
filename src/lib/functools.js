@@ -1,6 +1,7 @@
 function $builtinmodule() {
     const functools = {
         __name__: new Sk.builtin.str("functools"),
+        __doc__: new Sk.builtin.str("Tools for working with functions and callable objects"),
         __all__: new Sk.builtin.list(
             [
                 "update_wrapper",
