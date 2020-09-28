@@ -115,7 +115,7 @@ Sk.builtin.bytes = Sk.abstr.buildNativeClass("bytes", {
                 });
                 return Sk.misceval.chain(r, () => new Sk.builtin.bytes(source));
             }
-            throw new Sk.builtin.TypeError("cannot convert '" + Sk.abstr.typeName(source) + "' object into bytes");
+            throw new Sk.builtin.TypeError("cannot convert '" + Sk.abstr.typeName(pySource) + "' object into bytes");
         },
         $r() {
             let num;
