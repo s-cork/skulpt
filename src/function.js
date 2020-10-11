@@ -35,7 +35,7 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
         this.$name = (code.co_name && code.co_name.v) || code.name || "<native JS>";
         this.$d = Sk.builtin.dict ? new Sk.builtin.dict() : undefined;
         this.$doc = code.$doc;
-        this.$module = (Sk.globals && Sk.globals["__name__"]) || Sk.builtin.none.none$;
+        this.$module = (Sk.globals && Sk.globals["__name__"]);
         this.$qualname = (code.co_qualname && code.co_qualname.v) || this.$name;
 
         if (closure2 !== undefined) {
@@ -127,9 +127,20 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
         },
         __doc__: {
             $get() {
-                return new Sk.builtin.str(this.$doc);
+                return this.$doc || Sk.builtin.none.none$;
             },
+            $set(value) {
+                this.$doc = value;
+            }
         },
+        __module__: {
+            $get() {
+                return this.$module || Sk.builtin.none.none$;
+            },
+            $set(value) {
+                this.$module = value;
+            }
+        }
     },
     proto: {
         $memoiseFlags() {

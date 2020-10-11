@@ -222,6 +222,9 @@ Sk.builtin.str = Sk.abstr.buildNativeClass("str", {
         nb$remainder: strBytesRemainder,
     },
     proto: /**@lends {Sk.builtin.str.prototype} */ {
+        toString: function () {
+            return this.v;
+        },
         $subtype_new(args, kwargs) {
             const instance = new this.constructor();
             // we call str new method with all the args and kwargs
@@ -1363,15 +1366,16 @@ var str_iter_ = Sk.abstr.buildIteratorClass("str_iterator", {
                 }
                 return new Sk.builtin.str(str.v.substring(i, this.$seq[++this.$index]));
             };
+        } else {
+            this.$seq = str.v;
+            this.tp$iternext = () => {
+                const ch = this.$seq[this.$index++];
+                if (ch === undefined) {
+                    return undefined;
+                }
+                return new Sk.builtin.str(ch);
+            };
         }
-        this.$seq = str.v;
-        this.tp$iternext = () => {
-            const ch = this.$seq[this.$index++];
-            if (ch === undefined) {
-                return undefined;
-            }
-            return new Sk.builtin.str(ch);
-        };
     },
     iternext() {
         return this.tp$iternext();
