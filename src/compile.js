@@ -2704,12 +2704,11 @@ Compiler.prototype.cmod = function (mod) {
     var modf = this.enterScope(new Sk.builtin.str("<module>"), mod, 0, this.canSuspend);
 
     var entryBlock = this.newBlock("module entry");
-    this.u.prefixCode = "var " + modf + "=(function($forcegbl){";
+    this.u.prefixCode = "var " + modf + "=(function($forcegbl, $loc){";
     this.u.varDeclsCode =
         "var $gbl = $forcegbl || {}, $blk=" + entryBlock +
-        ",$exc=[],$loc=$gbl,$cell={},$err=undefined;" +
-        "$loc.__file__=new Sk.builtins.str('" + this.filename +
-        "');var $ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
+        ",$exc=[],$loc=$loc || $gbl,$cell={},$err=undefined;" +
+        "var $ret=undefined,$postfinally=undefined,$currLineNo=undefined,$currColNo=undefined;";
 
     if (Sk.execLimit !== null) {
         this.u.varDeclsCode += "if (typeof Sk.execStart === 'undefined') {Sk.execStart = Date.now()}";
@@ -2722,7 +2721,6 @@ Compiler.prototype.cmod = function (mod) {
     this.u.varDeclsCode += "if ("+modf+".$wakingSuspension!==undefined) { $wakeFromSuspension(); }" +
         "if (Sk.retainGlobals) {" +
         "    if (Sk.globals) { $gbl = Sk.globals; Sk.globals = $gbl; $loc = $gbl; }" +
-        "    if (Sk.globals) { $gbl = Sk.globals; Sk.globals = $gbl; $loc = $gbl; $loc.__file__=new Sk.builtins.str('" + this.filename + "');}" +
         "    else { Sk.globals = $gbl; }" +
         "} else { Sk.globals = $gbl; }";
 
