@@ -809,7 +809,11 @@ Sk.builtin.eval = function (source, globals, locals) {
     } else if (!(source instanceof pyCode)) {
         throw new Sk.builtin.TypeError("eval() arg 1 must be a string, bytes or code object");
     }
-    return Sk.misceval.chain(Sk.builtin.exec(source, globals, locals), (new_locals) => new_locals.__final_res__ || Sk.builtin.none.none$);
+    return Sk.misceval.chain(Sk.builtin.exec(source, globals, locals), (new_locals) => {
+        const res = new_locals.__final_res__ || Sk.builtin.none.none$;
+        delete new_locals.__final_res__;
+        return res;
+    });
 };
 
 
