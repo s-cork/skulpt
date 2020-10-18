@@ -581,7 +581,7 @@ Compiler.prototype.ccall = function (e) {
         // so we should probably add self to the mangling
         // TODO: feel free to ignore the above
         out("if (typeof self === \"undefined\" || self.toString().indexOf(\"Window\") > 0) { throw new Sk.builtin.RuntimeError(\"super(): no arguments\") };");
-        positionalArgs = "[$gbl.__class__,self]";
+        positionalArgs = "[__class__,self]";
     }
     out ("$ret = (",func,".tp$call)?",func,".tp$call(",positionalArgs,",",keywordArgs,") : Sk.misceval.applyOrSuspend(",func,",undefined,undefined,",keywordArgs,",",positionalArgs,");");
 
@@ -947,6 +947,8 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
             return this.cjoinedstr(e);
         case Sk.astnodes.FormattedValue:
             return this.cformattedvalue(e);
+        case Sk.astnodes.Ellipsis:
+            return this.makeConstant("Sk.builtin.ellipsis");
         default:
             Sk.asserts.fail("unhandled case " + e.constructor.name + " vexpr");
     }
@@ -2022,7 +2024,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
 
     // inject __class__ cell when running python3
     if (Sk.__future__.python3 && class_for_super) {
-        this.u.varDeclsCode += "$gbl.__class__=$gbl." + class_for_super.v + ";";
+        this.u.varDeclsCode += "let __class__=$gbl." + class_for_super.v + " || $cell." + class_for_super.v  + ";";
     }
 
     // finally, set up the block switch that the jump code expects
