@@ -667,6 +667,15 @@ function getInt(x, base) {
         return new Sk.builtin.int_(res.v);
     }
 
+    if (typeof x === "number") {
+        Sk.asserts.fail("calling int from python with js object");
+        return new Sk.builtin.int_(stringToNumberOrBig(Math.trunc(x)));
+    } else if (typeof x === "string") {
+        Sk.asserts.fail("calling int from python with js object"); {
+            return new Sk.builtin.int_(Sk.str2number(x, base || 10));
+        }
+    }
+
     throw new Sk.builtin.TypeError("int() argument must be a string, a bytes-like object or a number, not '" + Sk.abstr.typeName(x) + "'");
 }
 

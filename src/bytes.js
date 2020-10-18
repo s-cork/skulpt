@@ -114,6 +114,9 @@ Sk.builtin.bytes = Sk.abstr.buildNativeClass("bytes", {
                     source.push(n);
                 });
                 return Sk.misceval.chain(r, () => new Sk.builtin.bytes(source));
+            } else if (pySource instanceof Uint8Array) {
+                Sk.asserts.fail("python call to bytes with javascript value - should use new Sk.builtin.bytes(uint8arr)");
+                return new Sk.builtin.bytes(pySource);
             }
             throw new Sk.builtin.TypeError("cannot convert '" + Sk.abstr.typeName(source) + "' object into bytes");
         },
