@@ -213,23 +213,7 @@ Sk.configure = function (options) {
     Sk.setupOperators(Sk.__future__.python3);
     Sk.setupDunderMethods(Sk.__future__.python3);
     Sk.setupObjects(Sk.__future__.python3);
-
-    // Anvil Patch to sort out <> for py2
-    let funny = Sk.token.Funny;
-    let idx = funny.indexOf("<>|");
-    if ((Sk.__future__.python3)) {
-        idx = funny.indexOf("<>|");
-        if (idx > 0) {
-            Sk.token.Funny = funny.slice(0, idx) + funny.slice(idx+3);
-        }
-        delete Sk.token.EXACT_TOKEN_TYPES["<>"];
-    } else {
-        if (idx === -1) {
-            idx = funny.indexOf("<");
-            Sk.token.Funny = funny.slice(0, idx) + "<>|" + funny.slice(idx);
-        }
-        Sk.token.EXACT_TOKEN_TYPES["<>"] = Sk.token.tokens.T_NOTEQUAL;
-    }
+    Sk.token.setupTokens(Sk.__future__.python3);
 };
 
 Sk.exportSymbol("Sk.configure", Sk.configure);
