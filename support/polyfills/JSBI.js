@@ -12,7 +12,7 @@ const { default: __JSBI } = require("jsbi");
 // use jsbi which is es5 compliant - change to ES6 in the compilation version
 var globalThis = Sk.global;
 
-globalThis.JSBI = globalThis.BigInt !== undefined ? Object.create(null) : __JSBI;
+globalThis.JSBI = globalThis.BigInt !== undefined ? {} : __JSBI;
 const JSBI = globalThis.JSBI;
 
 if (globalThis.BigInt === undefined) {
