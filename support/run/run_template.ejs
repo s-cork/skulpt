@@ -73,6 +73,10 @@ function runit(myDiv, pyver) {
         inputfunTakesPrompt: true,
         debugout: showjs,
         debugging: debug,
+        killableWhile: true,
+        // killableFor: true,
+        // yieldLimit: Infinity,
+        execLimit: 10000,
         __future__: future
     });
 
@@ -86,6 +90,8 @@ function runit(myDiv, pyver) {
 
     var myPromise = Sk.misceval.asyncToPromise(function() {
         return Sk.importMainWithBody("<stdin>", true, prog, true);
+    }, {
+        "*" : () => {}
     });
 
     myPromise.then(function(mod) {}, function(err) {
