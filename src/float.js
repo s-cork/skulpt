@@ -300,7 +300,7 @@ Sk.builtin.float_.PyFloat_Check = function (op) {
  * @return {string}   The string representation of this instance's value.
  */
 Sk.builtin.float_.prototype.toFixed = function (x) {
-    return this.v.toFixed(Sk.ffi.toNumber(x));
+    return this.v.toFixed(Sk.ffi.toJsNumber(x));
 };
 
 function numberSlot(f) {
@@ -449,7 +449,7 @@ Sk.builtin.float_.prototype.round$ = function (ndigits) {
     if (ndigits !== undefined && !Sk.misceval.isIndex(ndigits)) {
         throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(ndigits) + "' object cannot be interpreted as an index");
     }
-    number = Sk.ffi.toNumber(this);
+    number = Sk.ffi.toJsNumber(this);
     if (ndigits === undefined) {
         ndigs = 0;
     } else {

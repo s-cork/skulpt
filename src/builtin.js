@@ -418,7 +418,7 @@ Sk.builtin.unichr = function unichr(x) {
     if (!Sk.builtin.checkInt(x)) {
         throw new Sk.builtin.TypeError("an integer is required");
     }
-    x = Sk.ffi.toNumber(x);
+    x = Sk.ffi.toJsNumber(x);
 
     try {
         return new Sk.builtin.str(String.fromCodePoint(x));
