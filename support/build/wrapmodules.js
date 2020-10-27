@@ -100,3 +100,11 @@ if (process.argv.includes("internal")) {
     }
     buildJsonFile("unit3", ["test/unit3"], [".py"], "support/tmp/unit3.js");
 }
+
+
+/**
+ * 
+ * \.([\w]+)=Sk\.abstr\.build(Native|Iterator)Class\("([\w]+)",\{constructor:function
+ * 
+ * .$1=Sk.abstr.build$2Class("$3",{constructor:function $1
+ */
