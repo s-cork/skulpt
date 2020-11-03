@@ -396,6 +396,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     delete this.$dir;
                     return (this.$dir = dir);
                 },
+                configurable: true,
             },
             tp$iter: {
                 get() {
@@ -407,6 +408,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     }
                     delete this.tp$iter;
                 },
+                configurable: true,
             },
             tp$iternext: {
                 get() {
@@ -419,6 +421,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     }
                     delete this.tp$iternext;
                 },
+                configurable: true,
             },
             mp$subscript: {
                 get() {
@@ -431,6 +434,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     delete this.mp$subscript;
                     delete this.sq$length;
                 },
+                configurable: true,
             },
             sq$length: {
                 get() {
@@ -443,6 +447,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     delete this.mp$subscript;
                     delete this.sq$length;
                 },
+                configurable: true,
             },
             tp$call: {
                 get() {
@@ -461,6 +466,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     }
                     delete this.tp$call;
                 },
+                configurable: true,
             },
         },
     },
