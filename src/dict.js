@@ -506,6 +506,12 @@ function dict$merge(b) {
         // or other mapping types like mapping proxy
         const keyfunc = Sk.abstr.lookupSpecial(b, Sk.builtin.str.$keys);
 
+        if (keyfunc === undefined) {
+            throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(b) + "' object is not a mapping");
+        } else if (b.mp$subscript === undefined) {
+            throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(b) + "' object is not a subscriptable");
+        }
+
         return Sk.misceval.chain(Sk.misceval.callsimOrSuspendArray(keyfunc, []), (keys) =>
             Sk.misceval.iterFor(Sk.abstr.iter(keys), (key) =>
                 Sk.misceval.chain(b.mp$subscript(key, true), (v) => {
