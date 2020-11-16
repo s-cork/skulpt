@@ -89,6 +89,7 @@ if (process.argv.includes("internal")) {
     };
 
     buildJsonFile("builtinFiles", ["src/builtin", "src/lib"], [".js", ".py"], "dist/skulpt-stdlib.js", opts)
+    updateConstructorNames()
 } else if (process.argv.includes("unit2")) {
     if (!fs.existsSync("support/tmp")) {
 	fs.mkdirSync("support/tmp");
@@ -104,7 +105,24 @@ if (process.argv.includes("internal")) {
 
 /**
  * 
- * \.([\w]+)=Sk\.abstr\.build(Native|Iterator)Class\("([\w]+)",\{constructor:function
+ * \.([\w]+)=Sk\.abstr\.build(Native|Iterator)Class\("([\w]+)",\{constructor:function\(
  * 
- * .$1=Sk.abstr.build$2Class("$3",{constructor:function $1
+ * .$1=Sk.abstr.build$2Class("$3",{constructor:function $1(
  */
+
+function updateConstructorNames() {
+    const minFile = "dist/skulpt.min.js";
+    fs.readFile(minFile, "utf8", (err, data) => {
+        if (err) {
+            return console.log(err);
+        }
+        const result = data.replace(
+            /\.([\w]+)=Sk\.abstr\.build(Native|Iterator)Class\("([\w]+)",\{constructor:function\(/g,
+            '.$1=Sk.abstr.build$2Class("$3",{constructor:function $1('
+        );
+
+        fs.writeFile(minFile, result, "utf8", function (err) {
+            if (err) return console.log(err);
+        });
+    });
+}
