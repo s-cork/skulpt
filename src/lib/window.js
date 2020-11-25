@@ -6,7 +6,7 @@ function $builtinmodule() {
                 const jsName = pyName.toString();
                 const ret = window[jsName];
                 if (ret !== undefined) {
-                    return Sk.ffi.toPy(ret);
+                    return Sk.ffi.proxy(ret);
                 }
                 throw new Sk.builtin.AttributeError("window has no attribute " + jsName);
             },
