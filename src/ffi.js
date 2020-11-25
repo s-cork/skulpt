@@ -293,9 +293,9 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         // determine the type and name of this proxy
         if (obj.call === Function.prototype.call) {
             this.is$type =
-                flag !== "bound" && obj.prototype && obj.prototype.constructor && is_constructor.test(Function.prototype.toString.call(obj));
-            this.is$bound = flag === "bound";
+                obj.prototype && obj.prototype.constructor && Function.prototype.toString.call(obj).match(is_constructor);
             this.is$callable = true;
+            this.$bound = (flag || {}).bound;
             this.tp$name = obj.name || "<native JS>";
         } else {
             this.is$type = false;
@@ -319,8 +319,8 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     return meth;
                 }
                 let ret;
-                if (attr.bind) {
-                    ret = proxy(attr.bind(this.js$wrapped), "bound");
+                if (this.js$wrapped.constructor !== Object) {
+                    ret = proxy(attr, {bound: this.js$wrapped});
                     this.$methods[jsName] = ret;
                 } else {
                     ret = proxy(attr);
@@ -349,8 +349,8 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 return new Sk.builtin.str("{...}");
             } else if (this.is$type) {
                 return new Sk.builtin.str("<class " + this.tp$name + " (proxy)>");
-            } else if (this.is$bound) {
-                return new Sk.builtin.str("<" + this.tp$name + " (proxy)>");
+            } else if (this.$bound) {
+                return new Sk.builtin.str("<bound method " + this.tp$name + " (proxy)>");
             } else if (this.is$callable) {
                 return new Sk.builtin.str("<function " + this.tp$name + " (proxy)>");
             } else if (this.js$wrapped.constructor === Object) {
@@ -404,7 +404,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     throw new Sk.builtin.TypeError("'" + this.tp$name + "' object is not callable");
                 }
                 return Sk.misceval.chain(
-                    this.js$wrapped(...args.map((x) => toJs(x))),
+                    this.js$wrapped.call(this.$bound, ...args.map((x) => toJs(x))),
                     (res) => (res instanceof Promise ? Sk.misceval.promiseToSuspension(res) : res),
                     (res) => proxy(res)
                 );
@@ -496,11 +496,12 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                         return (this.tp$call = (args, kwargs) => {
                             Sk.abstr.checkNoKwargs(this.tp$name, kwargs);
                             args = args.map((x) => toJs(x));
-                            if (this.is$type) {
+                            const bound = this.$bound;
+                            if (this.is$type && (bound === undefined || bound === window || bound.constructor === Object)) {
                                 return proxy(new this.js$wrapped(...args));
                             }
                             return Sk.misceval.chain(
-                                this.js$wrapped(...args),
+                                this.js$wrapped.call(this.$bound, ...args),
                                 (res) => (res instanceof Promise ? Sk.misceval.promiseToSuspension(res) : res),
                                 (res) => proxy(res)
                             );
