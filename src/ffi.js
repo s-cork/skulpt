@@ -197,7 +197,8 @@ function toJs(obj, hooks) {
 
     if (hooks.objectHook) {
         // pass this val to the objectHook - might be a Uint8Array or some other js object that was proxied
-        return hooks.objectHook(val);
+        // also pass the original object
+        return hooks.objectHook(val, obj);
     }
     // we don't have a python object so send the val
     return val;
@@ -217,7 +218,9 @@ function toJs(obj, hooks) {
  * to hooks available in hooks
  * hooks.dictHook - override the default dict to object literal bevaiour
  * hooks.unhandledHook - by default this function throws an error in the unhandled case
- * 
+ * hooks.bigintHook - by default bigints will fail - can also catch this case in unhandledHook
+ * hooks.handleConstant - get NaN, Infinity, -Infinity
+ * hooks.arrayHook
  */
 function toJSON(obj, hooks) {
     if (obj === undefined || obj === null) {
@@ -228,30 +231,46 @@ function toJSON(obj, hooks) {
         return val;
     }
     const type = typeof val;
-    if (type === "number" || type === "string" || type === "boolean") {
+    if (type === "string" || type === "boolean") {
         return val;
     }
-    if (Array.isArray(val)) {
-        return val.map((x) => toJSON(x, hooks));
-    }
     hooks = hooks || {};
-    if (obj instanceof Sk.builtin.dict) {
-        if (hooks.dictHook) {
-            return hooks.dictHook(obj);
-        } else {
-            const ret = {};
-            obj.$items().forEach(([k, v]) => {
-                k = k.valueOf();
-                const type = typeof k;
-                if (type === "string" || type === "number" || type === "boolean" || k === null) {
-                    ret[k] = toJSON(v, hooks);
-                } else {
-                    throw TypeError("unhandled key in conversion from dictionary - can only handle str, int, float, None, bool");
-                }
-            });
-            return ret;
+    if (type === "number") {
+        if (hooks.handleConstant && (val === NaN || val === Infinity || val === -Infinity)) {
+            return hooks.handleConstant(val, obj);
+        }
+        return val;
+    }
+    if (type === "object") {
+        if (Array.isArray(val)) {
+            if (hooks.arrayHook) {
+                return hooks.arrayHook(val, obj);
+            }
+            return val.map((x) => toJSON(x, hooks));
+        }
+        if (obj instanceof Sk.builtin.dict) {
+            if (hooks.dictHook) {
+                return hooks.dictHook(obj);
+            } else {
+                const ret = {};
+                obj.$items().forEach(([k, v]) => {
+                    k = k.valueOf();
+                    const type = typeof k;
+                    if (type === "string" || type === "number" || type === "boolean" || k === null) {
+                        ret[k] = toJSON(v, hooks);
+                    } else {
+                        throw TypeError("unhandled key in conversion from dictionary - can only handle str, int, float, None, bool");
+                    }
+                });
+                return ret;
+            }
+        } 
+    } else if (type === "bigint") {
+        if (hooks.bigintHook) {
+            return hooks.bigintHook(val, obj);
         }
     }
+
     if (hooks.unhandledHook) {
         return hooks.unhandledHook(obj);
     }
