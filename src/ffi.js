@@ -35,10 +35,10 @@ Sk.ffi = {
  *
  * only works on basic objects that are being used as storage, doesn't handle
  * functions, etc.
- * options.funcHook
- * options.dictHook
+ * hooks.funcHook
+ * hooks.dictHook
  */
-function toPy(obj, options) {
+function toPy(obj, hooks) {
     if (obj === null || obj === undefined) {
         return Sk.builtin.none.none$;
     }
@@ -57,44 +57,44 @@ function toPy(obj, options) {
             return new Sk.builtin.str(obj);
         }
         if (type === "function") {
-            if (options.funcHook) {
-                return options.funcHook(obj);
+            if (hooks.funcHook) {
+                return hooks.funcHook(obj);
             }
             // should this proxy or new Sk.builtin.func? old remap used to do an Sk.builtin.func
             return new Sk.builtin.func(obj);
         }
         if (Array.isArray(obj)) {
-            return new Sk.builtin.list(obj.map((x) => toPy(x)));
+            return new Sk.builtin.list(obj.map((x) => toPy(x, hooks)));
         }
         constructor = obj.constructor;
         if (constructor === Uint8Array) {
             return new Sk.builtin.bytes(obj);
         }
     }
-    options = options || {};
+    hooks = hooks || {};
     if (type === "object") {
         constructor = constructor || obj.constructor;
         if (constructor === Sk.misceval.Suspension) {
             return obj;
         }
         if (constructor === Object || constructor === undefined /* Object.create(null) */) {
-            if (options.dictHook) {
-                return options.dictHook(obj);
+            if (hooks.dictHook) {
+                return hooks.dictHook(obj);
             }
-            return toPyDict(obj);
+            return toPyDict(obj, hooks);
         }
         if (constructor === Set) {
-            return toPySet(obj);
+            return toPySet(obj, hooks);
         }
         if (constructor === Map) {
             const ret = new Sk.builtin.dict();
             obj.forEach((val, key) => {
-                ret.mp$ass_subscript(toPy(key), toPy(val));
+                ret.mp$ass_subscript(toPy(key), toPy(val, hooks));
             });
             return ret;
         }
-        if (options.proxyHook) {
-            return options.proxyHook(obj);
+        if (hooks.proxyHook) {
+            return hooks.proxyHook(obj, hooks);
         }
         return proxy(obj);
     }
@@ -110,13 +110,16 @@ function toPy(obj, options) {
     }
 
     // could be a symbol I guess
-    throw TypeError("can't remap type:" + type);
+    if (hooks.unhandledHook) {
+        return hooks.unhandledHook(obj);
+    }
+    throw TypeError("can't remap type: " + type);
 }
 
 /**
  * 
  * @param {*} obj 
- * @param {*} options 
+ * @param {*} hooks 
  * 
  * This will handle any object and conver it to javascript
  * 
@@ -144,13 +147,13 @@ function toPy(obj, options) {
  * 
  * can override behaviours with hooks
  * 
- * options.dictHook - override the conversion to dict
- * options.setHook - override the conversion to set
- * options.wrapHook - override the default wrap behavior
- * options.objectHook - override the behaviour of a javascript object (of type object) that is about to be returned
+ * hooks.dictHook - override the conversion to dict
+ * hooks.setHook - override the conversion to set
+ * hooks.wrapHook - override the default wrap behavior
+ * hooks.objectHook - override the behaviour of a javascript object (of type object) that is about to be returned
  * 
  */
-function toJs(obj, options) {
+function toJs(obj, hooks) {
     if (obj === undefined || obj === null) {
         return obj;
     }
@@ -164,24 +167,24 @@ function toJs(obj, options) {
         return val;
     }
     if (Array.isArray(val)) {
-        return val.map((x) => toJs(x, options));
+        return val.map((x) => toJs(x, hooks));
     }
-    options = options || {};
+    hooks = hooks || {};
     if (val.sk$object) {
         if (obj instanceof Sk.builtin.dict) {
-            if (options.dictHook) {
-                return options.dictHook(obj);
+            if (hooks.dictHook) {
+                return hooks.dictHook(obj);
             }
-            return toJsHashMap(obj, options);
+            return toJsHashMap(obj, hooks);
         }
         if (obj instanceof Sk.builtin.set) {
-            if (options.setHook) {
-                return options.setHook(obj);
+            if (hooks.setHook) {
+                return hooks.setHook(obj);
             }
-            return new Set(toJsArray(obj, options));
+            return new Set(toJsArray(obj, hooks));
         }
-        if (options.wrapHook !== undefined) {
-            return options.wrapHook(obj);
+        if (hooks.wrapHook) {
+            return hooks.wrapHook(obj);
         }
         if (obj.tp$call !== undefined) {
             const tp_name = obj.tp$name;
@@ -192,9 +195,9 @@ function toJs(obj, options) {
         return new WrappedObject(obj);
     }
 
-    if (options.objectHook) {
+    if (hooks.objectHook) {
         // pass this val to the objectHook - might be a Uint8Array or some other js object that was proxied
-        return options.objectHook(val);
+        return hooks.objectHook(val);
     }
     // we don't have a python object so send the val
     return val;
@@ -204,19 +207,19 @@ function toJs(obj, options) {
 /**
  * 
  * @param {*} obj 
- * @param {*} options 
+ * @param {*} hooks 
  * 
  * toJSON will return a jsonable object
  * handles simple python objects - None, str, int, float, bool, list, tuple, dict
  * 
  * keys of dictionaries are only allowed to be - None, str, int, float, bool
  * 
- * to hooks available in options
- * options.dictHook - override the default dict to object literal bevaiour
- * options.unhandledHook - by default this function throws an error in the unhandled case
+ * to hooks available in hooks
+ * hooks.dictHook - override the default dict to object literal bevaiour
+ * hooks.unhandledHook - by default this function throws an error in the unhandled case
  * 
  */
-function toJSON(obj, options) {
+function toJSON(obj, hooks) {
     if (obj === undefined || obj === null) {
         return obj;
     }
@@ -229,19 +232,19 @@ function toJSON(obj, options) {
         return val;
     }
     if (Array.isArray(val)) {
-        return val.map((x) => toJSON(x, options));
+        return val.map((x) => toJSON(x, hooks));
     }
-    options = options || {};
+    hooks = hooks || {};
     if (obj instanceof Sk.builtin.dict) {
-        if (options.dictHook) {
-            return options.dictHook(obj);
+        if (hooks.dictHook) {
+            return hooks.dictHook(obj);
         } else {
             const ret = {};
             obj.$items().forEach(([k, v]) => {
                 k = k.valueOf();
                 const type = typeof k;
                 if (type === "string" || type === "number" || type === "boolean" || k === null) {
-                    ret[k] = toJSON(v, options);
+                    ret[k] = toJSON(v, hooks);
                 } else {
                     throw TypeError("unhandled key in conversion from dictionary - can only handle str, int, float, None, bool");
                 }
@@ -249,8 +252,8 @@ function toJSON(obj, options) {
             return ret;
         }
     }
-    if (options.unhandledHook) {
-        return options.unhandledHook(obj);
+    if (hooks.unhandledHook) {
+        return hooks.unhandledHook(obj);
     }
     throw new TypeError("unhandled remap " + Sk.abstr.typeName(obj));
 }
@@ -285,15 +288,15 @@ function toJsString(obj) {
     return String(obj);
 }
 
-function toJsArray(obj, options) {
-    return Array.from(obj, (x) => toJs(x, options));
+function toJsArray(obj, hooks) {
+    return Array.from(obj, (x) => toJs(x, hooks));
 }
 
-function toJsHashMap(dict, options) {
+function toJsHashMap(dict, hooks) {
     const obj = {};
     dict.$items().forEach(([key, val]) => {
         // if non str keys are sent to this function it may behave unexpectedly (but it won't fail)
-        obj[key.valueOf()] = toJs(val, options);
+        obj[key.valueOf()] = toJs(val, hooks);
     });
     return obj;
 }
@@ -335,16 +338,16 @@ function toPyStr(obj) {
     return new Sk.builtin.str(obj);
 }
 
-function toPyList(obj) {
-    return new Sk.builtin.list(Array.from(obj, (x) => toPy(x)));
+function toPyList(obj, hooks) {
+    return new Sk.builtin.list(Array.from(obj, (x) => toPy(x, hooks)));
 }
 
-function toPySet(obj) {
-    return new Sk.builtin.set(Array.from(obj, (x) => toPy(x)));
+function toPySet(obj, hooks) {
+    return new Sk.builtin.set(Array.from(obj, (x) => toPy(x, hooks)));
 }
 
-function toPyTuple(obj) {
-    return new Sk.builtin.tuple(Array.from(obj, (x) => toPy(x)));
+function toPyTuple(obj, hooks) {
+    return new Sk.builtin.tuple(Array.from(obj, (x) => toPy(x, hooks)));
 }
 
 function toPyInt(num) {
@@ -363,10 +366,10 @@ function toPyInt(num) {
  * @param {*} obj 
  * 
  */
-function toPyDict(obj) {
+function toPyDict(obj, hooks) {
     const ret = new Sk.builtin.dict();
     Object.entries(obj).forEach(([key, val]) => {
-        ret.mp$ass_subscript(new Sk.builtin.str(key), toPy(val));
+        ret.mp$ass_subscript(new Sk.builtin.str(key), toPy(val, hooks));
     });
     return ret;
 }
