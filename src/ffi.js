@@ -55,15 +55,16 @@ function toPy(obj, hooks) {
     if (obj.length !== undefined) {
         if (type === "string") {
             return new Sk.builtin.str(obj);
-        }
-        if (type === "function") {
+        } else if (type === "function") {
             if (hooks.funcHook) {
                 return hooks.funcHook(obj);
             }
             // should this proxy or new Sk.builtin.func? old remap used to do an Sk.builtin.func
             return new Sk.builtin.func(obj);
-        }
-        if (Array.isArray(obj)) {
+        } else if (Array.isArray(obj)) {
+            if (JSBI.__isBigInt(obj)) {
+                return new Sk.builtin.int_(JSBI.numberIfSafe(obj));
+            }
             return new Sk.builtin.list(obj.map((x) => toPy(x, hooks)));
         }
         constructor = obj.constructor;
@@ -76,17 +77,14 @@ function toPy(obj, hooks) {
         constructor = constructor || obj.constructor;
         if (constructor === Sk.misceval.Suspension) {
             return obj;
-        }
-        if (constructor === Object || constructor === undefined /* Object.create(null) */) {
+        } else if (constructor === Object || constructor === undefined /* Object.create(null) */) {
             if (hooks.dictHook) {
                 return hooks.dictHook(obj);
             }
             return toPyDict(obj, hooks);
-        }
-        if (constructor === Set) {
+        } else if (constructor === Set) {
             return toPySet(obj, hooks);
-        }
-        if (constructor === Map) {
+        } else if (constructor === Map) {
             const ret = new Sk.builtin.dict();
             obj.forEach((val, key) => {
                 ret.mp$ass_subscript(toPy(key), toPy(val, hooks));
@@ -97,35 +95,30 @@ function toPy(obj, hooks) {
             return hooks.proxyHook(obj, hooks);
         }
         return proxy(obj);
-    }
-
-    if (type === "number") {
+    } else if (type === "number") {
         return numberToPy(obj);
-    }
-    if (type === "boolean") {
+    } else if (type === "boolean") {
         return new Sk.builtin.bool(obj);
-    }
-    if (type === "bigint") {
+    } else if (type === "bigint") {
         return new Sk.builtin.int_(JSBI.numberIfSafe(obj));
     }
-
-    // could be a symbol I guess
     if (hooks.unhandledHook) {
         return hooks.unhandledHook(obj);
     }
-    throw TypeError("can't remap type: " + type);
+    // could be a Symbol?
+    Sk.asserts.fail("unhandled remap case of type " + type);
 }
 
 /**
- * 
- * @param {*} obj 
- * @param {*} hooks 
- * 
+ *
+ * @param {*} obj
+ * @param {*} hooks
+ *
  * This will handle any object and conver it to javascript
- * 
+ *
  * simple objects - str, int, float, bool, tuple, list, set, dict, bytes
  * are converted as you might expect
- * 
+ *
  * str - string
  * int - number or bigint (depending on the size)
  * float - number
@@ -134,24 +127,24 @@ function toPy(obj, hooks) {
  * set - Set
  * dict - object literal
  * bytes - Uint8Array
- * 
+ *
  * dict - all keys are allowed - this may cause unexpected bevaiour for non str keys
  * {None: 'a', (1,): 'b', True: 'c', A(): 'd'} => {null: 'a', '1,': 'b', true: 'c', "<'A' object>": 'd'}
  * and on conversion back will convert all the keys to str objects
- * 
+ *
  * All js objects passed to this function will be returned
- * 
+ *
  * All other python objects are wrapped
  * wrapped objects have a truthy $isWrapped property and an unwrap method
  * (used to convert back toPy)
- * 
+ *
  * can override behaviours with hooks
- * 
+ *
  * hooks.dictHook - override the conversion to dict
  * hooks.setHook - override the conversion to set
  * hooks.wrapHook - override the default wrap behavior
  * hooks.objectHook - override the behaviour of a javascript object (of type object) that is about to be returned
- * 
+ *
  */
 function toJs(obj, hooks) {
     if (obj === undefined || obj === null) {
@@ -166,11 +159,16 @@ function toJs(obj, hooks) {
         // number, string, boolean, bigint, function
         return val;
     }
-    if (Array.isArray(val)) {
-        return val.map((x) => toJs(x, hooks));
-    }
     hooks = hooks || {};
-    if (val.sk$object) {
+    if (Array.isArray(val)) {
+        if (JSBI.__isBigInt(val)) {
+            return val; // older browser BigInt is pollyfilled as an array
+        } else if (hooks.arrayHook) {
+            return hooks.arrayHook(val, obj); // pass the array and the original obj (tuple or list (or Array))
+        } else {
+            return val.map((x) => toJs(x, hooks));
+        }
+    } else if (val.sk$object) {
         if (obj instanceof Sk.builtin.dict) {
             if (hooks.dictHook) {
                 return hooks.dictHook(obj);
@@ -183,18 +181,11 @@ function toJs(obj, hooks) {
             }
             return new Set(toJsArray(obj, hooks));
         }
-        if (hooks.wrapHook) {
-            return hooks.wrapHook(obj);
+        if (hooks.unhandledHook) {
+            return hooks.unhandledHook(obj);
         }
-        if (obj.tp$call !== undefined) {
-            const tp_name = obj.tp$name;
-            if (tp_name === "function" || tp_name === "method" || tp_name === "builtin_function_or_method") {
-                return WrappedFunction(obj);
-            }
-        }
-        return new WrappedObject(obj);
+        return;
     }
-
     if (hooks.objectHook) {
         // pass this val to the objectHook - might be a Uint8Array or some other js object that was proxied
         // also pass the original object
@@ -204,17 +195,16 @@ function toJs(obj, hooks) {
     return val;
 }
 
-
 /**
- * 
- * @param {*} obj 
- * @param {*} hooks 
- * 
+ *
+ * @param {*} obj
+ * @param {*} hooks
+ *
  * toJSON will return a jsonable object
  * handles simple python objects - None, str, int, float, bool, list, tuple, dict
- * 
+ *
  * keys of dictionaries are only allowed to be - None, str, int, float, bool
- * 
+ *
  * to hooks available in hooks
  * hooks.dictHook - override the default dict to object literal bevaiour
  * hooks.unhandledHook - by default this function throws an error in the unhandled case
@@ -236,19 +226,24 @@ function toJSON(obj, hooks) {
     }
     hooks = hooks || {};
     if (type === "number") {
-        if (hooks.handleConstant && (val === NaN || val === Infinity || val === -Infinity)) {
-            return hooks.handleConstant(val, obj);
+        if (hooks.numberHook) {
+            // may want to deal with Infinity, NaN, -Infinity or difference between ints and floats
+            return hooks.numberHook(val, obj);
         }
         return val;
-    }
-    if (type === "object") {
+    } else if (type === "object") {
         if (Array.isArray(val)) {
-            if (hooks.arrayHook) {
+            if (JSBI.__isBigInt(val)) {
+                if (hooks.bigintHook) {
+                    return hooks.bigintHook(val, obj);
+                }
+                // fall through to unhandled                
+            } else if (hooks.arrayHook) {
                 return hooks.arrayHook(val, obj);
+            } else {
+                return val.map((x) => toJSON(x, hooks));
             }
-            return val.map((x) => toJSON(x, hooks));
-        }
-        if (obj instanceof Sk.builtin.dict) {
+        } else if (obj instanceof Sk.builtin.dict) {
             if (hooks.dictHook) {
                 return hooks.dictHook(obj);
             } else {
@@ -264,35 +259,17 @@ function toJSON(obj, hooks) {
                 });
                 return ret;
             }
-        } 
+        }
+        // fall through to unhandledHook
     } else if (type === "bigint") {
         if (hooks.bigintHook) {
             return hooks.bigintHook(val, obj);
         }
     }
-
     if (hooks.unhandledHook) {
         return hooks.unhandledHook(obj);
     }
     throw new TypeError("unhandled remap " + Sk.abstr.typeName(obj));
-}
-
-function WrappedFunction(obj) {
-    const wrapped = (...args) => Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x))), (res) => toJs(res));
-    wrapped.v = obj;
-    wrapped.unwrap = () => obj;
-    wrapped.$isWrapped = true;
-    return wrapped;
-}
-
-class WrappedObject {
-    constructor(obj) {
-        this.v = obj;
-        this.$isWrapped = true;
-    }
-    unwrap() {
-        return this.v;
-    }
 }
 
 function isTrue(obj) {
@@ -380,11 +357,7 @@ function toPyInt(num) {
     return Math.abs(num) < Number.MAX_SAFE_INTEGER ? new Sk.builtin.int_(num) : new Sk.builtin.int_(JSBI.BigInt(num));
 }
 
-/**
- * 
- * @param {*} obj 
- * 
- */
+
 function toPyDict(obj, hooks) {
     const ret = new Sk.builtin.dict();
     Object.entries(obj).forEach(([key, val]) => {
@@ -393,7 +366,6 @@ function toPyDict(obj, hooks) {
     return ret;
 }
 
-
 // cache the proxied objects in a weakmap
 const _proxied = new WeakMap();
 
@@ -401,11 +373,11 @@ const _proxied = new WeakMap();
 // the only flags currently used is {bound: some_js_object}
 function proxy(obj, flags) {
     if (obj === null || obj === undefined) {
-        throw new TypeError("null object passed to proxy - use Sk.ffi.remapToPy");
+        return Sk.builtin.none.none$;
     }
     const type = typeof obj;
     if (type !== "object" && type !== "function") {
-        throw TypeError("can only proxy js objects and functions - use Sk.ffi.remapToPy");
+        return toPy(obj); // don't proxy strings, numbers, bigints
     }
     flags = flags || {};
     const cached = _proxied.get(obj);
@@ -421,7 +393,19 @@ function proxy(obj, flags) {
 
 const is_constructor = /^class|[^a-zA-Z_$]this[^a-zA-Z_$]/g;
 
-const pyHooks = { dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj) }; 
+const pyHooks = { dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj) };
+const jsHooks = {
+    unhandledHook: (obj) => {
+        if (obj.tp$call) {
+            const wrapped = (...args) => Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x, pyHooks))), (res) => toJs(res, jsHooks));
+            wrapped.v = obj;
+            wrapped.unwrap = () => obj;
+            wrapped.$isWrapped = true;
+            return wrapped;
+        }
+        return { v: obj, $isWrapped: true, unwrap: () => obj };
+    },
+};
 // we customize the dictHook and the funcHook here - we want to keep object literals as proxied objects when remapping to Py
 // and we want funcs to be proxied
 
@@ -436,9 +420,8 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         this.in$repr = false;
 
         // determine the type and name of this proxy
-        if (obj.call === Function.prototype.call) {
-            this.is$type =
-                obj.prototype && obj.prototype.constructor && Function.prototype.toString.call(obj).match(is_constructor) !== null;
+        if (typeof obj === "function") {
+            this.is$type = obj.prototype && obj.prototype.constructor && Function.prototype.toString.call(obj).match(is_constructor) !== null;
             this.is$callable = true;
             this.$bound = (flags || {}).bound;
             this.tp$name = obj.name || "<native JS>";
@@ -472,7 +455,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
             if (value === undefined) {
                 delete this.js$wrapped[jsName];
             } else {
-                this.js$wrapped[jsName] = toJs(value);
+                this.js$wrapped[jsName] = toJs(value, jsHooks);
             }
         },
         $r() {
@@ -508,7 +491,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         },
         sq$contains(item) {
             return toJs(item) in this.js$wrapped;
-        }
+        },
     },
     methods: {
         __dir__: {
@@ -528,7 +511,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 if (!(js_wrapped.prototype && js_wrapped.prototype.constructor)) {
                     throw new Sk.builtin.TypeError("'" + js_proxy.tp$name + "' is not a constructor");
                 }
-                return toPy(new js_wrapped(...args.map((x) => toJs(x))), pyHooks);
+                return toPy(new js_wrapped(...args.map((x) => toJs(x, jsHooks))), pyHooks);
             },
             $flags: { MinArgs: 1 },
         },
@@ -538,7 +521,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     throw new Sk.builtin.TypeError("'" + this.tp$name + "' object is not callable");
                 }
                 return Sk.misceval.chain(
-                    this.js$wrapped.call(this.$bound, ...args.map((x) => toJs(x))),
+                    this.js$wrapped.apply(this.$bound, args.map((x) => toJs(x, jsHooks))),
                     (res) => (res instanceof Promise ? Sk.misceval.promiseToSuspension(res) : res),
                     (res) => toPy(res, pyHooks)
                 );
@@ -629,13 +612,13 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                         delete this.tp$call;
                         return (this.tp$call = (args, kwargs) => {
                             Sk.abstr.checkNoKwargs(this.tp$name, kwargs);
-                            args = args.map((x) => toJs(x));
+                            args = args.map((x) => toJs(x, jsHooks));
                             const bound = this.$bound;
                             if (this.is$type && (bound === undefined || bound === window || bound.constructor === Object)) {
                                 return toPy(new this.js$wrapped(...args), pyHooks);
                             }
                             return Sk.misceval.chain(
-                                this.js$wrapped.call(this.$bound, ...args),
+                                this.js$wrapped.apply(this.$bound, args),
                                 (res) => (res instanceof Promise ? Sk.misceval.promiseToSuspension(res) : res),
                                 (res) => toPy(res, pyHooks)
                             );
@@ -650,5 +633,3 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         sk$acceptable_as_base_class: false,
     },
 });
-
-// work in progress functions
