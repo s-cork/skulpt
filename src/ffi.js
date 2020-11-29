@@ -155,44 +155,61 @@ function toJs(obj, hooks) {
     if (val === null) {
         return val;
     }
-    if (typeof val !== "object") {
-        // number, string, boolean, bigint, function
-        return val;
-    }
+    const type = typeof val;
     hooks = hooks || {};
-    if (Array.isArray(val)) {
-        if (JSBI.__isBigInt(val)) {
-            return val; // older browser BigInt is pollyfilled as an array
-        } else if (hooks.arrayHook) {
-            return hooks.arrayHook(val, obj); // pass the array and the original obj (tuple or list (or Array))
-        } else {
-            return val.map((x) => toJs(x, hooks));
+    if (type === "string" || type === "boolean") {
+        return val;
+    } else if (type === "number") {
+        if (hooks.numberHook) {
+            return hooks.numberHook(val, obj);
         }
+        return val;
+    } else if (type === "bigint") {
+        if (hooks.bigintHook) {
+            return hooks.bigintHook(val, obj);
+        }
+        return val;
     } else if (val.sk$object) {
+        // this python object didn't override valueOf()
         if (obj instanceof Sk.builtin.dict) {
             if (hooks.dictHook) {
                 return hooks.dictHook(obj);
             }
             return toJsHashMap(obj, hooks);
-        }
-        if (obj instanceof Sk.builtin.set) {
+        } else if (obj instanceof Sk.builtin.set) {
             if (hooks.setHook) {
                 return hooks.setHook(obj);
             }
             return new Set(toJsArray(obj, hooks));
-        }
-        if (hooks.unhandledHook) {
+        } else if (hooks.unhandledHook) {
             return hooks.unhandledHook(obj);
         }
-        return;
+        return undefined;
+    } else if (type === "object") {
+        if (Array.isArray(val)) {
+            if (JSBI.__isBigInt(val)) {
+                if (hooks.bigintHook) {
+                    return hooks.bigintHook(val, obj);
+                }
+                return val; // older browser BigInt is pollyfilled as an array
+            } else if (hooks.arrayHook) {
+                return hooks.arrayHook(val, obj); // pass the array and the original obj (tuple or list (or Array))
+            }
+            return val.map((x) => toJs(x, hooks));
+        } else if (hooks.objectHook) {
+            // pass this val to the objectHook - might be a Uint8Array or some other js object that was proxied
+            // also pass the original object
+            return hooks.objectHook(val, obj);
+        }
+        return val;
+    } else if (type === "function") {
+        if (hooks.funcHook) {
+            return hooks.funcHook(val, obj);
+        }
+        return val;
     }
-    if (hooks.objectHook) {
-        // pass this val to the objectHook - might be a Uint8Array or some other js object that was proxied
-        // also pass the original object
-        return hooks.objectHook(val, obj);
-    }
-    // we don't have a python object so send the val
-    return val;
+    // could be a symbol - anything else?
+    Sk.asserts.fail("unhandled remap type: " + type);
 }
 
 /**
@@ -265,6 +282,7 @@ function toJSON(obj, hooks) {
         if (hooks.bigintHook) {
             return hooks.bigintHook(val, obj);
         }
+        // fall through to unhandledHook
     }
     if (hooks.unhandledHook) {
         return hooks.unhandledHook(obj);
