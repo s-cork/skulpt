@@ -8,9 +8,7 @@
  * but use BigInt as the primitive type
  *
  */
-const __JSBI = require("jsbi");
-// use jsbi which is es5 compliant - change to ES6 in the compilation version
-const JSBI = Sk.global.JSBI = Sk.global.BigInt !== undefined ? {} : __JSBI;
+const JSBI = Sk.global.JSBI = Sk.global.BigInt !== undefined ? {} : require("jsbi");
 
 if (Sk.global.BigInt === undefined) {
     // __isBigInt is not part of the public api so include it if this is ever removed
