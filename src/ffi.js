@@ -46,11 +46,13 @@ function toPy(obj, hooks) {
     if (obj.sk$object) {
         return obj;
     } else if (obj.$isWrapped && obj.unwrap) {
+        // wrap protocol
         return obj.unwrap();
     }
 
     let constructor;
     const type = typeof obj;
+    hooks = hooks || {};
 
     if (obj.length !== undefined) {
         if (type === "string") {
@@ -72,7 +74,6 @@ function toPy(obj, hooks) {
             return new Sk.builtin.bytes(obj);
         }
     }
-    hooks = hooks || {};
     if (type === "object") {
         constructor = constructor || obj.constructor;
         if (constructor === Sk.misceval.Suspension) {
@@ -140,11 +141,15 @@ function toPy(obj, hooks) {
  *
  * can override behaviours with hooks
  *
- * hooks.dictHook - override the conversion to dict
- * hooks.setHook - override the conversion to set
- * hooks.wrapHook - override the default wrap behavior
- * hooks.objectHook - override the behaviour of a javascript object (of type object) that is about to be returned
- *
+ * hooks.dictHook(pydict) - override the default behaviour from dict to object literal
+ * hooks.setHook(pyset) - override the default behaviour from set to Set
+ * hooks.unhandledHook(pyobj) - python objects that arent simple (str, None, bool, list, set, tuple, int, float) will return undefined - override this behaveiour here
+ * 
+ * hooks.arrayHook(arr, pyobj) - override the array behaviour resulting from a tuple or list (get the internal array of python objects as the first argument)
+ * hooks.numberHook(num, pyobj) - override the number return for float, int
+ * hooks.bigintHoot(bigint, pyobj) - override the return of a bigint for large python integers (this might be polyfilled in older browsers)
+ * hooks.objectHook(obj, pyobj) - override the behaviour of a javascript object (of type object) that is about to be returned
+ * hooks.funcHook(func, pyobj) - override the behvaiour of javascript function that is about to be returned
  */
 function toJs(obj, hooks) {
     if (obj === undefined || obj === null) {
@@ -164,12 +169,14 @@ function toJs(obj, hooks) {
             return hooks.numberHook(val, obj);
         }
         return val;
-    } else if (type === "bigint") {
+    } else if (JSBI.__isBigInt(val)) {
+        // either it's a native bigint or polyfilled as an array like object
         if (hooks.bigintHook) {
             return hooks.bigintHook(val, obj);
         }
         return val;
     } else if (val.sk$object) {
+        // python objects are either of type object or function
         // this python object didn't override valueOf()
         if (obj instanceof Sk.builtin.dict) {
             if (hooks.dictHook) {
@@ -187,12 +194,7 @@ function toJs(obj, hooks) {
         return undefined;
     } else if (type === "object") {
         if (Array.isArray(val)) {
-            if (JSBI.__isBigInt(val)) {
-                if (hooks.bigintHook) {
-                    return hooks.bigintHook(val, obj);
-                }
-                return val; // older browser BigInt is pollyfilled as an array
-            } else if (hooks.arrayHook) {
+            if (hooks.arrayHook) {
                 return hooks.arrayHook(val, obj); // pass the array and the original obj (tuple or list (or Array))
             }
             return val.map((x) => toJs(x, hooks));
@@ -226,64 +228,56 @@ function toJs(obj, hooks) {
  * hooks.dictHook - override the default dict to object literal bevaiour
  * hooks.unhandledHook - by default this function throws an error in the unhandled case
  * hooks.bigintHook - by default bigints will fail - can also catch this case in unhandledHook
- * hooks.handleConstant - get NaN, Infinity, -Infinity
+ * hooks.numberhook - can hoandle constans like NaN or difference between ints and floats
  * hooks.arrayHook
  */
 function toJSON(obj, hooks) {
     if (obj === undefined || obj === null) {
-        return obj;
+        // undefined is not jsonable so return null
+        return null;
     }
     const val = obj.valueOf();
     if (val === null) {
         return val;
     }
     const type = typeof val;
+    hooks = hooks || {};
     if (type === "string" || type === "boolean") {
         return val;
-    }
-    hooks = hooks || {};
-    if (type === "number") {
+    } else if (type === "number") {
         if (hooks.numberHook) {
             // may want to deal with Infinity, NaN, -Infinity or difference between ints and floats
             return hooks.numberHook(val, obj);
         }
         return val;
-    } else if (type === "object") {
-        if (Array.isArray(val)) {
-            if (JSBI.__isBigInt(val)) {
-                if (hooks.bigintHook) {
-                    return hooks.bigintHook(val, obj);
-                }
-                // fall through to unhandled                
-            } else if (hooks.arrayHook) {
-                return hooks.arrayHook(val, obj);
-            } else {
-                return val.map((x) => toJSON(x, hooks));
-            }
-        } else if (obj instanceof Sk.builtin.dict) {
-            if (hooks.dictHook) {
-                return hooks.dictHook(obj);
-            } else {
-                const ret = {};
-                obj.$items().forEach(([k, v]) => {
-                    k = k.valueOf();
-                    const type = typeof k;
-                    if (type === "string" || type === "number" || type === "boolean" || k === null) {
-                        ret[k] = toJSON(v, hooks);
-                    } else {
-                        throw TypeError("unhandled key in conversion from dictionary - can only handle str, int, float, None, bool");
-                    }
-                });
-                return ret;
-            }
-        }
-        // fall through to unhandledHook
-    } else if (type === "bigint") {
+    } else if (JSBI.__isBigInt(val)) {
+        // either it's a native bigint or polyfilled as an array like object
         if (hooks.bigintHook) {
             return hooks.bigintHook(val, obj);
         }
-        // fall through to unhandledHook
+        // fall through to unhandled
+    } else if (Array.isArray(val)) {
+        if (hooks.arrayHook) {
+            return hooks.arrayHook(val, obj);
+        }
+        return val.map((x) => toJSON(x, hooks));
+    } else if (obj instanceof Sk.builtin.dict) {
+        if (hooks.dictHook) {
+            return hooks.dictHook(obj);
+        }
+        const ret = {};
+        obj.$items().forEach(([k, v]) => {
+            k = k.valueOf();
+            const type = typeof k;
+            if (type === "string" || type === "number" || type === "boolean" || k === null) {
+                ret[k] = toJSON(v, hooks);
+            } else {
+                throw TypeError("unhandled key in conversion from dictionary - can only handle str, int, float, None, bool");
+            }
+        });
+        return ret;
     }
+    // fall through to unhandledHook
     if (hooks.unhandledHook) {
         return hooks.unhandledHook(obj);
     }
