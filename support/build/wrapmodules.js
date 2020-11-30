@@ -89,7 +89,9 @@ if (process.argv.includes("internal")) {
     };
 
     buildJsonFile("builtinFiles", ["src/builtin", "src/lib"], [".js", ".py"], "dist/skulpt-stdlib.js", opts)
-    updateConstructorNames()
+    if (process.argv.includes("prod")) {
+        updateConstructorNames();
+    }
 } else if (process.argv.includes("unit2")) {
     if (!fs.existsSync("support/tmp")) {
 	fs.mkdirSync("support/tmp");
