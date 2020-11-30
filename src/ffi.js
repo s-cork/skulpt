@@ -45,7 +45,7 @@ function toPy(obj, hooks) {
 
     if (obj.sk$object) {
         return obj;
-    } else if (obj.$isWrapped && obj.unwrap) {
+    } else if (obj.$isPyWrapped && obj.unwrap) {
         // wrap protocol
         return obj.unwrap();
     }
@@ -62,7 +62,7 @@ function toPy(obj, hooks) {
     } else if (type === "function") {
         // should the defualt behaviour be to proxy or new Sk.builtin.func?
         // old remap used to do an Sk.builtin.func
-        return hooks.funcHook ? hooks.funcHook(obj) : new Sk.builtin.func(obj);
+        return hooks.funcHook ? hooks.funcHook(obj) : proxy(obj);
     } else if (JSBI.__isBigInt(obj)) {
         // might be type === "bigint" if bigint native or an array like object for older browsers
         return new Sk.builtin.int_(JSBI.numberIfSafe(obj));
@@ -123,7 +123,7 @@ function toPy(obj, hooks) {
  * All js objects passed to this function will be returned
  *
  * All other python objects are wrapped
- * wrapped objects have a truthy $isWrapped property and an unwrap method
+ * wrapped objects have a truthy $isPyWrapped property and an unwrap method
  * (used to convert back toPy)
  *
  * can override behaviours with hooks
@@ -173,9 +173,9 @@ function toJs(obj, hooks) {
             return hooks.dictHook ? hooks.dictHook(obj) : toJsHashMap(obj, hooks);
         } else if (obj instanceof Sk.builtin.set) {
             return hooks.setHook ? hooks.setHook(obj) : new Set(toJsArray(obj, hooks));
-        } else if (hooks.wrapHook) {
-            // a wrap protocol would set $isWrapped = true, and an unwrap function to be called in toPy
-            return hooks.wrapHook(obj);
+        } else {
+            // a wrap protocol would set $isPyWrapped = true, and an unwrap function to be called in toPy
+            return hooks.unhandledHook ? hooks.unhandledHook(obj) : undefined;
         }
         // fall through to unhandled hook - or return undefined
     } else if (type === "object") {
@@ -189,10 +189,8 @@ function toJs(obj, hooks) {
         return hooks.funcHook ? hooks.funcHook(val, obj) : val;
     }
 
-    // if no wrapHook set then a python object could end up here
-    // otherwise a javascript symbol? (unlikely)
-    // either call the unhandledHook or return undefined
-    return hooks.unhandledHook ? hooks.unhandledHook(obj) : undefined;
+    // we really shouldn't get here - what's left - type symbol?
+    Sk.asserts.fail("unhandled type " + type);
 }
 
 /**
@@ -201,65 +199,45 @@ function toJs(obj, hooks) {
  * @param {*} hooks
  *
  * toJSON will return a jsonable object
+ * expects only python objects
  * handles simple python objects - None, str, int, float, bool, list, tuple, dict
  *
  * keys of dictionaries are only allowed to be - None, str, int, float, bool
  *
- * to hooks available in hooks
+ * the following hooks are available
+ * 
  * hooks.dictHook - override the default dict to object literal bevaiour
- * hooks.unhandledHook - by default this function throws an error in the unhandled case
- * hooks.bigintHook - by default bigints will fail - can also catch this case in unhandledHook
- * hooks.numberhook - can hoandle constans like NaN or difference between ints and floats
- * hooks.arrayHook
+ * hooks.unhandledHook(obj) - by default this function throws an error in the unhandled case
+ * hooks.bigintHook(bigint, pyObj) - by default bigints will fail - can also catch this case in unhandledHook
+ * hooks.numberhook(num, pyObj) - can hoandle constans like NaN or difference between ints and floats
+ * hooks.arrayHook(arr, pyObj)
  */
 function toJSON(obj, hooks) {
-    if (obj === undefined || obj === null) {
-        // undefined is not jsonable so return null
-        return null;
-    }
-    const val = obj.valueOf();
-    if (val === null) {
-        return val;
-    }
-    const type = typeof val;
     hooks = hooks || {};
-    if (type === "string" || type === "boolean") {
-        return val;
-    } else if (type === "number") {
-        return hooks.numberHook ? hooks.numberHook(val, obj) : val;
-        // may want to deal with Infinity, NaN, -Infinity or difference between ints and floats
-    } else if (JSBI.__isBigInt(val)) {
-        // either it's a native bigint or polyfilled as an array like object
-        if (hooks.bigintHook) {
-            return hooks.bigintHook(val, obj);
-        }
-        // fall through to unhandled since bigints are not jsonable
-    } else if (Array.isArray(val)) {
-        return hooks.arrayHook ? hooks.arrayHook(val, obj) : val.map((x) => toJSON(x, hooks));
-    } else if (obj instanceof Sk.builtin.dict) {
-        if (hooks.dictHook) {
-            return hooks.dictHook(obj);
-        } else {
+    const fail = (obj) => {
+        throw new TypeError("unhandled remap " + Sk.abstr.typeName(obj));
+    };
+    hooks.unhandledHook = hooks.unhandledHook || fail;
+    hooks.funcHook = hooks.objectHook = (val, obj) => hooks.unhandledHook(obj);
+    hooks.bigintHook = hooks.bigintHook || hooks.unhandledHook;
+    if (!hooks.dictHook) {
+        hooks.dictHook = (d) => {
             const ret = {};
-            obj.$items().forEach(([k, v]) => {
+            d.$items().forEach(([k, v]) => {
                 k = k.valueOf();
                 const type = typeof k;
                 if (type === "string" || type === "number" || type === "boolean" || k === null) {
-                    ret[k] = toJSON(v, hooks);
+                    ret[k] = toJs(v, hooks);
                 } else {
                     throw TypeError("unhandled key in conversion from dictionary - can only handle str, int, float, None, bool");
                 }
             });
             return ret;
-        }
+        };
     }
-    // fall through to unhandledHook or raise a typeerror
-    // anything other than dict, str, float, int, None, bool, list, tuple could end up here
-    if (hooks.unhandledHook) {
-        return hooks.unhandledHook(obj);
-    }
-    throw new TypeError("unhandled remap " + Sk.abstr.typeName(obj));
+    return toJs(obj, hooks);
 }
+
 
 function isTrue(obj) {
     // basically the logic for Sk.misceval.isTrue - here for convenience
@@ -382,17 +360,17 @@ function proxy(obj, flags) {
 
 const is_constructor = /^class|[^a-zA-Z_$]this[^a-zA-Z_$]/g;
 
-const pyHooks = { dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj) };
+const pyHooks = { dictHook: (obj) => proxy(obj) };
 const jsHooks = {
-    wrapHook: (obj) => {
+    unhandledHook: (obj) => {
         if (obj.tp$call) {
             const wrapped = (...args) => Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x, pyHooks))), (res) => toJs(res, jsHooks));
             wrapped.v = obj;
             wrapped.unwrap = () => obj;
-            wrapped.$isWrapped = true;
+            wrapped.$isPyWrapped = true;
             return wrapped;
         }
-        return { v: obj, $isWrapped: true, unwrap: () => obj };
+        return { v: obj, $isPyWrapped: true, unwrap: () => obj };
     },
 };
 // we customize the dictHook and the funcHook here - we want to keep object literals as proxied objects when remapping to Py
