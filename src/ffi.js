@@ -352,6 +352,9 @@ function proxy(obj, flags) {
         if (flags.bound === cached.$bound) {
             return cached;
         }
+        if (!flags.name) {
+            flags.name = cached.$name;
+        }
     }
     const ret = new JsProxy(obj, flags);
     _proxied.set(obj, ret);
@@ -386,41 +389,42 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         this.$methods = Object.create(null);
         this.in$repr = false;
 
+        flags = flags || {};
+
         // determine the type and name of this proxy
         if (typeof obj === "function") {
-            const bound = (this.$bound = (flags || {}).bound);
+            const bound = (this.$bound = flags.bound);
             this.is$type =
                 obj.prototype &&
                 obj.prototype.constructor &&
                 (bound === undefined || bound === window || bound.constructor === Object) &&
                 Function.prototype.toString.call(obj).match(is_constructor) !== null;
             this.is$callable = true;
-            this.$name = obj.name || "<native JS>";
-            this.tp$name = this.is$type ? "ProxyClass" : this.$bound ? "ProxyMethod" : "ProxyFunction";
+            this.$name = flags.name || obj.name || "<native JS>";
+            if (this.$name.length <= 2) {
+                this.$name = "<(" + this.$name + ") native JS>"; // better this than a single letter minified name
+            }
+            this.tp$name = this.is$type ? "proxyclass" : this.$bound ? "proxymethod" : "proxyfunction";
         } else {
             this.is$type = false;
             this.is$callable = false;
-            this.tp$name = obj.constructor.name || "ProxyObject";
+            this.tp$name = flags.name || (obj.constructor && obj.constructor.name) || "proxyobject";
             if (this.tp$name === "Object") {
-                this.tp$name = "ProxyObject";
+                this.tp$name = "proxyobject";
+            } else if (this.tp$name.length <= 2) {
+                // we might have a better name in the cache so check there...
+                this.tp$name = proxy(obj.constructor).$name;
             }
+            this.$name = this.tp$name;
         }
         // make slot functions lazy
         Object.defineProperties(this, this.memoized$slots);
     },
     slots: {
         tp$doc: "proxy for a javascript object",
+        tp$hash: Sk.builtin.none.none$, // unhashable
         tp$getattr(pyName) {
-            const jsName = pyName.toString();
-            const attr = this.js$wrapped[jsName];
-            if (attr !== undefined) {
-                // here we override the funcHook to pass the bound object
-                return toPy(attr, { dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj, { bound: this.js$wrapped }) });
-            } else if (jsName in this.js$wrapped) {
-                // do we actually have this property?
-                return Sk.builtin.none.none$;
-            }
-            return Sk.generic.getAttr.call(this, pyName);
+            return this.$lookup(pyName) || Sk.generic.getAttr.call(this, pyName);
         },
         tp$setattr(pyName, value) {
             const jsName = pyName.toString();
@@ -431,15 +435,16 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
             }
         },
         $r() {
-            if (this.in$repr) {
-                return new Sk.builtin.str("{...}");
-            } else if (this.is$type) {
-                return new Sk.builtin.str("<class " + this.$name + " (proxy)>");
-            } else if (this.$bound) {
-                return new Sk.builtin.str("<bound method " + this.$name + " (proxy)>");
-            } else if (this.is$callable) {
-                return new Sk.builtin.str("<function " + this.$name + " (proxy)>");
+            if (this.is$callable) {
+                if (this.is$type || !this.$bound) {
+                    return new Sk.builtin.str("<" + this.tp$name + " '" + this.$name + "'>");
+                }
+                const boundRepr = Sk.misceval.objectRepr(proxy(this.$bound));
+                return new Sk.builtin.str("<bound " + this.tp$name + " '" + this.$name + "' of " + boundRepr + ">");
             } else if (this.js$wrapped.constructor === Object) {
+                if (this.in$repr) {
+                    return new Sk.builtin.str("{...}");
+                }
                 this.in$repr = true;
                 const ret = new Sk.builtin.str(
                     "proxyobject({" +
@@ -451,18 +456,29 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 this.in$repr = false;
                 return ret;
             }
-            return new Sk.builtin.str("<'" + this.tp$name + "' object (proxy)>");
+            const object = this.tp$name === "proxyobject" ? "object" : "proxyobject";
+            return new Sk.builtin.str("<" + this.tp$name + " " + object + ">");
         },
         tp$as_sequence_or_mapping: true,
         mp$subscript(pyItem) {
             // todo should we account for -1 i.e. array like subscripts
-            return this.tp$getattr(pyItem);
+            const ret = this.$lookup(pyItem);
+            if (ret === undefined) {
+                throw new Sk.builtin.LookupError(pyItem);
+            }
+            return ret;
         },
         mp$ass_subscript(pyItem, value) {
             return this.tp$setattr(pyItem, value);
         },
         sq$contains(item) {
             return toJs(item) in this.js$wrapped;
+        },
+        ob$eq(other) {
+            return this.js$wrapped === other.js$wrapped;
+        },
+        ob$ne(other) {
+            return this.js$wrapped !== other.js$wrapped;
         },
     },
     methods: {
@@ -483,31 +499,30 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 if (!(js_wrapped.prototype && js_wrapped.prototype.constructor)) {
                     throw new Sk.builtin.TypeError("'" + js_proxy.tp$name + "' is not a constructor");
                 }
-                return toPy(new js_wrapped(...args.map((x) => toJs(x, jsHooks))), pyHooks);
+                return js_proxy.$new(args);
             },
             $flags: { MinArgs: 1 },
         },
         __call__: {
-            $meth(args) {
+            $meth(args, kwargs) {
                 if (this.js$wrapped.call === undefined) {
                     throw new Sk.builtin.TypeError("'" + this.tp$name + "' object is not callable");
                 }
-                return Sk.misceval.chain(
-                    this.js$wrapped.apply(
-                        this.$bound,
-                        args.map((x) => toJs(x, jsHooks))
-                    ),
-                    (res) => (res instanceof Promise ? Sk.misceval.promiseToSuspension(res) : res),
-                    (res) => toPy(res, pyHooks)
-                );
+                return this.$call(args, kwargs);
             },
-            $flags: { FastCall: true, NoKwargs: true },
+            $flags: { FastCall: true },
         },
         keys: {
             $meth() {
-                return new Sk.builtin.list(Array.from(this.$dir, (x) => new Sk.builtin.str(x)));
+                return new Sk.builtin.list(Object.keys(this.js$wrapped).map((x) => new Sk.builtin.str(x)));
             },
             $flags: { NoArgs: true },
+        },
+        get: {
+            $meth(pyName, _default) {
+                return this.$lookup(pyName) || _default || Sk.builtin.none.none$;
+            },
+            $flags: { MinArgs: 1, MaxArgs: 2 },
         },
     },
     getsets: {
@@ -521,7 +536,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         },
         __name__: {
             $get() {
-                return new Sk.builtin.str(this.tp$name);
+                return new Sk.builtin.str(this.$name);
             },
         },
         __module__: {
@@ -537,6 +552,35 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         valueOf() {
             return this.js$wrapped;
         },
+        $new(args, kwargs) {
+            Sk.abstr.checkNoKwargs("__new__", kwargs);
+            return toPy(new this.js$wrapped(...args.map((x) => toJs(x, jsHooks))), {
+                dictHook: (obj) => proxy(obj),
+                proxyHook: (obj) => proxy(obj, { name: this.$name }),
+            });
+        },
+        $call(args, kwargs) {
+            Sk.abstr.checkNoKwargs("__call__", kwargs);
+            return Sk.misceval.chain(
+                this.js$wrapped.apply(
+                    this.$bound,
+                    args.map((x) => toJs(x, jsHooks))
+                ),
+                (res) => (res instanceof Promise ? Sk.misceval.promiseToSuspension(res) : res),
+                (res) => toPy(res, pyHooks)
+            );
+        },
+        $lookup(pyName) {
+            const jsName = pyName.toString();
+            const attr = this.js$wrapped[jsName];
+            if (attr !== undefined) {
+                // here we override the funcHook to pass the bound object
+                return toPy(attr, { dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj, { bound: this.js$wrapped, name: jsName }) });
+            } else if (jsName in this.js$wrapped) {
+                // do we actually have this property?
+                return Sk.builtin.none.none$;
+            }
+        },
         // only get these if we need them
         memoized$slots: {
             $dir: {
@@ -551,54 +595,39 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
             },
             tp$iter: {
                 get() {
+                    delete this.tp$iter;
                     if (this.js$wrapped[Symbol.iterator] !== undefined) {
-                        delete this.tp$iter;
                         return (this.tp$iter = () => {
                             return proxy(this.js$wrapped[Symbol.iterator]());
                         });
                     }
-                    delete this.tp$iter;
                 },
             },
             tp$iternext: {
                 get() {
+                    delete this.tp$iternext;
                     if (this.js$wrapped.next !== undefined) {
-                        delete this.tp$iternext;
                         return (this.tp$iternext = () => {
                             const nxt = this.js$wrapped.next().value;
                             return nxt && toPy(nxt, pyHooks);
                         });
                     }
-                    delete this.tp$iternext;
                 },
             },
             sq$length: {
                 get() {
-                    if (this.js$wrapped.length !== undefined) {
-                        delete this.sq$length;
+                    delete this.sq$length;
+                    if (!this.is$callable && this.js$wrapped.length !== undefined) {
                         return (this.sq$length = () => this.js$wrapped.length);
                     }
-                    delete this.sq$length;
                 },
             },
             tp$call: {
                 get() {
-                    if (this.is$callable) {
-                        delete this.tp$call;
-                        return (this.tp$call = (args, kwargs) => {
-                            Sk.abstr.checkNoKwargs(this.tp$name, kwargs);
-                            args = args.map((x) => toJs(x, jsHooks));
-                            if (this.is$type) {
-                                return toPy(new this.js$wrapped(...args), pyHooks);
-                            }
-                            return Sk.misceval.chain(
-                                this.js$wrapped.apply(this.$bound, args),
-                                (res) => (res instanceof Promise ? Sk.misceval.promiseToSuspension(res) : res),
-                                (res) => toPy(res, pyHooks)
-                            );
-                        });
-                    }
                     delete this.tp$call;
+                    if (this.is$callable) {
+                        return (this.tp$call = this.is$type ? this.$new : this.$call);
+                    }
                 },
             },
         },
