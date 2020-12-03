@@ -492,12 +492,12 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         __new__: {
             // this is effectively a static method
             $meth(js_proxy, ...args) {
-                if (!js_proxy instanceof JsProxy) {
+                if (!(js_proxy instanceof JsProxy)) {
                     throw new Sk.builtin.TypeError("expected a proxy object as the first argument not " + Sk.abstr.typeName(js_proxy));
                 }
                 const js_wrapped = js_proxy.js$wrapped;
                 if (!(js_wrapped.prototype && js_wrapped.prototype.constructor)) {
-                    throw new Sk.builtin.TypeError("'" + js_proxy.tp$name + "' is not a constructor");
+                    throw new Sk.builtin.TypeError(Sk.misceval.objectRepr(js_proxy) + " is not a constructor");
                 }
                 return js_proxy.$new(args);
             },
@@ -505,7 +505,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         },
         __call__: {
             $meth(args, kwargs) {
-                if (this.js$wrapped.call === undefined) {
+                if (typeof this.js$wrapped !== "function") {
                     throw new Sk.builtin.TypeError("'" + this.tp$name + "' object is not callable");
                 }
                 return this.$call(args, kwargs);
