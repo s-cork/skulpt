@@ -367,7 +367,14 @@ const pyHooks = { dictHook: (obj) => proxy(obj) };
 const jsHooks = {
     unhandledHook: (obj) => {
         if (obj.tp$call) {
-            const wrapped = (...args) => Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x, pyHooks))), (res) => toJs(res, jsHooks));
+            const wrapped = (...args) => {
+                const ret = Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x, pyHooks))), (res) => toJs(res, jsHooks));
+                if (ret instanceof Sk.misceval.Suspension) {
+                    // better to return a promise here then hope the javascript library will handle a suspension
+                    return Sk.misceval.asyncToPromise(() => ret);
+                }
+                return ret;
+            };
             wrapped.v = obj;
             wrapped.unwrap = () => obj;
             wrapped.$isPyWrapped = true;
