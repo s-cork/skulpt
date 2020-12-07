@@ -429,7 +429,9 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
     },
     slots: {
         tp$doc: "proxy for a javascript object",
-        tp$hash: Sk.builtin.none.none$, // unhashable
+        tp$hash() {
+            return Sk.builtin.object.prototype.tp$hash.call(this.js$wrapped);
+        },
         tp$getattr(pyName) {
             return this.$lookup(pyName) || Sk.generic.getAttr.call(this, pyName);
         },
@@ -486,6 +488,16 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         },
         ob$ne(other) {
             return this.js$wrapped !== other.js$wrapped;
+        },
+        tp$as_number: true,
+        nb$bool() {
+            if (this.js$wrapped.constructor === Object) {
+                return Object.keys(this.js$wrapped).length > 0;
+            } else if (this.sq$length) {
+                return this.sq$length() > 0;
+            } else {
+                return true;
+            }
         },
     },
     methods: {
