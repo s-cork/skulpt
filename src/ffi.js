@@ -366,7 +366,10 @@ const is_constructor = /^class|[^a-zA-Z_$]this[^a-zA-Z_$]/g;
 const pyHooks = { dictHook: (obj) => proxy(obj) };
 const jsHooks = {
     unhandledHook: (obj) => {
-        if (obj.tp$call) {
+        const _cached = _proxied.get(obj);
+        if (_cached) {
+            return _cached;
+        } else if (obj.tp$call) {
             const wrapped = (...args) => {
                 const ret = Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x, pyHooks))), (res) => toJs(res, jsHooks));
                 if (ret instanceof Sk.misceval.Suspension) {
@@ -378,9 +381,12 @@ const jsHooks = {
             wrapped.v = obj;
             wrapped.unwrap = () => obj;
             wrapped.$isPyWrapped = true;
+            _proxied.set(obj, wrapped); 
             return wrapped;
         }
-        return { v: obj, $isPyWrapped: true, unwrap: () => obj };
+        const ret = { v: obj, $isPyWrapped: true, unwrap: () => obj };
+        _proxied.set(obj, ret);
+        return ret;
     },
 };
 // we customize the dictHook and the funcHook here - we want to keep object literals as proxied objects when remapping to Py
