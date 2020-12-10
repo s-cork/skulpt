@@ -361,7 +361,7 @@ function proxy(obj, flags) {
     return ret;
 }
 
-const is_constructor = /^class|[^a-zA-Z_$]this[^a-zA-Z_$]/g;
+const is_constructor = /^class|[^a-zA-Z_$]this[^a-zA-Z_$]|^function[a-zA-Z\(\)\{\s]+\[native code\]\s+\}$/g;
 
 const pyHooks = { dictHook: (obj) => proxy(obj) };
 const jsHooks = {
