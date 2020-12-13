@@ -364,6 +364,7 @@ function proxy(obj, flags) {
 const is_constructor = /^class|[^a-zA-Z_$]this[^a-zA-Z_$]|^function[a-zA-Z\(\)\{\s]+\[native code\]\s+\}$/g;
 
 const pyHooks = { dictHook: (obj) => proxy(obj) };
+const boundHook = (bound, name) => ({ dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj, { bound, name }) });
 const jsHooks = {
     unhandledHook: (obj) => {
         const _cached = _proxied.get(obj);
@@ -413,9 +414,9 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 (bound === undefined || bound === window || bound.constructor === Object) &&
                 Function.prototype.toString.call(obj).match(is_constructor) !== null;
             this.is$callable = true;
-            this.$name = flags.name || obj.name || "<native JS>";
+            this.$name = flags.name || obj.name || "(native JS)";
             if (this.$name.length <= 2) {
-                this.$name = "<(" + this.$name + ") native JS>"; // better this than a single letter minified name
+                this.$name = this.$name + " (native JS)"; // better this than a single letter minified name
             }
             this.tp$name = this.is$type ? "proxyclass" : this.$bound ? "proxymethod" : "proxyfunction";
         } else {
@@ -461,13 +462,11 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     return new Sk.builtin.str("{...}");
                 }
                 this.in$repr = true;
-                const ret = new Sk.builtin.str(
-                    "proxyobject({" +
-                        Object.entries(this.js$wrapped)
-                            .map(([key, val]) => "'" + key + "': " + Sk.misceval.objectRepr(toPy(val, pyHooks)))
-                            .join(", ") +
-                        "})"
-                );
+                const entries = Object.entries(this.js$wrapped).map(([key, val]) => {
+                    val = toPy(val, boundHook(this.js$wrapped, key));
+                    return "'" + key + "': " + Sk.misceval.objectRepr(val);
+                });
+                const ret = new Sk.builtin.str("proxyobject({" + entries.join(", ") + "})");
                 this.in$repr = false;
                 return ret;
             }
@@ -600,7 +599,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
             const attr = this.js$wrapped[jsName];
             if (attr !== undefined) {
                 // here we override the funcHook to pass the bound object
-                return toPy(attr, { dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj, { bound: this.js$wrapped, name: jsName }) });
+                return toPy(attr, boundHook(this.js$wrapped, jsName));
             } else if (jsName in this.js$wrapped) {
                 // do we actually have this property?
                 return Sk.builtin.none.none$;
