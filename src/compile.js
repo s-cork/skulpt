@@ -237,7 +237,9 @@ Compiler.prototype.outputInterruptTest = function () { // Added by RNL
 };
 
 Compiler.prototype._jumpfalse = function (test, block) {
-    var cond = this._gr("jfalse", "(", test, "===false||!Sk.misceval.isTrue(", test, "))");
+    out("$ret = Sk.misceval.isTrue(", test, ", true);");
+    this._checkSuspension();
+    var cond = this._gr("jfalse", "!$ret");
     out("if(", cond, "){/*test failed */$blk=", block, ";continue;}");
 };
 

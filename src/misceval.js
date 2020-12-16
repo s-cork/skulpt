@@ -615,7 +615,7 @@ Sk.exportSymbol("Sk.misceval.opAllowsEquality", Sk.misceval.opAllowsEquality);
  * @returns {boolean}
  * @param {*} x 
  */
-Sk.misceval.isTrue = function (x) {
+Sk.misceval.isTrue = function (x, canSuspend) {
     if (x === true || x === Sk.builtin.bool.true$) {
         return true;
     }
@@ -626,11 +626,11 @@ Sk.misceval.isTrue = function (x) {
         return false;
     }
     if (x.nb$bool) {
-        return x.nb$bool(); // the slot wrapper takes care of converting to js Boolean
+        return x.nb$bool(canSuspend); // the slot wrapper takes care of converting to js Boolean
     }
     if (x.sq$length) {
         // the slot wrapper takes care of the error message and converting to js int
-        return x.sq$length() !== 0;
+        return Sk.misceval.chain(x.sq$length(canSuspend), (r) => r !== 0);
     }
     return Boolean(x);
 };

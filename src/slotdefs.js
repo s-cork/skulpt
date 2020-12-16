@@ -135,17 +135,19 @@ function slotFuncNoArgs(dunderFunc) {
  */
 function slotFuncNoArgsWithCheck(dunderName, checkFunc, checkMsg, f) {
     return function (dunderFunc) {
-        return function () {
+        return function slotfunc(canSuspend) {
             const func = dunderFunc.tp$descr_get ? dunderFunc.tp$descr_get(this) : dunderFunc;
-            let res = Sk.misceval.callsimArray(func, []);
-            if (!checkFunc(res)) {
-                throw new Sk.builtin.TypeError(dunderName + " should return " + checkMsg + " (returned " + Sk.abstr.typeName(res) + ")");
-            }
-            // f is might be a function that changes the result to a js object like for nb$bool which returns a Boolean
-            if (f !== undefined) {
-                return f(res);
-            }
-            return res;
+            const ret = Sk.misceval.chain(Sk.misceval.callsimOrSuspendArray(func, []), (res) => {
+                if (checkFunc && !checkFunc(res)) {
+                    throw new Sk.builtin.TypeError(dunderName + " should return " + checkMsg + " (returned " + Sk.abstr.typeName(res) + ")");
+                }
+                // f might be a function that changes the result to a js object like for nb$bool which returns a Boolean
+                if (f !== undefined) {
+                    return f(res);
+                }
+                return res;
+            });
+            return canSuspend ? ret : Sk.misceval.retryOptionalSuspensionOrThrow(ret);
         };
     };
 }
@@ -846,21 +848,7 @@ slots.__next__ = {
 slots.__len__ = {
     $name: "__len__",
     $slot_name: "sq$length",
-    $slot_func: function (dunderFunc) {
-        return function sq$length(canSuspend) {
-            let res;
-            const func = dunderFunc.tp$descr_get ? dunderFunc.tp$descr_get(this) :  dunderFunc;
-            if (canSuspend) {
-                res = Sk.misceval.callsimOrSuspendArray(func, []);
-                return Sk.misceval.chain(res, (r) => {
-                    return Sk.misceval.asIndexOrThrow(r);
-                });
-            } else {
-                res = Sk.misceval.callsimArray(func, []);
-                return Sk.misceval.asIndexOrThrow(res);
-            }
-        };
-    },
+    $slot_func: slotFuncNoArgsWithCheck(null, null, null, (r) => Sk.misceval.asIndexOrThrow(r)), // asIndexOrThrow does the checks and conversion
     $wrapper: wrapperCallBack(wrapperCallNoArgs, (res) => new Sk.builtin.int_(res)),
     $flags: { NoArgs: true },
     $textsig: "($self, /)",
