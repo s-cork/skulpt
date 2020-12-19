@@ -236,9 +236,12 @@ Compiler.prototype.outputInterruptTest = function () { // Added by RNL
     return output;
 };
 
-Compiler.prototype._jumpfalse = function (test, block) {
-    var cond = this._gr("jfalse", "(", test, "===false||!Sk.misceval.isTrue(", test, "))");
-    out("if(", cond, "){/*test failed */$blk=", block, ";continue;}");
+Compiler.prototype._jumpfalse = function (test, block, canSuspend) {
+    out("$ret=Sk.misceval.isTrue(", test, (canSuspend ? ",true" : "")+ ");");
+    if (canSuspend) {
+        this._checkSuspension(null, "$ret !== true && $ret !== false");
+    }    
+    out("if(!$ret){/*test failed */$blk=", block, ";continue;}");
 };
 
 Compiler.prototype._jumpundef = function (test, block) {
@@ -264,8 +267,9 @@ Compiler.prototype._jump = function (block) {
 /**
  * @param {Object=} e Object with keys 'lineno' and 'col_offset'
  */
-Compiler.prototype._checkSuspension = function(e) {
+Compiler.prototype._checkSuspension = function(e, suspCheck) {
     var retblk;
+    suspCheck = suspCheck ? suspCheck + " && " : "";
     if (this.u.canSuspend) {
 
         retblk = this.newBlock("function return or resume suspension");
@@ -274,13 +278,13 @@ Compiler.prototype._checkSuspension = function(e) {
 
         e = e || {lineno: "$currLineNo", col_offset: "$currColNo"};
 
-        out ("if ($ret && $ret.$isSuspension) { return $saveSuspension($ret,'"+this.filename+"',"+e.lineno+","+e.col_offset+"); }");
+        out ("if (" + suspCheck + "$ret !== undefined && $ret !== null && $ret.$isSuspension) { return $saveSuspension($ret,'"+this.filename+"',"+e.lineno+","+e.col_offset+"); }");
 
         this.u.doesSuspend = true;
         this.u.tempsToSave = this.u.tempsToSave.concat(this.u.localtemps);
 
     } else {
-        out ("if ($ret && $ret.$isSuspension) { $ret = Sk.misceval.retryOptionalSuspensionOrThrow($ret); }");
+        out ("if (" + suspCheck + "$ret !== undefined && $ret !== null && $ret.$isSuspension) { $ret = Sk.misceval.retryOptionalSuspensionOrThrow($ret); }");
     }
 };
 Compiler.prototype.cunpackstarstoarray = function(elts, permitEndOnly) {
@@ -510,7 +514,7 @@ Compiler.prototype.ccompgen = function (type, tmpname, generators, genIndex, val
     n = l.ifs ? l.ifs.length : 0;
     for (i = 0; i < n; ++i) {
         ifres = this.vexpr(l.ifs[i]);
-        this._jumpfalse(ifres, start);
+        this._jumpfalse(ifres, start, true);
     }
 
     if (++genIndex < generators.length) {
@@ -570,10 +574,12 @@ Compiler.prototype.ccompare = function (e) {
 
     for (i = 0; i < n; ++i) {
         rhs = this.vexpr(e.comparators[i]);
-        out("$ret = Sk.builtin.bool(Sk.misceval.richCompareBool(", cur, ",", rhs, ",'", e.ops[i].prototype._astname, "', true));");
+        out("$ret = Sk.misceval.richCompareBool(", cur, ",", rhs, ",'", e.ops[i].prototype._astname, "', true);");
         this._checkSuspension(e);
-        out(fres, "=$ret;");
-        this._jumpfalse("$ret", done);
+        out(fres, "=Sk.builtin.bool($ret);");
+        if (i < n - 1) {
+            this._jumpfalse("$ret", done, false);
+        }        
         cur = rhs;
     }
     this._jump(done);
@@ -1268,14 +1274,14 @@ Compiler.prototype.cif = function (s) {
         test = this.vexpr(s.test);
 
         if (s.orelse && s.orelse.length > 0) {
-            this._jumpfalse(test, next);
+            this._jumpfalse(test, next, true);
             this.vseqstmt(s.body);
             this._jump(end);
 
             this.setBlock(next);
             this.vseqstmt(s.orelse);
         } else {
-            this._jumpfalse(test, end);
+            this._jumpfalse(test, end, true);
             this.vseqstmt(s.body);
         }
         this._jump(end);
@@ -1304,7 +1310,7 @@ Compiler.prototype.cwhile = function (s) {
         body = this.newBlock("while body");
 
         this.annotateSource(s);
-        this._jumpfalse(this.vexpr(s.test), orelse ? orelse : next);
+        this._jumpfalse(this.vexpr(s.test), orelse ? orelse : next, true);
         this._jump(body);
 
         this.pushBreakBlock(next);
@@ -2199,7 +2205,7 @@ Compiler.prototype.cifexp = function (e) {
     var ret = this._gr("res", "null");
 
     var test = this.vexpr(e.test);
-    this._jumpfalse(test, next);
+    this._jumpfalse(test, next, true);
 
     out(ret, "=", this.vexpr(e.body), ";");
     this._jump(end);
