@@ -153,9 +153,10 @@ function slotFuncNoArgsWithCheck(dunderName, checkFunc, checkMsg, f) {
 }
 
 function slotFuncOneArg(dunderFunc) {
-    return function (value) {
+    return function (value, canSuspend) {
         const func = dunderFunc.tp$descr_get ? dunderFunc.tp$descr_get(this) : dunderFunc;
-        return Sk.misceval.callsimArray(func, [value]);
+        const ret = Sk.misceval.callsimOrSuspendArray(func, [value]);
+        return canSuspend ? ret : Sk.misceval.retryOptionalSuspensionOrThrow(ret);
     };
 }
 
@@ -874,7 +875,7 @@ slots.__contains__ = {
             const func = dunderFunc.tp$descr_get ? dunderFunc.tp$descr_get(this) :  dunderFunc;
             let res = Sk.misceval.callsimOrSuspendArray(func, [key]);
             res = Sk.misceval.chain(res, (r) => Sk.misceval.isTrue(r));
-            if (res.$isSuspension) {
+            if (res !== true && res !== false && res.$isSuspension) {
                 return canSuspend ? res : Sk.misceval.retryOptionalSuspensionOrThrow(res);
             }
             return res;
@@ -900,13 +901,7 @@ slots.__contains__ = {
 slots.__getitem__ = {
     $name: "__getitem__",
     $slot_name: "mp$subscript",
-    $slot_func: function (dunderFunc) {
-        return function mp$subscript(key, canSuspend) {
-            const func = dunderFunc.tp$descr_get ? dunderFunc.tp$descr_get(this) :  dunderFunc;
-            const ret = Sk.misceval.callsimOrSuspendArray(func, [key]);
-            return canSuspend ? ret : Sk.misceval.retryOptionalSuspensionOrThrow(ret);
-        };
-    },
+    $slot_func: slotFuncOneArg,
     $wrapper: wrapperCallOneArg,
     $textsig: "($self, key, /)",
     $flags: { OneArg: true },
