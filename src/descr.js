@@ -355,7 +355,7 @@ Sk.builtin.classmethod_descriptor = buildDescriptor("classmethod_descriptor", "m
                     );
                 }
             }
-            if (type.ob$type !== Sk.builtin.type) {
+            if (!type.ob$type.$isSubType(Sk.builtin.type)) {
                 throw new Sk.builtin.TypeError(
                     "descriptor '" +
                         this.d$name +
