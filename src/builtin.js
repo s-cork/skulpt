@@ -823,6 +823,8 @@ Sk.builtin.reduce = function reduce(fun, seq, initializer) {
     var item;
     var accum_value;
     var iter;
+    Sk.builtin.pyCheckArgsLen("reduce", arguments.length, 2, 3);
+    // since reduce is part of the python 2.7 this isn't a builtin function so we check the args here
     if (!Sk.builtin.checkIterable(seq)) {
         throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(seq) + "' object is not iterable");
     }
