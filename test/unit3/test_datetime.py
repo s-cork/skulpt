@@ -5385,8 +5385,8 @@ class TestLocalTimeDisambiguation(unittest.TestCase):
         dt = datetime(1, 1, 1, fold=1)
         self.assertEqual(t.fold, 1)
         self.assertEqual(dt.fold, 1)
-        # with self.assertRaises(TypeError):
-        #     time(0, 0, 0, 0, None, 0) # skulpt supports 2.7 so keyword only args not a thing
+        with self.assertRaises(TypeError):
+            time(0, 0, 0, 0, None, 0) # skulpt supports 2.7 so keyword only args not a thing
 
     def test_member(self):
         dt = datetime(1, 1, 1, fold=1)
@@ -5414,10 +5414,10 @@ class TestLocalTimeDisambiguation(unittest.TestCase):
             dt.replace(fold=2)
         # Check that fold is a keyword-only argument
         # python2 support so no keyword arguments here in skulpt
-        # with self.assertRaises(TypeError):
-        #     t.replace(1, 1, 1, None, 1)
-        # with self.assertRaises(TypeError):
-        #     dt.replace(1, 1, 1, 1, 1, 1, 1, None, 1)
+        with self.assertRaises(TypeError):
+            t.replace(1, 1, 1, None, 1)
+        with self.assertRaises(TypeError):
+            dt.replace(1, 1, 1, 1, 1, 1, 1, None, 1)
 
     def test_comparison(self):
         t = time(0)
