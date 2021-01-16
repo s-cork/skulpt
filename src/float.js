@@ -67,7 +67,13 @@ Sk.builtin.float_ = Sk.abstr.buildNativeClass("float", {
                 x = _str_to_float(arg.v);
             }
             if (x === undefined) {
-                throw new Sk.builtin.TypeError("float() argument must be a string or a number");
+                if (typeof arg === "number" || typeof arg === "string") {
+                    // slow path for calling via python with js value
+                    Sk.asserts.fail("python call to float with js object");
+                    x = new Sk.builtin.float_(x);
+                } else {
+                    throw new Sk.builtin.TypeError("float() argument must be a string or a number");
+                }
             }
             if (this === Sk.builtin.float_.prototype) {
                 return x;
