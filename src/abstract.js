@@ -527,6 +527,23 @@ Sk.abstr.mappingUnpackIntoKeywordArray = function (jsArray, pyMapping, pyCodeObj
     );
 };
 
+Sk.abstr.keywordArrayFromPyDict = function (dict) {
+    const arr = [];
+    dict.$items().forEach(([key, val]) => {
+        if (!Sk.builtin.checkString(key)) {
+            throw new Sk.builtin.TypeError("keywords must be strings");
+        }
+        arr.push(key.$jsstr());
+        arr.push(val);
+    });
+    return arr;
+};
+
+Sk.abstr.keywordArrayToPyDict = function (kwarray) {
+    kwarray = kwarray.map((x, i) => i % 2 ? x : new Sk.builtin.str(x));
+    return new Sk.builtin.dict(kwarray);
+};
+
 /**
  *
  * @function
