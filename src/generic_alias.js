@@ -189,7 +189,7 @@ Sk.builtin.GenericAlias = Sk.abstr.buildNativeClass("types.GenericAlias", {
             }
             const mod = Sk.abstr.lookupSpecial(item, Sk.builtin.str.$module);
             if (mod === undefined || Sk.builtin.checkNone(mod)) {
-                return SK.misceval.objectRepr(item);
+                return Sk.misceval.objectRepr(item);
             } else if (mod.toString() === "builtins") {
                 return qualname.toString();
             }

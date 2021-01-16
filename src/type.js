@@ -587,7 +587,7 @@ function $allocateSlot(dunder, dunderFunc) {
         delete proto[slot_name]; // required in order to override the multiple inheritance getter slots
     }
     Object.defineProperty(proto, slot_name, {
-        value: slot_def.$slot_func(dunderFunc),
+        value: slot_def.$slot_func(dunderFunc, proto),
         writable: true,
         configurable: true,
     });

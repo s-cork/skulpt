@@ -84,6 +84,15 @@ INVALID_UNDERSCORE_LITERALS = [
     '(1+1.5_j)',
 ]
 
+class CNS:
+    def __init__(self):
+        self._dct = {}
+    def __setitem__(self, item, value):
+        self._dct[item.lower()] = value
+    def __getitem__(self, item):
+        return self._dct[item]
+
+
 class TokenTests(unittest.TestCase):
     def test_underscore_literals(self):
         self.assertEqual(0_0_0, 0)
