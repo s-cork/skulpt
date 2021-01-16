@@ -1355,42 +1355,6 @@ function strBytesRemainder(rhs) {
     return new strBytesConstructor(ret);
 };
 
-/**
- * @constructor
- * @param {Object} obj
- */
-var str_iter_ = Sk.abstr.buildIteratorClass("str_iterator", {
-    constructor: function str_iter_(str) {
-        this.$index = 0;
-        if (str.$hasAstralCodePoints()) {
-            this.$seq = str.codepoints;
-            this.tp$iternext = () => {
-                const i = this.$seq[this.$index];
-                if (i === undefined) {
-                    return undefined;
-                }
-                return new Sk.builtin.str(str.v.substring(i, this.$seq[++this.$index]));
-            };
-        } else {
-            this.$seq = str.v;
-            this.tp$iternext = () => {
-                const ch = this.$seq[this.$index++];
-                if (ch === undefined) {
-                    return undefined;
-                }
-                return new Sk.builtin.str(ch);
-            };
-        }
-    },
-    iternext() {
-        return this.tp$iternext();
-    },
-    methods: {
-        __length_hint__: Sk.generic.iterLengthHintWithArrayMethodDef,
-    },
-    flags: { sk$acceptable_as_base_class: false },
-});
-
 var reservedWords_ = {
     abstract: true,
     as: true,
@@ -1490,3 +1454,40 @@ function fixReserved(name) {
 
 Sk.builtin.str.reservedWords_ = reservedWords_;
 
+
+
+/**
+ * @constructor
+ * @param {Object} obj
+ */
+var str_iter_ = Sk.abstr.buildIteratorClass("str_iterator", {
+    constructor: function str_iter_(str) {
+        this.$index = 0;
+        if (str.$hasAstralCodePoints()) {
+            this.$seq = str.codepoints;
+            this.tp$iternext = () => {
+                const i = this.$seq[this.$index];
+                if (i === undefined) {
+                    return undefined;
+                }
+                return new Sk.builtin.str(str.v.substring(i, this.$seq[++this.$index]));
+            };
+        } else {
+            this.$seq = str.v;
+            this.tp$iternext = () => {
+                const ch = this.$seq[this.$index++];
+                if (ch === undefined) {
+                    return undefined;
+                }
+                return new Sk.builtin.str(ch);
+            };
+        }
+    },
+    iternext() {
+        return this.tp$iternext();
+    },
+    methods: {
+        __length_hint__: Sk.generic.iterLengthHintWithArrayMethodDef,
+    },
+    flags: { sk$acceptable_as_base_class: false },
+});

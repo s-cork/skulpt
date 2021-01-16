@@ -523,6 +523,7 @@ function $builtinmodule(name) {
                 $doc: null,
             },
         },
+        classmethods: Sk.generic.classGetItem,
         getsets: {
             pattern: {
                 $get() {
@@ -876,6 +877,7 @@ function $builtinmodule(name) {
                 $doc: null,
             },
         },
+        classmethods: Sk.generic.classGetItem,
         getsets: {
             lastindex: {
                 $get() {

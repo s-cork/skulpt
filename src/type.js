@@ -667,6 +667,12 @@ Sk.builtin.type.prototype.tp$getsets = {
             this.prototype.hp$name = this.prototype.tp$name = value.$jsstr();
         },
     },
+    __qualname__: {
+        $get() {
+            // todo
+            return Sk.abstr.lookupSpecial(this, Sk.builtin.str.$name);
+        }
+    },
     __module__: {
         $get() {
             const typeproto = this.prototype;

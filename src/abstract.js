@@ -544,6 +544,10 @@ Sk.abstr.keywordArrayToPyDict = function (kwarray) {
     return new Sk.builtin.dict(kwarray);
 };
 
+Sk.abstr.keywordArrayFromHashMap = function (hashmap) {
+    return Object.entries(hashmap).flat();
+};
+
 /**
  *
  * @function
@@ -759,6 +763,17 @@ Sk.abstr.objectGetItem = function (o, key, canSuspend) {
     if (o.mp$subscript) {
         return o.mp$subscript(key, canSuspend);
     }
+    if (Sk.builtin.checkClass(o)) {
+        if (o === Sk.builtin.type) {
+            return new Sk.builtin.GenericAlias(o, key);
+        }
+        const meth = Sk.abstr.typeLookup(o, Sk.builtin.str.$class_getitem);
+        if (meth !== undefined) {
+            const res = Sk.misceval.callsimOrSuspendArray(meth, [key]);
+            return canSuspend ? res : Sk.misceval.retryOptionalSuspensionOrThrow(res);
+        }
+    }
+
     throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(o) + "' does not support indexing");
 };
 Sk.exportSymbol("Sk.abstr.objectGetItem", Sk.abstr.objectGetItem);
@@ -873,11 +888,13 @@ Sk.abstr.lookupSpecial = function (obj, pyName) {
 };
 Sk.exportSymbol("Sk.abstr.lookupSpecial", Sk.abstr.lookupSpecial);
 
-
-Sk.abstr.typeLookup = function (type_obj, pyName) {
-    const res = type_obj.$typeLookup(pyName);
-    if (res !== undefined && res.tp$descr_get) {
-        return res.tp$descr_get(null, type_obj);
+Sk.abstr.typeLookup = function (obj, pyName) {
+    Sk.asserts.assert(obj.$typeLookup, "non type passed to typeLookup");
+    const res = obj.$typeLookup(pyName);
+    if (res === undefined) {
+        return res;
+    } else if (res.tp$descr_get !== undefined) {
+        return res.tp$descr_get(null, obj);
     }
     return res;
 };
@@ -982,9 +999,15 @@ Sk.abstr.setUpGetSets = function (klass, getsets) {
     }
     const klass_proto = klass.prototype;
     getsets = getsets || klass_proto.tp$getsets || {};
+
+    let fixReserved = (x) => x;
+    if (Sk.builtin.str !== undefined) {
+        fixReserved = (x) => new Sk.builtin.str(x).$mangled;
+    }
+
     Object.entries(getsets).forEach(([getset_name, getset_def]) => {
         getset_def.$name = getset_name;
-        klass_proto[getset_name] = new Sk.builtin.getset_descriptor(klass, getset_def);
+        klass_proto[fixReserved(getset_name)] = new Sk.builtin.getset_descriptor(klass, getset_def);
     });
     Object.defineProperty(klass_proto, "tp$getsets", { value: null, writable: true });
 };
@@ -1000,9 +1023,15 @@ Sk.abstr.setUpMethods = function (klass, methods) {
     }
     const klass_proto = klass.prototype;
     methods = methods || klass_proto.tp$methods || {};
+
+    let fixReserved = (x) => x;
+    if (Sk.builtin.str !== undefined) {
+        fixReserved = (x) => new Sk.builtin.str(x).$mangled;
+    }
+
     Object.entries(methods).forEach(([method_name, method_def]) => {
         method_def.$name = method_name;
-        klass_proto[method_name] = new Sk.builtin.method_descriptor(klass, method_def);
+        klass_proto[fixReserved(method_name)] = new Sk.builtin.method_descriptor(klass, method_def);
     });
     Object.defineProperty(klass_proto, "tp$methods", { value: null, writable: true });
 };
@@ -1018,9 +1047,13 @@ Sk.abstr.setUpClassMethods = function (klass, methods) {
     }
     const klass_proto = klass.prototype;
     methods = methods || klass_proto.tp$classmethods || {};
+    let fixReserved = (x) => x;
+    if (Sk.builtin.str !== undefined) {
+        fixReserved = (x) => new Sk.builtin.str(x).$mangled;
+    }
     Object.entries(methods).forEach(([method_name, method_def]) => {
         method_def.$name = method_name;
-        klass_proto[method_name] = new Sk.builtin.classmethod_descriptor(klass, method_def);
+        klass_proto[fixReserved(method_name)] = new Sk.builtin.classmethod_descriptor(klass, method_def);
     });
     Object.defineProperty(klass_proto, "tp$classmethods", { value: null, writable: true });
 };
@@ -1121,6 +1154,7 @@ Sk.abstr.setUpSlots = function (klass, slots) {
     if (slots.tp$as_sequence_or_mapping) {
         _set_up_sequence_to_number_slots(slots);
     }
+
 
     // make all slots non-enumerable - makes the dir implementation easier
     Object.entries(slots).forEach(([slot_name, value]) => {
@@ -1255,7 +1289,7 @@ Sk.abstr.buildNativeClass = function (typename, options) {
         Object.defineProperty(type_proto, p, {
             value: val,
             writable: true,
-            enumerable: !(p.includes("$") || (p in Object.prototype)), 
+            enumerable: !(p.includes("$") || p in Array.prototype),
             // only make these private in these cases otherwise they're public methods
         });
     });
