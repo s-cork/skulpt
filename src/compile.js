@@ -1,7 +1,8 @@
 /** @param {...*} x */
 var out;
 
-Sk.gensymcount = 0;
+Sk.gensymcount = 0; // to be removed but temporarily here because Sk is sensitive
+var gensymcount = 0;
 
 /**
  * @constructor
@@ -118,7 +119,7 @@ Compiler.prototype.annotateSource = function (ast) {
 Compiler.prototype.gensym = function (hint) {
     hint = hint || "";
     hint = "$" + hint;
-    hint += Sk.gensymcount++;
+    hint += gensymcount++;
     return hint;
 };
 
@@ -2851,7 +2852,7 @@ Sk.compile = function (source, filename, mode, canSuspend) {
 Sk.exportSymbol("Sk.compile", Sk.compile);
 
 Sk.resetCompiler = function () {
-    Sk.gensymcount = 0;
+    gensymcount = 0;
 };
 
 Sk.exportSymbol("Sk.resetCompiler", Sk.resetCompiler);
