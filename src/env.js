@@ -266,6 +266,7 @@ Sk.read = function (x) {
     } else if (Sk.builtinFiles.files[x] === undefined) {
         throw "File not found: '" + x + "'";
     }
+    debugger;
     return Sk.builtinFiles.files[x];
 };
 

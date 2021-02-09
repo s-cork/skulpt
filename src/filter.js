@@ -12,10 +12,19 @@ Sk.builtin.filter_ = Sk.abstr.buildIteratorClass("filter", {
     iternext(canSuspend) {
         // iterate over iterable until we pass the predicate
         // this.chcek$filter either returns the item or undefined
-        const ret = Sk.misceval.iterFor(this.$iterable, (i) =>
-            Sk.misceval.chain(this.check$filter(i), (i) => (i ? new Sk.misceval.Break(i) : undefined))
-        );
-        return canSuspend ? ret : Sk.misceval.retryOptionalSuspensionOrThrow(ret);
+        const ret = () =>
+            Sk.misceval.iterFor(this.$iterable, (i) =>
+                Sk.misceval.chain(
+                    () => this.check$filter(i),
+                    (i) => {
+                        if (i) {
+                            throw new Sk.misceval.Break(i);
+                        }
+                        return undefined;
+                    }
+                )
+            );
+        return canSuspend ? ret() : Sk.misceval.retryOptionalSuspensionOrThrow(ret);
     },
     slots: {
         tp$doc:
@@ -38,9 +47,9 @@ Sk.builtin.filter_ = Sk.abstr.buildIteratorClass("filter", {
         check$filter(item) {
             let res;
             if (this.$func === null) {
-                res = item;
+                res = () => item;
             } else {
-                res = Sk.misceval.callsimOrSuspendArray(this.$func, [item]);
+                res = () => Sk.misceval.callsimOrSuspendArray(this.$func, [item]);
             }
             return Sk.misceval.chain(res, (ret) => (Sk.misceval.isTrue(ret) ? item : undefined));
         },
