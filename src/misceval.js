@@ -29,12 +29,12 @@ Sk.misceval = {};
  * @param {Object=} child A child suspension. 'optional' will be copied from here if supplied.
  * @param {Object=} data Data attached to this suspension. Will be copied from child if not supplied.
  */
-Sk.misceval.Suspension = function Suspension(resume, child, data) {
+Sk.misceval.Suspension = function Suspension(resume, child=null, data) {
     this.$isSuspension = true;
     this.resume = resume || (() => {});
     this.child = child;
-    this.optional = child !== undefined && child.optional;
-    if (data === undefined && child !== undefined) {
+    this.optional = child != null && child.optional;
+    if (data === undefined && child != null) {
         this.data = child.data;
     } else {
         this.data = data || {};
@@ -1256,21 +1256,20 @@ Sk.exportSymbol("Sk.misceval.applyOrSuspend", Sk.misceval.applyOrSuspend);
  * Do the boilerplate suspension stuff.
  */
 Sk.misceval.promiseToSuspension = function (promise) {
-    const suspension = new Sk.misceval.Suspension();
+    const suspension = new Sk.misceval.Suspension(
+        () => {
+            if (suspension.data["error"]) {
+                throw suspension.data["error"];
+            }
 
-    suspension.resume = function () {
-        if (suspension.data["error"]) {
-            throw suspension.data["error"];
+            return suspension.data["result"];
+        },
+        null,
+        {
+            type: "Sk.promise",
+            promise: promise,
         }
-
-        return suspension.data["result"];
-    };
-
-    suspension.data = {
-        type: "Sk.promise",
-        promise: promise,
-    };
-
+    );
     suspension.suspend();
 };
 Sk.exportSymbol("Sk.misceval.promiseToSuspension", Sk.misceval.promiseToSuspension);
