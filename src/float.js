@@ -218,6 +218,11 @@ Sk.builtin.float_ = Sk.abstr.buildNativeClass("float", {
             $doc: Sk.builtin.none.none$,
         },
     },
+    proto: {
+        valueOf() {
+            return this.v;
+        }
+    }
 });
 
 const invalidUnderscores = /_[eE]|[eE]_|\._|_\.|[+-]_|__/;
