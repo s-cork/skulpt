@@ -363,8 +363,9 @@ function proxy(obj, flags) {
 
 const is_constructor = /^class|[^a-zA-Z_$]this[^a-zA-Z_$]|^function[a-zA-Z\(\)\{\s]+\[native code\]\s+\}$/g;
 
-const pyHooks = { dictHook: (obj) => proxy(obj) };
-const boundHook = (bound, name) => ({ dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj, { bound, name }) });
+const pyHooks = { dictHook: (obj) => proxy(obj), unhandledHook: obj => String(obj)}; 
+// unhandled is likely only Symbols and get a string rather than undefined
+const boundHook = (bound, name) => ({ dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj, { bound, name }), unhandledHook: (obj) => String(obj) });
 const jsHooks = {
     unhandledHook: (obj) => {
         const _cached = _proxied.get(obj);
