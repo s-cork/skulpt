@@ -361,7 +361,6 @@ function proxy(obj, flags) {
     return ret;
 }
 
-const is_constructor = /^class|[^a-zA-Z_$]this[^a-zA-Z_$]|^function[a-zA-Z\(\)\{\s]+\[native code\]\s+\}$/g;
 
 const pyHooks = { dictHook: (obj) => proxy(obj), unhandledHook: obj => String(obj)}; 
 // unhandled is likely only Symbols and get a string rather than undefined
@@ -404,36 +403,25 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         this.$methods = Object.create(null);
         this.in$repr = false;
 
-        flags = flags || {};
+        flags || (flags = {});
+
+        // make slot functions lazy
+        Object.defineProperties(this, this.memoized$slots);
 
         // determine the type and name of this proxy
         if (typeof obj === "function") {
-            const bound = (this.$bound = flags.bound);
-            this.is$type =
-                obj.prototype &&
-                obj.prototype.constructor &&
-                (bound === undefined || bound === window || bound.constructor === Object) &&
-                Function.prototype.toString.call(obj).match(is_constructor) !== null;
             this.is$callable = true;
+            this.$bound = flags.bound;
             this.$name = flags.name || obj.name || "(native JS)";
             if (this.$name.length <= 2) {
                 this.$name = this.$name + " (native JS)"; // better this than a single letter minified name
             }
-            this.tp$name = this.is$type ? "proxyclass" : this.$bound ? "proxymethod" : "proxyfunction";
         } else {
-            this.is$type = false;
             this.is$callable = false;
-            this.tp$name = flags.name || (obj.constructor && obj.constructor.name) || "proxyobject";
-            if (this.tp$name === "Object") {
-                this.tp$name = "proxyobject";
-            } else if (this.tp$name.length <= 2) {
-                // we might have a better name in the cache so check there...
-                this.tp$name = proxy(obj.constructor).$name;
-            }
-            this.$name = this.tp$name;
+            delete this.is$type; // set in memoized slots for lazy loading;
+            this.is$type = false;
+            this.$name = flags.name;
         }
-        // make slot functions lazy
-        Object.defineProperties(this, this.memoized$slots);
     },
     slots: {
         tp$doc: "proxy for a javascript object",
@@ -609,6 +597,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         // only get these if we need them
         memoized$slots: {
             $dir: {
+                configurable: true,
                 get() {
                     const dir = new Set();
                     // loop over enumerable properties
@@ -619,6 +608,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 },
             },
             tp$iter: {
+                configurable: true,
                 get() {
                     delete this.tp$iter;
                     if (this.js$wrapped[Symbol.iterator] !== undefined) {
@@ -629,6 +619,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 },
             },
             tp$iternext: {
+                configurable: true,
                 get() {
                     delete this.tp$iternext;
                     if (this.js$wrapped.next !== undefined) {
@@ -640,6 +631,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 },
             },
             sq$length: {
+                configurable: true,
                 get() {
                     delete this.sq$length;
                     if (!this.is$callable && this.js$wrapped.length !== undefined) {
@@ -648,11 +640,66 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 },
             },
             tp$call: {
+                configurable: true,
                 get() {
                     delete this.tp$call;
                     if (this.is$callable) {
                         return (this.tp$call = this.is$type ? this.$new : this.$call);
                     }
+                },
+            },
+            tp$name: {
+                configurable: true,
+                get() {
+                    delete this.tp$name;
+                    if (!this.is$callable) {
+                        const obj = this.js$wrapped;
+                        let tp$name = this.$name || (obj.constructor && obj.constructor.name) || "proxyobject";
+                        if (tp$name === "Object") {
+                            tp$name = "proxyobject";
+                        } else if (tp$name.length <= 2) {
+                            // we might have a better name in the cache so check there...
+                            tp$name = proxy(obj.constructor).$name;
+                        }
+                        return (this.tp$name = tp$name);
+                    } else {
+                        return (this.tp$name = this.is$type ? "proxyclass" : this.$bound ? "proxymethod" : "proxyfunction");
+                    }
+                },
+            },
+            is$type: {
+                configurable: true,
+                get() {
+                    delete this.is$type;
+                    // we already know if we're a function
+                    const jsFunc = this.js$wrapped;
+                    const proto = jsFunc.prototype;
+                    if (proto === undefined) {
+                        // Arrow functions and shorthand methods don't get a prototype
+                        // neither do native js functions like requestAnimationFrame, JSON.parse
+                        return (this.is$type = false);
+                    }
+                    const maybeConstructor = checkBodyIsMaybeConstructor(jsFunc);
+                    if (maybeConstructor === true) {
+                        // definitely a constructor and needs new
+                        return (this.is$type = true);
+                    }  else if (maybeConstructor === false) {
+                        // Number, Symbol, Boolean, BigInt, String
+                        return (this.is$type = false);
+                    }
+                    const protoLen = Object.getOwnPropertyNames(proto).length;
+                    if (protoLen > 1) {
+                        // if the function object has a prototype with more than just constructor, intention is to be used as a constructor
+                        return (this.is$type = true);
+                    }
+                    return (this.is$type = Object.getPrototypeOf(proto) !== Object.prototype);
+                    // we could be a subclass with only constructor on the prototype
+                    // if our prototype's __proto__ is Object.prototype then we are the most base function
+                    // the most likely option is that `this` should be whatever `this.$bound` is, rather than using new
+                    // example x is this.$bound and shouldn't be called with new
+                    // var x = {foo: function() {this.bar='foo'}} 
+                    // Sk.misceval.Break is a counter example
+                    // better to fail with Sk.misceval.Break() (which may have a type guard) than fail by calling new x.foo()
                 },
             },
         },
@@ -661,3 +708,26 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         sk$acceptable_as_base_class: false,
     },
 });
+
+const is_constructor = /^class|^function[a-zA-Z\d\(\)\{\s]+\[native code\]\s+\}$/;
+
+const getFunctionBody = Function.prototype.toString;
+const noNewNeeded = new Set([Number, String, Symbol, Boolean]);
+// Some js builtins that shouldn't be called with new
+// these are unlikely to be proxied by the user but you never know
+if (typeof Sk.global.BigInt !== "undefined") {
+    noNewNeeded.add(Sk.global.BigInt);
+}
+
+function checkBodyIsMaybeConstructor(obj) {
+    const body = getFunctionBody.call(obj);
+    const match = body.match(is_constructor);
+    if (match === null) {
+        return null; // Not a constructor
+    } else if (match[0] === "class") {
+        return true;
+    } else {
+        // some native constructors shouldn't have new
+        return !noNewNeeded.has(obj);
+    }
+};
