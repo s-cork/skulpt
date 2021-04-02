@@ -21,7 +21,7 @@
  * Any variables that aren't set will be left alone.
  */
 
-Sk.bool_check = function (variable, name) {
+ Sk.bool_check = function (variable, name) {
     if (variable === undefined || variable === null || typeof variable !== "boolean") {
         throw new Error("must specify " + name + " and it must be a boolean");
     }
