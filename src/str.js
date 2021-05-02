@@ -222,6 +222,9 @@ Sk.builtin.str = Sk.abstr.buildNativeClass("str", {
         nb$remainder: strBytesRemainder,
     },
     proto: /**@lends {Sk.builtin.str.prototype} */ {
+        toString() {
+            return this.v;
+        },
         $subtype_new(args, kwargs) {
             const instance = new this.constructor();
             // we call str new method with all the args and kwargs
@@ -283,9 +286,6 @@ Sk.builtin.str = Sk.abstr.buildNativeClass("str", {
                 return tgt.v;
             }
             throw new Sk.builtin.TypeError("a str instance is required not '" + Sk.abstr.typeName(tgt) + "'");
-        },
-        toString() {
-            return this.v;
         },
         valueOf() {
             return this.v;

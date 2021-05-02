@@ -24,7 +24,6 @@ Sk.builtins = {
     "hasattr"   : null,
     "id"        : null,
     
-    "reduce"    : new Sk.builtin.func(Sk.builtin.reduce),
     "sorted"    : null,
     "any"       : null,
     "all"       : null,
@@ -477,6 +476,7 @@ Sk.setupObjects = function (py3) {
         Sk.builtins["map"] = Sk.builtin.map_;
         Sk.builtins["zip"] = Sk.builtin.zip_;
         Sk.builtins["range"] = Sk.builtin.range_;
+        delete Sk.builtins["reduce"];
         delete Sk.builtins["xrange"];
         delete Sk.builtins["StandardError"];
         delete Sk.builtins["unicode"];
@@ -487,6 +487,7 @@ Sk.setupObjects = function (py3) {
         };
         delete Sk.builtin.int_.prototype.tp$str;
         delete Sk.builtin.bool.prototype.tp$str;
+        delete Sk.builtins["raw_input"];
         delete Sk.builtin.str.prototype.decode;
         Sk.builtins["bytes"] = Sk.builtin.bytes;
         Sk.builtins["ascii"] = new Sk.builtin.sk_method(
@@ -519,6 +520,15 @@ Sk.setupObjects = function (py3) {
             null,
             "builtins"
         );
+        Sk.builtins["reduce"] = new Sk.builtin.sk_method(
+            {
+                $meth: Sk.builtin.reduce,
+                $name: "reduce",
+                $flags: { MinArgs: 2, MaxArgs: 3 },
+            },
+            null,
+            "builtins"
+        );
         Sk.builtins["filter"] = new Sk.builtin.func(Sk.builtin.filter);
         Sk.builtins["map"] = new Sk.builtin.func(Sk.builtin.map);
         Sk.builtins["zip"] = new Sk.builtin.func(Sk.builtin.zip);
@@ -540,6 +550,7 @@ Sk.setupObjects = function (py3) {
         Sk.builtin.bool.prototype.tp$str = function () {
             return this.$r();
         };
+        Sk.builtins["raw_input"] = new Sk.builtin.func(Sk.builtin.raw_input);
         Sk.builtin.str.prototype.decode = Sk.builtin.str.$py2decode;
         delete Sk.builtins["bytes"];
         delete Sk.builtins["ascii"];
