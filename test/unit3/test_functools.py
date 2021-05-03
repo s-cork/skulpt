@@ -1839,6 +1839,7 @@ class TestCachedProperty(unittest.TestCase):
         self.assertEqual(item.get_cost(), 4)
         self.assertEqual(item.cached_cost, 3)
 
+    @ignore_skulpt
     def test_threaded(self):
         go = threading.Event()
         item = CachedCostItemWait(go)
@@ -1899,11 +1900,12 @@ class TestCachedProperty(unittest.TestCase):
 
     def test_reuse_same_name(self):
         """Reusing a cached_property on different classes under the same name is OK."""
+        global counter, _cp
         counter = 0
 
         @py_functools.cached_property
         def _cp(_self):
-            nonlocal counter
+            global counter
             counter += 1
             return counter
 
@@ -1927,11 +1929,11 @@ class TestCachedProperty(unittest.TestCase):
 
         Foo.cp = cp
 
-        with self.assertRaisesRegex(
+        with self.assertRaises(
                 TypeError,
-                "Cannot use cached_property instance without calling __set_name__ on it.",
-        ):
+        ) as e:
             Foo().cp
+        self.assertEqual(str(e.exception), "Cannot use cached_property instance without calling __set_name__ on it.")
 
     def test_access_from_class(self):
         self.assertIsInstance(CachedCostItem.cost, py_functools.cached_property)
