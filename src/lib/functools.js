@@ -56,6 +56,7 @@ function functools_mod(functools) {
         lookupSpecial,
         copyKeywordsToNamedArgs,
         typeName,
+        checkOneArg,
         iter: objectGetIter,
         gattr: objectGetAttr,
     } = Sk.abstr;
@@ -725,6 +726,87 @@ cache_info_type:    namedtuple class with the fields:\n\
             },
         },
     });
+
+
+     /********** cached_property *************/
+
+     functools.cached_property = Sk.abstr.buildNativeClass("functools.cached_property", {
+         constructor: function cached_property() {},
+         slots: {
+             tp$init(args, kws) {
+                 checkOneArg("cached_property", args, kws);
+                 this.$func = args[0];
+                 this.$attr = pyNone;
+                 this.$doc = this.func.tp$getattr(pyStr.$doc);
+             },
+             tp$descr_get(instance, owner) {
+                 if (instance === null) {
+                     return this;
+                 }
+                 if (checkNone(this.$attr)) {
+                     throw new pyTypeError("Cannot use cached_property instance without calling __set_name__ on it.");
+                 }
+                 let cache = instance.tp$getattr(pyStr.$dict);
+                 if (cache === undefined) {
+                     throw new pyTypeError(
+                         `No '__dict__' attribute on '${typeName(instance)}' instance to cache ${objectRepr(
+                             this.$attr
+                         )} property.`
+                     );
+                 }
+                 const val = cache.mp$lookup(this.$attr);
+                 if (val !== undefined) {
+                     return val;
+                 }
+                 return chain(pyCallOrSuspend(this.$func, [instance]), (val) => {
+                     try {
+                         cache.mp$ass_subscript(this.$attr, val);
+                     } catch (e) {
+                         if (e instanceof pyTypeError) {
+                             e = new pyTypeError(
+                                 `The '__dict__' attribute on ${typeName(
+                                     instance
+                                 )} instance does not support item assignment for caching ${objectRepr(
+                                     this.$attr
+                                 )} property."`
+                             );
+                         }
+                         throw e;
+                     }
+                     return val;
+                 });
+             },
+         },
+         methods: {
+             __set_name__: {
+                 $meth(owner, name) {
+                     if (checkNone(this.$attr)) {
+                         this.$attr = name;
+                     } else if (name !== this.$attr) {
+                         throw new pyTypeError(
+                             `Cannot assign the same cached_property to two different names (${objectRepr(
+                                 this.$attr
+                             )} and ${objectRepr(name)}).`
+                         );
+                     }
+                 },
+                 $flags: { MinArgs: 2, MaxArgs: 2 },
+             },
+         },
+         getsets: {
+             __doc__: {
+                 $get() {
+                     return this.$doc || pyNone;
+                 },
+                 $set(v) {
+                     this.$doc = v;
+                 },
+             },
+         },
+         //  classmethods: {
+         //      __class_getitem__
+         //  }
+     });
 
     const str_update = new pyStr("update");
     const __wrapped__ = new pyStr("__wrapped__");
