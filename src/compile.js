@@ -224,12 +224,13 @@ Compiler.prototype.outputInterruptTest = function () { // Added by RNL
             output += "if ($dateNow - Sk.execStart > Sk.execLimit) {throw new Sk.builtin.TimeLimitError(Sk.timeoutMsg())}";
         }
         if (Sk.yieldLimit !== null && this.u.canSuspend) {
-            output += "if ($dateNow - Sk.lastYield > Sk.yieldLimit) {";
+            output += "if (!$waking && ($dateNow - Sk.lastYield > Sk.yieldLimit)) {";
             output += "var $susp = $saveSuspension({data: {type: 'Sk.yield'}, resume: function() {}}, '"+this.filename+"',$currLineNo,$currColNo);";
             output += "$susp.$blk = $blk;";
             output += "$susp.optional = true;";
             output += "return $susp;";
             output += "}";
+            output += "$waking = false;";
             this.u.doesSuspend = true;
         }
     }
@@ -1922,7 +1923,7 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     // If there is a suspension, resume from it. Otherwise, initialise
     // parameters appropriately.
     //
-    this.u.varDeclsCode += "if ("+scopename+".$wakingSuspension!==undefined) { $wakeFromSuspension(); } else {";
+    this.u.varDeclsCode += "var $waking=false; if ("+scopename+".$wakingSuspension!==undefined) { $wakeFromSuspension(); $waking=true; } else {";
 
     if (fastCall) {
         // Resolve our arguments from $posargs+$kwargs.
@@ -2067,6 +2068,13 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     }
 
     //
+    // Skulpt doesn't have "co_consts", so record the docstring (or
+    // None) in the "co_docstring" property of the code object, ready
+    // for use by the Sk.builtin.func constructor.
+    //
+    out(scopename, ".co_docstring=", this.cDocstringOfCode(n), ";");
+
+    //
     // attach flags
     //
     if (kwarg) {
@@ -2115,7 +2123,6 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
                             "\",arguments.length,0,0);return new Sk.builtins['generator'](", scopename, ",$gbl,[]", frees, ");}))");
         }
     } else {
-        var res;
         if (decos.length > 0) {
             out("$ret = new Sk.builtins['function'](", scopename, ",$gbl", frees, ");");
             for (let decorator of decos.reverse()) {
@@ -2128,6 +2135,47 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
         return this._gr("funcobj", "new Sk.builtins['function'](", scopename, ",$gbl", frees, ")");
     }
 };
+
+/** JavaScript for the docstring of the given body, or null if the
+ * body has no docstring.
+ */
+Compiler.prototype.maybeCDocstringOfBody = function(body) {
+    if (body.length === 0)  // Don't think this can happen?
+        return null;
+
+    const stmt_0 = body[0];
+    if (stmt_0.constructor !== Sk.astnodes.Expr)
+        return null;
+
+    const expr = stmt_0.value;
+    if (expr.constructor !== Sk.astnodes.Str)
+        return null;
+
+    return this.vexpr(expr);
+};
+
+/** JavaScript for the docstring of the given node.  Only called from
+ * buildcodeobj(), and expects a FunctionDef, Lambda, or GeneratorExp
+ * node.  We give a "None" docstring to a GeneratorExp node, although
+ * it is not carried over to the final generator; this is harmless.
+ */
+Compiler.prototype.cDocstringOfCode = function(node) {
+    switch (node.constructor) {
+    case Sk.astnodes.AsyncFunctionDef:  // For when it's supported
+    case Sk.astnodes.FunctionDef:
+        return (
+            this.maybeCDocstringOfBody(node.body)
+            || "Sk.builtin.none.none$"
+        );
+
+    case Sk.astnodes.Lambda:
+    case Sk.astnodes.GeneratorExp:
+        return "Sk.builtin.none.none$";
+
+    default:
+        Sk.asserts.fail(`unexpected node kind ${node.constructor.name}`);
+    }
+}
 
 Compiler.prototype.cfunction = function (s, class_for_super) {
     var funcorgen;
@@ -2669,8 +2717,19 @@ Compiler.prototype.exitScope = function () {
  * @param {Sk.builtin.str=} class_for_super
  */
 Compiler.prototype.cbody = function (stmts, class_for_super) {
-    var i;
-    for (i = 0; i < stmts.length; ++i) {
+    var i = 0;
+
+    // If we have a docstring, then assign it to __doc__, and skip over
+    // the expression when properly compiling the rest of the body.  This
+    // happens for class and module bodies.
+    //
+    const maybeDocstring = this.maybeCDocstringOfBody(stmts);
+    if (maybeDocstring !== null) {
+        out("$loc.__doc__ = ", maybeDocstring, ";");
+        i = 1;
+    }
+
+    for (; i < stmts.length; ++i) {
         this.vstmt(stmts[i], class_for_super);
     }
 };
@@ -2719,7 +2778,7 @@ Compiler.prototype.cmod = function (mod) {
         this.u.varDeclsCode += "if (typeof Sk.lastYield === 'undefined') {Sk.lastYield = Date.now()}";
     }
 
-    this.u.varDeclsCode += "if ("+modf+".$wakingSuspension!==undefined) { $wakeFromSuspension(); }" +
+    this.u.varDeclsCode += "var $waking=false; if ("+modf+".$wakingSuspension!==undefined) { $wakeFromSuspension(); $waking=true; }" +
         "if (Sk.retainGlobals) {" +
         "    if (Sk.globals) { $gbl = Sk.globals; Sk.globals = $gbl; $loc = $gbl; }" +
         "    if (Sk.globals) { $gbl = Sk.globals; Sk.globals = $gbl; $loc = $gbl; $loc.__file__=new Sk.builtins.str('" + this.filename + "');}" +
