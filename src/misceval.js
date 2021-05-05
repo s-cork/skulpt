@@ -8,6 +8,8 @@
  */
 Sk.misceval = {};
 
+const sentinal = Symbol("");
+
 /** @typedef {Sk.builtin.object}*/ var pyObject;
 
 /*
@@ -31,16 +33,87 @@ Sk.misceval = {};
  * @param {Object=} locals Each attribute in locals will be attached to this suspension. Not copied from child.
  */
 Sk.misceval.Suspension = class Suspension {
-    constructor(resume, child = null, data, locals) {
+    constructor(resume, child = null) {
         this.$isSuspension = true;
-        this.resume = resume || (() => { });
+        let data = {result: sentinal, error: sentinal};
+        let optional;
+        if (typeof resume === "string") {
+            data.type = resume;
+            optional = true;
+            data.promise = Promise.resolve();
+            resume = () => {};
+        } else if (resume instanceof Promise) {
+            optional = false;
+            data.type = "Sk.promise";       
+            data.promise = resume.then((r) => {
+                this.data.result = r;
+            }, (e) => {
+                this.data.error = e;
+            });
+            resume = () => {
+                if (data.result !== sentinal) {
+                    return data.result;
+                } else if (data.error !== sentinal) {
+                    throw data.error;
+                } else {
+                    throw new Error("Suspension resumed before result");
+                }
+            }
+        } else if (typeof resume === "function") {
+            optional = child.optional;
+            data = child.data;
+        }
+        this.resume = resume;
+        this.data = data;
+        this.optional = optional;
         this.child = child;
-        this.optional = child ? child.optional : data ? data.optional : false;
-        this.data = data || (child && child.data) || {};
-        locals && Object.assign(this, locals);
+        // this.child = child;
+        // this.optional = child ? child.optional : data ? data.optional : false;
+        // this.data = data || (child && child.data) || {};
+        // locals && Object.assign(this, locals);
     }
     suspend() {
         throw this;
+    }
+    then(onResult, onError = (e) => {throw e;}, onSuspense) {
+        let child = this;
+        const onMaybeSuspense = (err) => {
+            return handleSuspensionOrReject(err, (child) => {
+                // console.log('child that did a cheeky suspension', child);
+                // child.then(onResult, onError);
+                // child.suspend();
+                // try {
+                //     return onResult(child.resume());
+                // } catch (err) {
+                //     return onMaybeSuspense(err);
+                // }
+            }, onError);
+        }
+        const resume = () => {
+            try {
+
+                const r = child.resume();
+                return r;
+                // console.log('child that did a cheeky resume', r);
+                // return onResult(() => child.resume());
+            } catch (err) {
+                // return handleSuspensionOrReject(err, (child) => {
+                //     Sk.misceval.chain(() => child.resume(), (r) => onResult(r)), onError);
+                // }
+                // return handleSuspensionOrReject(err, onSuspense || ((child) => {
+                //     child.then(onResult, onError);
+                // }), onError);
+            }
+            // } catch (err) {
+            //     return handleSuspensionOrReject(err, (child) => {
+            //         child.then(onResult, onError);
+            //     }, onError);
+            // }
+            // } catch (err) {
+            //     return onMaybeSuspense(err);
+            // }
+        }
+        new Sk.misceval.Suspension(resume, child).suspend();
     }
 }
 Sk.exportSymbol("Sk.misceval.Suspension", Sk.misceval.Suspension);
@@ -959,11 +1032,11 @@ Sk.misceval.asyncToPromise = function (suspendablefn, suspHandlers = {}) {
                 case "Sk.promise":
                     data.promise.then(
                         (res) => {
-                            data.result = res;
+                            // data.result = res;
                             resumeAsync();
                         },
                         (err) => {
-                            data.error = err;
+                            // data.error = err;
                             resumeAsync();
                         }
                     );
@@ -1028,7 +1101,9 @@ Sk.misceval.chain = function (...chainedFns) {
         return value;
     } catch (err) {
         handleSuspensionOrReject(err, (child) => {
-            throw new Sk.misceval.Suspension(() => Sk.misceval.chain(() => child.resume(), ...chainedFns.slice(i)), child);
+            // throw new Sk.misceval.Suspension(() => Sk.misceval.chain(() => child.resume(), ...chainedFns.slice(i)), child);
+            // child.then(childResume => Sk.misceval.chain(childResume, ...chainedFns.slice(i)));
+            child.then((r) => Sk.misceval.chain(() => chainedFns[i] ? chainedFns[i](r) : r, ...chainedFns.slice(i+1)));
         });
     }
 };
@@ -1051,6 +1126,7 @@ Sk.misceval.tryCatch = function (tryFn, catchFn) {
     } catch (err) {
         return handleSuspensionOrReject(
             err,
+            // (child) => child.then((r) => r, catchFn),
             (child) => {
                 throw new Sk.misceval.Suspension(() => Sk.misceval.tryCatch(() => child.resume(), catchFn), child);
             },
@@ -1067,6 +1143,13 @@ const tempIterator = (iterResult, iter) => ({
         return iterResult;
     },
 });
+
+const iterForErrorHandler = (err)  => {
+    if (err === Sk.misceval.Break || err instanceof Sk.misceval.Break) {
+        return err.brValue;
+    }
+    throw err;
+}
 
 /**
  * @function
@@ -1113,6 +1196,7 @@ Sk.misceval.iterFor = function (iter, forFn, initialValue) {
                         Sk.misceval.chain(
                             () => child.resume(),
                             (iterResult) => Sk.misceval.iterFor(tempIterator(iterResult, iter), forFn, prevRet)
+
                         );
                 } else {
                     resume = () =>
@@ -1122,13 +1206,21 @@ Sk.misceval.iterFor = function (iter, forFn, initialValue) {
                         );
                 }
                 throw new Sk.misceval.Suspension(resume, child);
+                // if (iterSuspended) {
+                //     child.then(
+                //         (iterResult) => Sk.misceval.iterFor(tempIterator(iterResult, iter), forFn, prevRet),
+                //         iterForErrorHandler
+                //     );
+                // } else {
+                //     child.then((prevRet) => Sk.misceval.iterFor(iter, forFn, prevRet), iterForErrorHandler);
+                // }
+                // child.then((r) => {
+                //     return iterSuspended ? Sk.misceval.iterFor(tempIterator(r, iter), forFn, prevRet) :
+                //         Sk.misceval.iterFor(iter, forFn, r)
+                // }, iterForErrorHandler);
+
             },
-            (err) => {
-                if (err === Sk.misceval.Break || err instanceof Sk.misceval.Break) {
-                    return err.brValue;
-                }
-                throw err;
-            }
+            iterForErrorHandler
         );
     }
 };
@@ -1252,20 +1344,20 @@ Sk.exportSymbol("Sk.misceval.applyOrSuspend", Sk.misceval.applyOrSuspend);
  * Do the boilerplate suspension stuff.
  */
 Sk.misceval.promiseToSuspension = function (promise) {
-    const suspension = new Sk.misceval.Suspension(
-        () => {
-            if (suspension.data["error"]) {
-                throw suspension.data["error"];
-            }
+    const suspension = new Sk.misceval.Suspension(promise);
+    //     () => {
+    //         if (suspension.data["error"]) {
+    //             throw suspension.data["error"];
+    //         }
 
-            return suspension.data["result"];
-        },
-        null,
-        {
-            type: "Sk.promise",
-            promise: promise,
-        }
-    );
+    //         return suspension.data["result"];
+    //     },
+    //     null,
+    //     {
+    //         type: "Sk.promise",
+    //         promise: promise,
+    //     }
+    // );
     suspension.suspend();
 };
 Sk.exportSymbol("Sk.misceval.promiseToSuspension", Sk.misceval.promiseToSuspension);

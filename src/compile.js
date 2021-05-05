@@ -225,7 +225,7 @@ Compiler.prototype.outputInterruptTest = function () { // Added by RNL
         }
         if (Sk.yieldLimit !== null && this.u.canSuspend) {
             output += "if ($dateNow - Sk.lastYield > Sk.yieldLimit) {";
-            output += "$saveSuspension(new Sk.misceval.Suspension(null, null, {type:'Sk.yield',optional:true}),'"+this.filename+"',$currLineNo,$currColNo);";
+            output += "new Sk.misceval.Suspension('Sk.yield').suspend();";
             output += "}";
             this.u.doesSuspend = true;
         }
@@ -277,6 +277,7 @@ Compiler.prototype._handleDebug = function (s, suspType) {
     const debugBlock = this.newBlock("debug breakpoint for line "+s.lineno);
     out("\n$blk=", debugBlock, ";");
     out("if (Sk.breakpoints('"+this.filename+"',"+s.lineno+","+s.col_offset+")) {",
+        // "new Sk.miseval.Suspension('" + suspType + "').suspend();" + 
         "$saveSuspension(new Sk.misceval.Suspension(null, null, {type: '"+suspType+"', optional: true}), '"+this.filename+"',"+s.lineno+","+s.col_offset+");",
         "}");
     this.u.blocks[this.u.curblock]._next = debugBlock;
@@ -1117,6 +1118,7 @@ Compiler.prototype.outputSuspensionHelpers = function (unit) {
             seenTemps[t] = true;
         }
     }
+    // output += "$ret = susp.$ret;" +
 
     output +=  "try { $ret=susp.child.resume(); } catch(err) {  ";
     output += "if (err instanceof Sk.misceval.Suspension) {"
@@ -1136,22 +1138,60 @@ Compiler.prototype.outputSuspensionHelpers = function (unit) {
 
     output += "var $saveSuspension = function($child, $filename, $lineno, $colno) {" +
             "if ($dbg === $child) {$dbg.suspend();}" + // we were already thrown inside our body so just rethrow
-            "var susp = new Sk.misceval.Suspension(" +
-                "function(){" + 
-                    unit.scopename + ".$wakingSuspension=susp; return " + unit.scopename + "(" + (unit.ste.generator ? "$gen" : "") + "); " + 
-                 "}, " +
-                "$child, " +  // child
-                "null, " + // data
-                // locals
-                "{$blk:$blk,$loc:$loc,$gbl:$gbl,$exc:$exc,$err:$err,$postfinally:$postfinally," +
-                "$filename:$filename,$lineno:$lineno,$colno:$colno" +
-                (hasCell ? ",$cell:$cell" : "") +
-                ",$tmps: {" + localSaveCode.join(",") + "}" +
-                "}" +
-            ");" +
+            `const scope = {
+                $blk,
+                $loc, 
+                $gbl, 
+                $exc, 
+                $err, 
+                $postfinally, 
+                $filename, 
+                $lineno, 
+                $colno,
+                ${(hasCell ? "$cell," : "")}
+                $tmps: {${localSaveCode.join(",")}}
+            };
+            const susp = new Sk.misceval.Suspension(() => {
+                ${unit.scopename}.$wakingSuspension = susp;
+                return ${unit.scopename}(${(unit.ste.generator ? "$gen" : "")});
+            }, $child);
+            Object.assign(susp, scope);
+            $dbg = susp;
+            susp.suspend();
+            ` + 
 
-            "$dbg = susp;" +
-            "$dbg.suspend();" +
+            // /*$child.then((r) => {
+            //     debugger;
+            //     ${unit.scopename}.$wakingSuspension = {...scope, $ret: r};
+            //     return ${unit.scopename}(${(unit.ste.generator ? "$gen" : "")});
+            // }, (err) => {
+            //     if (!(err instanceof Sk.builtin.BaseException)) { 
+            //         err = new Sk.builtin.ExternalError(err); 
+            //     } 
+            //     err.traceback.push({lineno: $currLineNo, colno: $currColNo, filename: '"+this.filename+"'}); 
+            //     if ($exc.length>0) { 
+            //         $err=err; $blk=$exc.pop(); 
+            //     } else { 
+            //         throw err; 
+            //     }
+            // });*/
+            // ` +
+            // "var susp = new Sk.misceval.Suspension(" +
+            //     "function(){" + 
+            //         unit.scopename + ".$wakingSuspension=susp; return " + unit.scopename + "(" + (unit.ste.generator ? "$gen" : "") + "); " + 
+            //      "}, " +
+            //     "$child, " +  // child
+            //     "null, " + // data
+            //     // locals
+            //     "{$blk:$blk,$loc:$loc,$gbl:$gbl,$exc:$exc,$err:$err,$postfinally:$postfinally," +
+            //     "$filename:$filename,$lineno:$lineno,$colno:$colno" +
+            //     (hasCell ? ",$cell:$cell" : "") +
+            //     ",$tmps: {" + localSaveCode.join(",") + "}" +
+            //     "}" +
+            // ");" +
+
+            // "$dbg = susp;" +
+            // "$dbg.suspend();" +
         "};";
 
     return output;

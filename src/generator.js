@@ -71,6 +71,7 @@ Sk.builtin.generator = Sk.abstr.buildIteratorClass("generator", {
         const finishIteration = () => Sk.misceval.chain(ret, (ret) => {
             this.gi$running = false;
             Sk.asserts.assert(ret !== undefined);
+            debugger;
             if (ret !== Sk.builtin.none.none$) {
                 // returns a pair: resume target and yielded value
                 this.gi$resumeat = ret[0];

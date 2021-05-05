@@ -277,6 +277,10 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
                     finalcode += "\n" + co.funcname + ";";
 
                     const modscope = Sk.global["eval"](finalcode);
+                    console.log(modscope);
+                    if (typeof modscope !== "function") {
+                        debugger;
+                    }
 
                     module["$d"] = {
                         __name__: new Sk.builtin.str(modname),

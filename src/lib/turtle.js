@@ -2217,30 +2217,16 @@ function generateTurtleModule(_target) {
             }
 
             if (result instanceof Promise) {
-                result = result.catch(function(e) {
+                result = result.then(function (res) {
+                    return Sk.ffi.remapToPy(res);
+                }, function(e) {
                     if (window && window.console) {
                         window.console.log("promise failed");
                         window.console.log(e.stack);
                     }
                     throw e;
                 });
-
-                susp = new Sk.misceval.Suspension();
-
-                susp.resume = function() {
-                    return (resolution === undefined) ?
-                        Sk.builtin.none.none$ :
-                        Sk.ffi.remapToPy(resolution);
-                };
-
-                susp.data = {
-                    type: "Sk.promise",
-                    promise: result.then(function(value) {
-                        resolution = value;
-                        return value;
-                    })
-                };
-
+                susp = new Sk.misceval.Suspension(result);
                 susp.suspend();
             }
             else {

@@ -124,22 +124,12 @@ var $builtinmodule = function (name) {
             }
         });
 
-        var susp = new Sk.misceval.Suspension();
-
-        susp.resume = function() {
-            return resolution;
-        };
-
-        susp.data = {
-            type: "Sk.promise",
-            promise: prom.then(function(value) {
-                resolution = value;
-                return value;
-            }, function(err) {
-                resolution = "";
-                return err;
-            })
-        };
+        const susp = new Sk.misceval.Suspension(
+            prom.then(
+                (value) => value,
+                (err) => ""
+            )
+        );
 
         susp.suspend();
     });

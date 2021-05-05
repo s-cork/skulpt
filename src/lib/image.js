@@ -35,7 +35,6 @@ $builtinmodule = function (name) {
 
 
         $loc.__init__ = new Sk.builtin.func(function (self, imageId) {
-            var susp;
             Sk.builtin.pyCheckArgsLen("__init__", arguments.length, 2, 2);
             try {
                 self.image = document.getElementById(Sk.ffi.remapToJs(imageId));
@@ -44,34 +43,23 @@ $builtinmodule = function (name) {
                 self.image = null;
             }
             if (self.image == null) {
-                susp = new Sk.misceval.Suspension();
-                susp.resume = function () {
-                    // Should the post image get stuff go here??
-                    if (susp.data["error"]) {
-                        throw new Sk.builtin.IOError(susp.data["error"].message);
-                    }
-                };
-                susp.data = {
-                    type: "Sk.promise",
-                    promise: new Promise(function (resolve, reject) {
-                            var newImg = new Image();
-                            newImg.crossOrigin = "";
-                            newImg.onerror = function () {
-                                reject(Error("Failed to load URL: " + newImg.src));
-                            };
-                            newImg.onload = function () {
-                                self.image = this;
-                                initializeImage(self);
-                                resolve();
-                            };
-                            // look for mapping from imagename to url and possible an image proxy server
-                            newImg.src = remapImageIdToURL(imageId);
-                        }
-                    )
-                };
-                return susp;
+                const promise = new Promise(function (resolve, reject) {
+                    var newImg = new Image();
+                    newImg.crossOrigin = "";
+                    newImg.onerror = function () {
+                        reject(new Sk.builtin.IOError("Failed to load URL: " + newImg.src));
+                    };
+                    newImg.onload = function () {
+                        self.image = this;
+                        initializeImage(self);
+                        resolve();
+                    };
+                    // look for mapping from imagename to url and possible an image proxy server
+                    newImg.src = remapImageIdToURL(imageId);
+                });
+                const susp = Sk.misceval.promiseToSuspension(promise);
+                susp.suspend();
             }
-
         });
 
         remapImageIdToURL = function (imageId) {
