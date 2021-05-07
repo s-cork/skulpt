@@ -1126,6 +1126,8 @@ Compiler.prototype.outputSuspensionHelpers = function (unit) {
         output += "catch (err) {";
         output += "if (err instanceof Sk.misceval.Suspension) {";
         output += "$saveSuspension(err, '" + this.filename + "', $currLineNo, $currColNo);} else ";
+        output += "if (err instanceof Promise) {";
+        output += "$saveSuspension(new Sk.misceval.Suspension(err), '" + this.filename + "', $currLineNo, $currColNo);} else ";
     } else {
         output += "try{$ret = Sk.misceval.retryOptionalSuspensionOrThrow(function(){return susp.child.resume()});}";
         output += "catch (err) {";
@@ -1994,6 +1996,9 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     this.u.suffixCode += !this.u.canSuspend
     ? "try{$ret = Sk.misceval.retryOptionalSuspensionOrThrow(function(){return err.resume()}); continue;} catch (e) {err = e;}}"
     : "$saveSuspension(err, '" + this.filename + "', $currLineNo, $currColNo);} else ";
+    this.u.suffixCode += !this.u.canSuspend
+    ? "else if (err instanceof Promise) {err = new Sk.misceval.SuspensionError('Cannot call a function that blocks or suspends here');}"
+    : "if (err instanceof Promise) {$saveSuspension(new Sk.misceval.Suspension(err), '" + this.filename + "', $currLineNo, $currColNo);} else ";
     // allow fall throw if we can't suspend
     this.u.suffixCode += "if (!(err instanceof Sk.builtin.BaseException)) { err = new Sk.builtin.ExternalError(err); }";
     this.u.suffixCode += "err.traceback.push({lineno: $currLineNo, colno: $currColNo, filename: '"+this.filename+"'}); ";
@@ -2317,6 +2322,9 @@ Compiler.prototype.cclass = function (s) {
     this.u.suffixCode += !this.u.canSuspend
     ? "try{$ret = Sk.misceval.retryOptionalSuspensionOrThrow(function(){return err.resume()}); continue;} catch (e) {err = e;}}"
     : "$saveSuspension(err, '" + this.filename + "', $currLineNo, $currColNo);} else ";
+    this.u.suffixCode += !this.u.canSuspend
+    ? "else if (err instanceof Promise) {err = new Sk.misceval.SuspensionError('Cannot call a function that blocks or suspends here');}"
+    : "if (err instanceof Promise) {$saveSuspension(new Sk.misceval.Suspension(err), '" + this.filename + "', $currLineNo, $currColNo);} else ";
     // allow fall throw if we can't suspend
     this.u.suffixCode += "if (!(err instanceof Sk.builtin.BaseException)) { err = new Sk.builtin.ExternalError(err); }";
     this.u.suffixCode += "err.traceback.push({lineno: $currLineNo, colno: $currColNo, filename: '"+this.filename+"'}); ";
@@ -2780,6 +2788,9 @@ Compiler.prototype.cmod = function (mod) {
     this.u.suffixCode += !this.u.canSuspend
     ? "try{$ret = Sk.misceval.retryOptionalSuspensionOrThrow(function(){return err.resume()}); continue;} catch (e) {err = e;}}"
     : "$saveSuspension(err, '" + this.filename + "', $currLineNo, $currColNo);} else ";
+    this.u.suffixCode += !this.u.canSuspend
+    ? "else if (err instanceof Promise) {err = new Sk.misceval.SuspensionError('Cannot call a function that blocks or suspends here');}"
+    : "if (err instanceof Promise) {$saveSuspension(new Sk.misceval.Suspension(err), '" + this.filename + "', $currLineNo, $currColNo);} else ";
     // allow fall throw if we can't suspend
     this.u.suffixCode += "if (!(err instanceof Sk.builtin.BaseException)) { err = new Sk.builtin.ExternalError(err); }";
     this.u.suffixCode += "err.traceback.push({lineno: $currLineNo, colno: $currColNo, filename: '"+this.filename+"'}); ";

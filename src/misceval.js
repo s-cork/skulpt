@@ -159,7 +159,9 @@ Sk.misceval.retryOptionalSuspensionOrThrow = function retryOptionalSuspensionOrT
         try {
             return suspendablefn();
         } catch (susp) {
-            if (!(susp instanceof Sk.misceval.Suspension)) {
+            if (susp instanceof Promise) {
+                throw new Sk.builtin.SuspensionError(message || "Cannot call a function that blocks or suspends here");
+            } else if(!(susp instanceof Sk.misceval.Suspension)) {
                 throw susp;
             } else if (!susp.optional) {
                 throw new Sk.builtin.SuspensionError(message || "Cannot call a function that blocks or suspends here");
@@ -188,6 +190,8 @@ function handleSuspensionOrReject(
 ) {
     if (maybeSuspension instanceof Sk.misceval.Suspension) {
         return suspensionHandler(maybeSuspension);
+    } else if (maybeSuspension instanceof Promise) {
+        return suspensionHandler(new Sk.misceval.Suspension(maybeSuspension));
     } else {
         return errorHandler(maybeSuspension);
     }

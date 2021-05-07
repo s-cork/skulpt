@@ -2232,16 +2232,15 @@ function generateTurtleModule(_target) {
             }
 
             if (result instanceof Promise) {
-                result = result.catch(function(e) {
-                    if (window && window.console) {
-                        window.console.log("promise failed");
-                        window.console.log(e.stack);
-                    }
-                    throw e;
-                });
-
-                susp = new Sk.misceval.Suspension(result.then((value) => Sk.ffi.remapToPy(value)));
-                susp.suspend();
+                throw result
+                    .catch(function (e) {
+                        if (window && window.console) {
+                            window.console.log("promise failed");
+                            window.console.log(e.stack);
+                        }
+                        throw e;
+                    })
+                    .then((value) => Sk.ffi.remapToPy(value));
             }
             else {
                 if (result === undefined) return Sk.builtin.none.none$;

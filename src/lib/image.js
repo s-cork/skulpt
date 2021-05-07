@@ -44,7 +44,7 @@ $builtinmodule = function (name) {
                 self.image = null;
             }
             if (self.image == null) {
-                susp = new Sk.misceval.Suspension(new Promise(function (resolve, reject) {
+                throw new Promise(function (resolve, reject) {
                     var newImg = new Image();
                     newImg.crossOrigin = "";
                     newImg.onerror = function () {
@@ -57,8 +57,7 @@ $builtinmodule = function (name) {
                     };
                     // look for mapping from imagename to url and possible an image proxy server
                     newImg.src = remapImageIdToURL(imageId);
-                }));
-                susp.suspend();
+                });
             }
             return Sk.builtin.none.none$;
 
@@ -176,7 +175,7 @@ $builtinmodule = function (name) {
 
 
         updateCanvasAndSuspend = function (self, x, y) {
-            var susp = new Sk.misceval.Suspension(new Promise(function (resolve, reject) {
+            throw new Promise(function (resolve, reject) {
                 self.updateCount++;
                 if ((self.updateCount % self.updateInterval) === 0) {
                     if (self.lastx + self.updateInterval >= self.width) {
@@ -202,8 +201,7 @@ $builtinmodule = function (name) {
                 } else {
                     resolve(Sk.builtin.none.none$);
                 }
-            }));
-            susp.suspend();
+            });
         };
 
         var setpixel = function (self, x, y, pix) {
@@ -311,9 +309,8 @@ $builtinmodule = function (name) {
         });
 
         $loc.draw = new Sk.builtin.func(function (self, win, ulx, uly) {
-            var susp;
             Sk.builtin.pyCheckArgsLen("draw", arguments.length, 2, 4);
-            susp = new Sk.misceval.Suspension(new Promise(function (resolve, reject) {
+            throw new Promise(function (resolve, reject) {
                 var can;
                 var ctx;
                 win = Sk.builtin.asnum$(win);
@@ -336,8 +333,7 @@ $builtinmodule = function (name) {
                 } else {
                     window.setTimeout(() => resolve(Sk.builtin.none.none$), 200);
                 }
-            }));
-            susp.suspend();
+            });
 
         });
 

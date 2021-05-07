@@ -59,11 +59,11 @@ var $builtinmodule = function (name) {
         Sk.builtin.pyCheckArgsLen("sleep", arguments.length, 1, 1);
         Sk.builtin.pyCheckType("delay", "float", Sk.builtin.checkNumber(delay));
 
-        throw new Sk.misceval.Suspension(new Promise(function(resolve) {
-            Sk.setTimeout(function() {
+        throw new Promise(function (resolve) {
+            Sk.setTimeout(function () {
                 resolve(Sk.builtin.none.none$);
-            }, Sk.ffi.remapToJs(delay)*1000);
-        }));
+            }, Sk.ffi.remapToJs(delay) * 1000);
+        });
     });
 
     function padLeft(str, l, c) {

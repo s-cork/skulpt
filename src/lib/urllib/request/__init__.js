@@ -124,8 +124,10 @@ var $builtinmodule = function (name) {
             }
         });
 
-        var susp = new Sk.misceval.Suspension(prom.then((r) => Sk.ffi.remapToPy(r), (e) => Sk.ffi.remapToPy("")));
-        susp.suspend();
+        throw prom.then(
+            (r) => Sk.ffi.remapToPy(r),
+            (e) => Sk.ffi.remapToPy("")
+        );
     });
 
 

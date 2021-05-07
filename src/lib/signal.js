@@ -55,7 +55,7 @@ var $builtinmodule = function (name) {
      */    
     mod.pause = new Sk.builtin.func(function () {
         Sk.builtin.pyCheckArgsLen("pause", arguments.length, 0, 0);
-        var susp = new Sk.misceval.Suspension(new Promise(function (resolve, reject) {
+        throw new Promise(function (resolve, reject) {
             if (Sk.signals != null && Sk.signals.addEventListener) {
                 // Define handler here, in order to remove it later
                 function handleSignal (signal) {
@@ -69,8 +69,7 @@ var $builtinmodule = function (name) {
                 // if signal has not been configured, just resume immediatelly
                 resolve(Sk.builtin.none.none$);
             }
-        }));
-        susp.suspend();
+        });
     });
 
     mod.signal = new Sk.builtin.func(function () {
