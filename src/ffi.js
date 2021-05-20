@@ -69,8 +69,8 @@ function toPy(obj, hooks) {
     } else if (Array.isArray(obj)) {
         return new Sk.builtin.list(obj.map((x) => toPy(x, hooks)));
     } else if (type === "object") {
-        const constructor = obj.constructor;
-        if (constructor === Object || constructor === undefined /* Object.create(null) */) {
+        const constructor = obj.constructor; // it's possible that a library deleted the constructor
+        if (constructor === Object && Object.getPrototypeOf(obj) === Object.prototype || constructor === undefined /* Object.create(null) */) {
             return hooks.dictHook ? hooks.dictHook(obj) : toPyDict(obj, hooks);
         } else if (constructor === Uint8Array) {
             return new Sk.builtin.bytes(obj);
@@ -205,7 +205,7 @@ function toJs(obj, hooks) {
  * keys of dictionaries are only allowed to be - None, str, int, float, bool
  *
  * the following hooks are available
- * 
+ *
  * hooks.dictHook - override the default dict to object literal bevaiour
  * hooks.unhandledHook(obj) - by default this function throws an error in the unhandled case
  * hooks.bigintHook(bigint, pyObj) - by default bigints will fail - can also catch this case in unhandledHook
@@ -237,7 +237,6 @@ function toJSON(obj, hooks) {
     }
     return toJs(obj, hooks);
 }
-
 
 function isTrue(obj) {
     // basically the logic for Sk.misceval.isTrue - here for convenience
@@ -361,10 +360,13 @@ function proxy(obj, flags) {
     return ret;
 }
 
-
-const pyHooks = { dictHook: (obj) => proxy(obj), unhandledHook: obj => String(obj)}; 
+const pyHooks = { dictHook: (obj) => proxy(obj), unhandledHook: (obj) => String(obj) };
 // unhandled is likely only Symbols and get a string rather than undefined
-const boundHook = (bound, name) => ({ dictHook: (obj) => proxy(obj), funcHook: (obj) => proxy(obj, { bound, name }), unhandledHook: (obj) => String(obj) });
+const boundHook = (bound, name) => ({
+    dictHook: (obj) => proxy(obj),
+    funcHook: (obj) => proxy(obj, { bound, name }),
+    unhandledHook: (obj) => String(obj),
+});
 const jsHooks = {
     unhandledHook: (obj) => {
         const _cached = _proxied.get(obj);
@@ -372,7 +374,9 @@ const jsHooks = {
             return _cached;
         } else if (obj.tp$call) {
             const wrapped = (...args) => {
-                const ret = Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x, pyHooks))), (res) => toJs(res, jsHooks));
+                const ret = Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x, pyHooks))), (res) =>
+                    toJs(res, jsHooks)
+                );
                 if (ret instanceof Sk.misceval.Suspension) {
                     // better to return a promise here then hope the javascript library will handle a suspension
                     return Sk.misceval.asyncToPromise(() => ret);
@@ -382,7 +386,7 @@ const jsHooks = {
             wrapped.v = obj;
             wrapped.unwrap = () => obj;
             wrapped.$isPyWrapped = true;
-            _proxied.set(obj, wrapped); 
+            _proxied.set(obj, wrapped);
             return wrapped;
         }
         const ret = { v: obj, $isPyWrapped: true, unwrap: () => obj };
@@ -446,7 +450,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 }
                 const boundRepr = Sk.misceval.objectRepr(proxy(this.$bound));
                 return new Sk.builtin.str("<bound " + this.tp$name + " '" + this.$name + "' of " + boundRepr + ">");
-            } else if (this.js$wrapped.constructor === Object) {
+            } else if (this.js$proto === Object.prototype) {
                 if (this.in$repr) {
                     return new Sk.builtin.str("{...}");
                 }
@@ -485,7 +489,8 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         },
         tp$as_number: true,
         nb$bool() {
-            if (this.js$wrapped.constructor === Object) {
+            // we could just check .constructor but some libraries delete it!
+            if (this.js$proto === Object.prototype) {
                 return Object.keys(this.js$wrapped).length > 0;
             } else if (this.sq$length) {
                 return this.sq$length() > 0;
@@ -506,13 +511,19 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
             // this is effectively a static method
             $meth(js_proxy, ...args) {
                 if (!(js_proxy instanceof JsProxy)) {
-                    throw new Sk.builtin.TypeError("expected a proxy object as the first argument not " + Sk.abstr.typeName(js_proxy));
+                    throw new Sk.builtin.TypeError(
+                        "expected a proxy object as the first argument not " + Sk.abstr.typeName(js_proxy)
+                    );
                 }
-                const js_wrapped = js_proxy.js$wrapped;
-                if (!(js_wrapped.prototype && js_wrapped.prototype.constructor)) {
-                    throw new Sk.builtin.TypeError(Sk.misceval.objectRepr(js_proxy) + " is not a constructor");
+                try {
+                    // let javascript throw errors if it wants
+                    return js_proxy.$new(args);
+                } catch (e) {
+                    if (e instanceof TypeError && e.message.includes("not a constructor")) {
+                        throw new Sk.builtin.TypeError(Sk.misceval.objectRepr(js_proxy) + " is not a constructor");
+                    }
+                    throw e;
                 }
-                return js_proxy.$new(args);
             },
             $flags: { MinArgs: 1 },
         },
@@ -596,6 +607,13 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         },
         // only get these if we need them
         memoized$slots: {
+            js$proto: {
+                configurable: true,
+                get() {
+                    delete this.js$proto;
+                    return (this.js$proto = Object.getPrototypeOf(this.js$wrapped));
+                },
+            },
             $dir: {
                 configurable: true,
                 get() {
@@ -654,8 +672,13 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     delete this.tp$name;
                     if (!this.is$callable) {
                         const obj = this.js$wrapped;
-                        let tp$name = this.$name || (obj.constructor && obj.constructor.name) || "proxyobject";
+                        let tp$name =
+                            obj[Symbol.toStringTag] ||
+                            this.$name ||
+                            (obj.constructor && obj.constructor.name) ||
+                            "proxyobject";
                         if (tp$name === "Object") {
+                            tp$name = this[Symbol.toStringTag];
                             tp$name = "proxyobject";
                         } else if (tp$name.length <= 2) {
                             // we might have a better name in the cache so check there...
@@ -677,13 +700,15 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     if (proto === undefined) {
                         // Arrow functions and shorthand methods don't get a prototype
                         // neither do native js functions like requestAnimationFrame, JSON.parse
-                        return (this.is$type = false);
+                        // Proxy doesn't get a prototype but must be called with new - it's the only one I know
+                        // How you'd use Proxy in python I have no idea
+                        return (this.is$type = jsFunc === window.Proxy);
                     }
                     const maybeConstructor = checkBodyIsMaybeConstructor(jsFunc);
                     if (maybeConstructor === true) {
                         // definitely a constructor and needs new
                         return (this.is$type = true);
-                    }  else if (maybeConstructor === false) {
+                    } else if (maybeConstructor === false) {
                         // Number, Symbol, Boolean, BigInt, String
                         return (this.is$type = false);
                     }
@@ -697,7 +722,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     // if our prototype's __proto__ is Object.prototype then we are the most base function
                     // the most likely option is that `this` should be whatever `this.$bound` is, rather than using new
                     // example x is this.$bound and shouldn't be called with new
-                    // var x = {foo: function() {this.bar='foo'}} 
+                    // var x = {foo: function() {this.bar='foo'}}
                     // Sk.misceval.Break is a counter example
                     // better to fail with Sk.misceval.Break() (which may have a type guard) than fail by calling new x.foo()
                 },
@@ -730,4 +755,4 @@ function checkBodyIsMaybeConstructor(obj) {
         // some native constructors shouldn't have new
         return !noNewNeeded.has(obj);
     }
-};
+}
