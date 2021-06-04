@@ -129,7 +129,7 @@ async function buildJsonFile(name, dirs, exts, outfile, options) {
         fs.writeFileSync(outfile, contents, "utf8");
         console.log(`js lib size: ${js_bytes} kb`);
         console.log("\nUpdated " + outfile + ".");
-        fs.writeFileSync("dist/full-stdlib.js" , JSON.stringify(ret, null, 2), "utf8");
+        fs.writeFileSync("dist/full-stdlib.json" , JSON.stringify(retFiles, null, 2), "utf8");
     } else {
         fs.writeFileSync(outfile , "Sk." + name + "=" + JSON.stringify(ret, null, 2), "utf8"); 
     }
