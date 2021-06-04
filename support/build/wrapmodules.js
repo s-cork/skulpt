@@ -120,8 +120,11 @@ async function buildJsonFile(name, dirs, exts, outfile, options) {
 
     const retFiles = ret.files;
     if (outfile.startsWith("dist")) {
-        const fastFilesNames = ["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.py", "src/lib/functools.js"];
-        const fastFiles = {files: Object.fromEntries(fastFilesNames.map(fileName => [fileName, retFiles[fileName]]))}
+        const fastFilesNames = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.py", "src/lib/functools.js"]);
+        const fastFiles = {};
+        for (let filename in retFiles) {
+            fastFiles[filename] = fastFilesNames.has(filename) ? null : retFiles[filename];
+        }
         const contents = "Sk." + name + "=" + JSON.stringify(fastFiles, null, 2);
         fs.writeFileSync(outfile, contents, "utf8");
         console.log(`js lib size: ${js_bytes} kb`);
