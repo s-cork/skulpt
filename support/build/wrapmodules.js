@@ -118,10 +118,20 @@ async function buildJsonFile(name, dirs, exts, outfile, options) {
 
     await processDirectories(dirs, exts, ret, options);
 
-    const contents = "Sk." + name + "=" + JSON.stringify(ret, null, 2);
-    fs.writeFileSync(outfile, contents, "utf8");
-    console.log(`js lib size: ${js_bytes} kb`);
-    console.log("\nUpdated " + outfile + ".");
+    const retFiles = ret.files;
+    if (outfile.startsWith("dist")) {
+        const fastFilesNames = ["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.py", "src/lib/functools.js"];
+        const fastFiles = {files: Object.fromEntries(fastFilesNames.map(fileName => [fileName, retFiles[fileName]]))}
+        const contents = "Sk." + name + "=" + JSON.stringify(fastFiles, null, 2);
+        fs.writeFileSync(outfile, contents, "utf8");
+        console.log(`js lib size: ${js_bytes} kb`);
+        console.log("\nUpdated " + outfile + ".");
+        const fullStdLib = "Sk." + name + "=" + JSON.stringify(ret, null, 2);
+        fs.writeFileSync("dist/full-stdlib.js" , fullStdLib, "utf8");
+    } else {
+        fs.writeFileSync(outfile , "Sk." + name + "=" + JSON.stringify(ret, null, 2), "utf8"); 
+    }
+  
 }
 
 async function main() {

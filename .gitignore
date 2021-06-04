@@ -5,7 +5,6 @@ doc/static/debugger/debugger.js
 doc/static/dist/*
 doc/ProgMan/
 vendor/
-dist/*
 node_modules/
 *.pyc
 .DS_Store
