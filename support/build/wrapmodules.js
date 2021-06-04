@@ -120,7 +120,7 @@ async function buildJsonFile(name, dirs, exts, outfile, options) {
 
     const retFiles = ret.files;
     if (outfile.startsWith("dist")) {
-        const fastFilesNames = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.py", "src/lib/functools.js"]);
+        const fastFilesNames = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.py", "src/lib/math.js", "src/lib/functools.js"]);
         const fastFiles = {};
         for (let filename in retFiles) {
             fastFiles[filename] = fastFilesNames.has(filename) ? retFiles[filename] : null;
