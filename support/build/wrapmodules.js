@@ -112,16 +112,31 @@ async function processDirectories(dirs, exts, ret, options) {
 };
 
 
+const fastFilePaths = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.py", "src/lib/math.js", "src/lib/itertools.js", "src/lib/functools.js", "src/lib/random.js"]);
+
+function loadSkulptFastSlow(ret, name, outfile) {
+    const retFiles = ret.files;
+    const fastFiles = {};
+    for (let filename in retFiles) {
+        fastFiles[filename] = fastFilePaths.has(filename) ? retFiles[filename] : null;
+    }
+    const contents = "Sk." + name + "={files: " + JSON.stringify(fastFiles, null, 2) + "}";
+    fs.writeFileSync(outfile, contents, "utf8");
+    fs.writeFileSync(outfile.replace(".js", ".json"), JSON.stringify(retFiles, null, 2), "utf8");
+}
+
 async function buildJsonFile(name, dirs, exts, outfile, options) {
     options = options || {};
     const ret = {files: {}};
 
     await processDirectories(dirs, exts, ret, options);
 
-    const contents = "Sk." + name + "=" + JSON.stringify(ret, null, 2);
-    fs.writeFileSync(outfile, contents, "utf8");
-    console.log(`js lib size: ${js_bytes} kb`);
-    console.log("\nUpdated " + outfile + ".");
+    if (outfile.startsWith("dist")) {
+        loadSkulptFastSlow(ret, name, outfile)
+    } else {
+        fs.writeFileSync(outfile , "Sk." + name + "=" + JSON.stringify(ret, null, 2), "utf8"); 
+    }
+  
 }
 
 async function main() {
@@ -148,6 +163,9 @@ async function main() {
         let stat = fs.statSync("dist/skulpt-stdlib.js");
         
         console.log(`\nstd-lib size: ${Math.round(stat.size/1000)} kb`);
+        stat = fs.statSync("dist/skulpt-stdlib.json");
+        
+        console.log(`\nfull-lib size: ${Math.round(stat.size/1000)} kb`);
         if (production) {
             updateConstructorNames();
         }
