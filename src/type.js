@@ -145,6 +145,8 @@ function tp$new(args, kwargs) {
     }
     klass.prototype.__doc__ = Sk.builtin.none.none$;
 
+
+
     // set __dict__ if not already on the prototype
     /**@todo __slots__ */
     if (klass.$typeLookup(Sk.builtin.str.$dict) === undefined) {
@@ -155,6 +157,17 @@ function tp$new(args, kwargs) {
     dict.$items().forEach(([key, val]) => {
         klass.prototype[key.$mangled] = val;
     });
+    /* Set ht_qualname to dict['__qualname__'] if available, else to
+    __name__.  The __qualname__ accessor will look for ht_qualname.
+    */
+    if (klass.prototype.hasOwnProperty("__qualname__")) {
+        const qualname = klass.prototype.__qualname__;
+        if (!Sk.builtin.checkString(qualname)) {
+            throw new Sk.builtin.TypeError("type __qualname__ must be a str, not '" + Sk.abstr.typeName(qualname) + "'");
+        }
+        klass.prototype.ht$qualname = qualname;
+    }
+    
     // make __new__ a static method
     if (klass.prototype.hasOwnProperty("__new__")) {
         const newf = klass.prototype.__new__;
@@ -321,11 +334,14 @@ function setUpKlass($name, klass, bases, meta) {
 
     Sk.abstr.setUpInheritance($name, klass, best_base, meta);
 
+    const pyName = new Sk.builtin.str($name);
     Object.defineProperties(klass_proto, {
         sk$prototypical: { value: true, writable: true },
         tp$bases: { value: bases, writable: true },
         tp$mro: { value: null, writable: true },
-        hp$type: { value: true, writable: true },
+        ht$type: { value: true, writable: true },
+        ht$name: { value: pyName, writable: true},
+        ht$qualname: { value: pyName, writable: true},
     });
     klass_proto.tp$mro = klass.$buildMRO();
 
@@ -574,7 +590,15 @@ Sk.builtin.type.prototype.tp$getsets = {
     },
     __name__: {
         $get() {
-            return new Sk.builtin.str(this.prototype.tp$name);
+            let name = this.prototype.ht$name;
+            if (name !== undefined) {
+                return new Sk.builtin.str(name);
+            }
+            name = this.prototype.tp$name;
+            if (name.includes(".")) {
+                name = name.slice(name.lastIndexOf(".") + 1);
+            }
+            return new Sk.builtin.str(name);
         },
         $set(value) {
             check_special_type_attr(this, value, Sk.builtin.str.$name);
@@ -583,14 +607,34 @@ Sk.builtin.type.prototype.tp$getsets = {
                     "can only assign string to " + this.prototype.tp$name + ".__name__, not '" + Sk.abstr.typeName(value) + "'"
                 );
             }
+            this.prototype.ht$name = value;
             this.prototype.tp$name = value.$jsstr();
         },
     },
+    __qualname__: {
+        $get() {
+            // todo
+            return this.prototype.ht$qualname || Sk.abstr.lookupSpecial(this, Sk.builtin.str.$name);
+        },
+        $set(value) {
+            check_special_type_attr(this, value, Sk.builtin.str.$name);
+            if (!Sk.builtin.checkString(value)) {
+                throw new Sk.builtin.TypeError(
+                    "can only assign string to " + this.prototype.tp$name + ".__qualname__, not '" + Sk.abstr.typeName(value) + "'"
+                );
+            }
+            this.prototype.ht$qualname = value;
+        }
+    },
     __module__: {
         $get() {
-            let mod = this.prototype.__module__;
+            const typeproto = this.prototype;
+            const mod = typeproto.__module__;
             if (mod && !(mod.ob$type === Sk.builtin.getset_descriptor)) {
                 return mod;
+            }
+            if (typeproto.tp$name.includes(".")) {
+                return new Sk.builtin.str(typeproto.tp$name.slice(0, typeproto.tp$name.lastIndexOf(".")));
             }
             return new Sk.builtin.str("builtins");
         },
@@ -660,7 +704,11 @@ const subtype_dict_getset_description = {
         if (dict_descr !== undefined) {
             return dict_descr.tp$descr_set(this, value);
         }
-        return Sk.generic.getSetDict.$set.call(this, value);
+        if (value === undefined) {
+            this.$d = new Sk.builtin.dict([]);
+        } else {
+            return Sk.generic.getSetDict.$set.call(this, value);
+        }
     },
     $doc: "dictionary for instance variables (if defined)",
     $name: "__dict__",

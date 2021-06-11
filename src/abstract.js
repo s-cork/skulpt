@@ -23,8 +23,17 @@ Sk.abstr = {};
  */
 Sk.abstr.typeName = function (obj) {
     if (obj != null && obj.tp$name !== undefined) {
-        return obj.tp$name;
+        let name = obj.ht$name;
+        if (name !== undefined) {
+            return name.toString();
+        }
+        name = obj.tp$name;
+        if (name.includes(".")) {
+            name = name.slice(name.lastIndexOf(".") + 1);
+        }
+        return name;
     } else {
+        Sk.asserts.fail(obj + " passed to typeName");
         return "<invalid type>";
     }
 };
@@ -521,6 +530,26 @@ Sk.abstr.mappingUnpackIntoKeywordArray = function (jsArray, pyMapping, pyCodeObj
     );
 };
 
+Sk.abstr.keywordArrayFromPyDict = function (dict) {
+    const kwarray = [];
+    dict.$items().forEach(([key, val]) => {
+        if (!Sk.builtin.checkString(key)) {
+            throw new Sk.builtin.TypeError("keywords must be strings");
+        }
+        kwarray.push(key.toString());
+        kwarray.push(val);
+    });
+    return kwarray;
+};
+
+Sk.abstr.keywordArrayToPyDict = function (kwarray) {
+    const dict = new Sk.builtin.dict();
+    for (let i = 0; i < kwarray.length; i += 2) {
+        dict.mp$ass_subscript(new Sk.builtin.str(kwarray[i]), kwarray[i + 1]);
+    }
+    return dict;
+};
+
 /**
  *
  * @function
@@ -736,6 +765,17 @@ Sk.abstr.objectGetItem = function (o, key, canSuspend) {
     if (o.mp$subscript) {
         return o.mp$subscript(key, canSuspend);
     }
+    if (Sk.builtin.checkClass(o)) {
+        if (o === Sk.builtin.type) {
+            return new Sk.builtin.GenericAlias(o, key);
+        }
+        const meth = Sk.abstr.typeLookup(o, Sk.builtin.str.$class_getitem);
+        if (meth !== undefined) {
+            const res = Sk.misceval.callsimOrSuspendArray(meth, [key]);
+            return canSuspend ? res : Sk.misceval.retryOptionalSuspensionOrThrow(res);
+        }
+    }
+
     throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(o) + "' does not support indexing");
 };
 Sk.exportSymbol("Sk.abstr.objectGetItem", Sk.abstr.objectGetItem);
@@ -1195,13 +1235,6 @@ Sk.abstr.buildNativeClass = function (typename, options) {
     /**@type {FunctionConstructor} */
     let typeobject = options.constructor;
 
-    let mod;
-    if (typename.includes(".")) {
-        // you should define the module like "collections.defaultdict" for static classes
-        const mod_typename = typename.split(".");
-        typename = mod_typename.pop();
-        mod = mod_typename.join(".");
-    }
     // set the prototypical chains for inheritance
     Sk.abstr.setUpInheritance(typename, typeobject, options.base, options.meta);
 
@@ -1223,9 +1256,6 @@ Sk.abstr.buildNativeClass = function (typename, options) {
     Sk.abstr.setUpGetSets(typeobject, options.getsets);
     Sk.abstr.setUpClassMethods(typeobject, options.classmethods);
 
-    if (mod !== undefined) {
-        type_proto.__module__ = new Sk.builtin.str(mod);
-    }
     
     const proto = options.proto || {};
     Object.entries(proto).forEach(([p, val]) => {
