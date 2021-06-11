@@ -1,6 +1,7 @@
 import unittest
 from collections import OrderedDict
 from random import shuffle
+import copy
 
 class TestOrderedDict(unittest.TestCase):
     OrderedDict = OrderedDict
@@ -241,26 +242,26 @@ class TestOrderedDict(unittest.TestCase):
         # different length implied inequality
         self.assertNotEqual(od1, OrderedDict(pairs[:-1]))
 
-    # def test_copying(self):
-    #     # Check that ordered dicts are copyable, deepcopyable, picklable,
-    #     # and have a repr/eval round-trip
-    #     pairs = [('c', 1), ('b', 2), ('a', 3), ('d', 4), ('e', 5), ('f', 6)]
-    #     od = OrderedDict(pairs)
-    #     def check(dup):
-    #         msg = "\ncopy: %s\nod: %s" % (dup, od)
-    #         self.assertIsNot(dup, od, msg)
-    #         self.assertEqual(dup, od)
-    #     check(od.copy())
-    #     check(copy.copy(od))
-    #     check(copy.deepcopy(od))
-    #     for proto in range(pickle.HIGHEST_PROTOCOL + 1):
-    #         with self.subTest(proto=proto):
-    #             check(pickle.loads(pickle.dumps(od, proto)))
-    #     check(eval(repr(od)))
-    #     update_test = OrderedDict()
-    #     update_test.update(od)
-    #     check(update_test)
-    #     check(OrderedDict(od))
+    def test_copying(self):
+        # Check that ordered dicts are copyable, deepcopyable, picklable,
+        # and have a repr/eval round-trip
+        pairs = [('c', 1), ('b', 2), ('a', 3), ('d', 4), ('e', 5), ('f', 6)]
+        od = OrderedDict(pairs)
+        def check(dup):
+            msg = "\ncopy: %s\nod: %s" % (dup, od)
+            self.assertIsNot(dup, od, msg)
+            self.assertEqual(dup, od)
+        check(od.copy())
+        check(copy.copy(od))
+        # check(copy.deepcopy(od))
+        # for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+        #     with self.subTest(proto=proto):
+        #         check(pickle.loads(pickle.dumps(od, proto)))
+        check(eval(repr(od)))
+        update_test = OrderedDict()
+        update_test.update(od)
+        check(update_test)
+        check(OrderedDict(od))
 
     # def test_yaml_linkage(self):
     #     # Verify that __reduce__ is setup in a way that supports PyYAML's dump() feature.
@@ -390,6 +391,50 @@ class TestOrderedDict(unittest.TestCase):
                 raise Exception()
         items = [('a', 1), ('c', 3), ('b', 2)]
         self.assertEqual(list(MyOD(items).items()), items)
+
+    def test_merge_operator(self):
+        OrderedDict = self.OrderedDict
+
+        a = OrderedDict({0: 0, 1: 1, 2: 1})
+        b = OrderedDict({1: 1, 2: 2, 3: 3})
+
+        c = a.copy()
+        d = a.copy()
+        c |= b
+        d |= list(b.items())
+        expected = OrderedDict({0: 0, 1: 1, 2: 2, 3: 3})
+        self.assertEqual(a | dict(b), expected)
+        self.assertEqual(a | b, expected)
+        self.assertEqual(c, expected)
+        self.assertEqual(d, expected)
+
+        c = b.copy()
+        c |= a
+        expected = OrderedDict({1: 1, 2: 1, 3: 3, 0: 0})
+        self.assertEqual(dict(b) | a, expected)
+        self.assertEqual(b | a, expected)
+        self.assertEqual(c, expected)
+
+        self.assertIs(type(a | b), OrderedDict)
+        self.assertIs(type(dict(a) | b), OrderedDict)
+        self.assertIs(type(a | dict(b)), OrderedDict)
+
+        expected = a.copy()
+        a |= ()
+        a |= ""
+        self.assertEqual(a, expected)
+
+        with self.assertRaises(TypeError):
+            a | None
+        with self.assertRaises(TypeError):
+            a | ()
+        with self.assertRaises(TypeError):
+            a | "BAD"
+        with self.assertRaises(TypeError):
+            a | ""
+        with self.assertRaises(ValueError):
+            a |= "BAD"
+
 
 if __name__ == '__main__':
     unittest.main()

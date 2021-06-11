@@ -398,7 +398,7 @@ function collections_mod(collections) {
         };
     }
 
-    collections.OrderedDict = Sk.abstr.buildNativeClass("collections.OrderedDict", {
+    const ODict = (collections.OrderedDict = Sk.abstr.buildNativeClass("collections.OrderedDict", {
         constructor: function OrderedDict() {
             Sk.builtin.dict.call(this);
         },
@@ -424,7 +424,7 @@ function collections_mod(collections) {
             tp$richcompare(other, op) {
                 if (op !== "Eq" && op !== "Ne") {
                     return Sk.builtin.NotImplemented.NotImplemented$;
-                } else if (!(other instanceof collections.OrderedDict)) {
+                } else if (!(other instanceof ODict)) {
                     return Sk.builtin.dict.prototype.tp$richcompare.call(this, other, op);
                 }
                 const ret = op == "Eq" ? true : false;
@@ -450,8 +450,21 @@ function collections_mod(collections) {
                 }
                 return ret;
             },
+            nb$or(other) {
+                return Sk.misceval.callsimArray(ODict, [Sk.builtin.dict.prototype.nb$or.call(this, other)]);
+            },
+            nb$reflected_or(other) {
+                return Sk.misceval.callsimArray(ODict, [Sk.builtin.dict.prototype.nb$reflected_or.call(this, other)]);
+            },
         },
         methods: {
+            copy: {
+                $meth() {
+                    // dict.copy returns a dict do the lazy thing
+                    return Sk.misceval.callsimArray(ODict, [this]);
+                },
+                $flags: { NoArgs: true },
+            },
             popitem: {
                 $flags: { NamedArgs: ["last"], Defaults: [Sk.builtin.bool.true$] },
                 $meth(last) {
@@ -491,7 +504,8 @@ function collections_mod(collections) {
                 },
             },
         },
-    });
+    }));
+    ODict.prototype.__copy__ = ODict.prototype.copy;
 
 
     collections.deque = Sk.abstr.buildNativeClass("collections.deque", {
