@@ -407,7 +407,7 @@ function collections_mod(collections) {
             tp$doc: "Dictionary that remembers insertion order",
             $r() {
                 if (this.in$repr) {
-                    return new Sk.builtin.str(Sk.abstr.typeName(this) + "(...)");
+                    return new Sk.builtin.str("...");
                 }
                 this.in$repr = true;
                 let pairs = this.$items().map(([key, val]) => `(${Sk.misceval.objectRepr(key)}, ${Sk.misceval.objectRepr(val)})`);
@@ -450,6 +450,19 @@ function collections_mod(collections) {
             }
         },
         methods: {
+            popitem: {
+                $flags: { NamedArgs: ["last"], Defaults: [Sk.builtin.bool.true$] },
+                $meth(last) {
+                    if (Sk.misceval.isTrue(last)) {
+                        return Sk.builtin.dict.prototype.popitem.tp$call([this]);
+                    } else if (this.size === 0) {
+                        throw new Sk.builtin.KeyError("dictionary is empty");
+                    }
+					const [key, val] = this.$items()[0];
+					this.pop$item(key);
+					return new Sk.builtin.tuple([key, val]);
+                },
+            },
             move_to_end: {
                 $flags: { NamedArgs: ["key", "last"], Defaults: [Sk.builtin.bool.true$] },
                 $meth(key, last) {
