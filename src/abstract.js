@@ -220,10 +220,13 @@ function binary_op_(v, w, opname) {
 
     let wop;
     let ret;
+    let tried_reflected = false;
     if (w_is_subclass) {
         wop = boNameToSlotFuncRhs_(w, opname);
-        // only use the reflected slot if it has actually be overridden
-        if (wop !== undefined && wop !== boNameToSlotFuncRhs_(v, opname)) {
+        if (wop === undefined) {
+            tried_reflected = true;
+        } else if (wop !== boNameToSlotFuncRhs_(v, opname)) {
+            tried_reflected = true;
             ret = wop.call(w, v);
             if (ret !== Sk.builtin.NotImplemented.NotImplemented$) {
                 return ret;
@@ -238,9 +241,9 @@ function binary_op_(v, w, opname) {
             return ret;
         }
     }
-    // Don't retry RHS if failed above
-    if (!w_is_subclass) {
-        wop = boNameToSlotFuncRhs_(w, opname);
+    // try the RHS if we haven't tried it yet and we're not the same type see test_magicmethods.py
+    if (!tried_reflected && w_type !== v_type) {
+        wop || (wop = boNameToSlotFuncRhs_(w, opname));
         if (wop !== undefined) {
             ret = wop.call(w, v);
             if (ret !== Sk.builtin.NotImplemented.NotImplemented$) {
@@ -697,6 +700,11 @@ Sk.abstr.checkArgsLen = function (func_name, args, minargs, maxargs) {
 Sk.exportSymbol("Sk.abstr.checkArgsLen", Sk.abstr.checkArgsLen);
 
 Sk.abstr.objectFormat = function (obj, format_spec) {
+    if (format_spec === undefined) {
+        format_spec = Sk.builtin.str.$emptystr;
+    } else if (!Sk.builtin.checkString(format_spec)) {
+        throw new Sk.builtin.TypeError("Format specifier must be a string, not " + Sk.abstr.typeName(format_spec));
+    }
     const meth = Sk.abstr.lookupSpecial(obj, Sk.builtin.str.$format); // inherited from object so guaranteed to exist
     const result = Sk.misceval.callsimArray(meth, [format_spec]);
     if (!Sk.builtin.checkString(result)) {
