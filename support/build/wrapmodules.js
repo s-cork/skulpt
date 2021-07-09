@@ -111,7 +111,7 @@ async function processDirectories(dirs, exts, ret, options) {
     }
 };
 
-const fastFilePaths = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.py", "src/lib/math.js"]);
+const fastFilePaths = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.js", "src/lib/math.js"]);
 const medFilePaths = new Set([, "src/lib/itertools.js", "src/lib/functools.js", "src/lib/random.js", "src/lib/collections.js", "src/lib/operator.js", "src/lib/keyword.js", "src/lib/string.js", "src/lib/re.js"]);
 
 function loadSkulptFastSlow(ret, name, outfile) {
