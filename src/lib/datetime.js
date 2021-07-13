@@ -14,7 +14,7 @@ function $builtinmodule() {
     const { isTrue, richCompareBool, asIndexOrThrow, asIndexSized, objectRepr, opAllowsEquality } = Sk.misceval;
     const { numberBinOp, typeName, buildNativeClass, checkArgsLen, objectHash, copyKeywordsToNamedArgs } = Sk.abstr;
     const { TypeError, ValueError, OverflowError, ZeroDivisionError, NotImplementedError, checkNumber, checkFloat, checkString, checkInt, asnum$, round } = Sk.builtin;
-    const intRound = (val) => val.nb$int(); // because python 2 returns a float.
+    const intRound = (val) => round(val).nb$int(); // because python 2 returns a float.
     const binOp = numberBinOp;
 
     const str_auto = new pyStr("auto");
