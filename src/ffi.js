@@ -152,7 +152,9 @@ function toJs(obj, hooks) {
     const type = typeof val;
     hooks = hooks || {};
 
-    if (type === "string" || type === "boolean") {
+    if (type === "string") {
+        return hooks.stringHook ? hooks.stringHook(val) : val;
+    } else if (type === "boolean") {
         return val;
     } else if (type === "number") {
         return hooks.numberHook ? hooks.numberHook(val, obj) : val;
