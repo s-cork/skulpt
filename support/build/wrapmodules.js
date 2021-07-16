@@ -152,7 +152,7 @@ async function buildJsonFile(name, dirs, exts, outfile, options) {
 
     await processDirectories(dirs, exts, ret, options);
 
-    if (outfile.startsWith("dist")) {
+    if (outfile.startsWith("dist") && options.production) {
         loadSkulptFastSlow(ret, name, outfile)
     } else {
         fs.writeFileSync(outfile , "Sk." + name + "=" + JSON.stringify(ret, null, 2), "utf8"); 
@@ -183,14 +183,13 @@ async function main() {
         await buildJsonFile("builtinFiles", ["src/builtin", "src/lib"], [".js", ".py"], "dist/skulpt-stdlib.js", opts);
         let stat = fs.statSync("dist/skulpt-stdlib.js");
         
-        console.log(`\nstd-lib size: ${Math.round(stat.size/1000)} kb`);
-        stat = fs.statSync("dist/skulpt-stdlib-1.json");
-        console.log(`\ngroup-1 size: ${Math.round(stat.size/1000)} kb`);
-        stat = fs.statSync("dist/skulpt-stdlib-2.json");
-        console.log(`\ngroup-2 size: ${Math.round(stat.size/1000)} kb`);
-        
         if (production) {
             updateConstructorNames();
+            console.log(`\nstd-lib size: ${Math.round(stat.size/1000)} kb`);
+            stat = fs.statSync("dist/skulpt-stdlib-1.json");
+            console.log(`\ngroup-1 size: ${Math.round(stat.size/1000)} kb`);
+            stat = fs.statSync("dist/skulpt-stdlib-2.json");
+            console.log(`\ngroup-2 size: ${Math.round(stat.size/1000)} kb`);
         }
     } else if (process.argv.includes("unit2")) {
         if (!fs.existsSync("support/tmp")) {
