@@ -7,7 +7,6 @@ Sk.ffi = {
     remapToJs: toJs,
     toPy,
     toJs,
-    toJSON,
 
     isTrue,
 
@@ -195,51 +194,7 @@ function toJs(obj, hooks) {
     Sk.asserts.fail("unhandled type " + type);
 }
 
-/**
- *
- * @param {*} obj
- * @param {*} hooks
- *
- * toJSON will return a jsonable object
- * expects only python objects
- * handles simple python objects - None, str, int, float, bool, list, tuple, dict
- *
- * keys of dictionaries are only allowed to be - None, str, int, float, bool
- *
- * the following hooks are available
- *
- * hooks.dictHook - override the default dict to object literal bevaiour
- * hooks.unhandledHook(obj) - by default this function throws an error in the unhandled case
- * hooks.bigintHook(bigint, pyObj) - by default bigints will fail - can also catch this case in unhandledHook
- * hooks.numberhook(num, pyObj) - can hoandle constans like NaN or difference between ints and floats
- * hooks.arrayHook(arr, pyObj)
- */
-function toJSON(obj, hooks) {
-    hooks = hooks || {};
-    const fail = (obj) => {
-        throw new TypeError("unhandled remap " + Sk.abstr.typeName(obj));
-    };
-    hooks.unhandledHook = hooks.unhandledHook || fail;
-    hooks.funcHook = hooks.objectHook = (val, obj) => hooks.unhandledHook(obj);
-    hooks.bigintHook = hooks.bigintHook || hooks.unhandledHook;
-    if (!hooks.dictHook) {
-        hooks.dictHook = (d) => {
-            const ret = {};
-            d.$items().forEach(([k, v]) => {
-                k = k.valueOf();
-                const type = typeof k;
-                if (type === "string" || type === "number" || type === "boolean" || k === null) {
-                    ret[k] = toJs(v, hooks);
-                } else {
-                    throw TypeError("unhandled key in conversion from dictionary - can only handle str, int, float, None, bool");
-                }
-            });
-            return ret;
-        };
-    }
-    return toJs(obj, hooks);
-}
-
+/** @returns a bool based on whether it is python truthy or not. Can also hand js values */
 function isTrue(obj) {
     // basically the logic for Sk.misceval.isTrue - here for convenience
     return obj != null && obj.nb$bool ? obj.nb$bool() : obj.sq$length ? obj.sq$length() !== 0 : Boolean(obj);
