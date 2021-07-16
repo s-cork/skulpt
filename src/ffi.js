@@ -318,12 +318,16 @@ function toPyTuple(obj, hooks) {
 function toPyInt(num) {
     if (typeof num === "number") {
         num = Math.trunc(num);
+        return Math.abs(num) < Number.MAX_SAFE_INTEGER
+            ? new Sk.builtin.int_(num)
+            : new Sk.builtin.int_(JSBI.BigInt(num));
     } else if (JSBI.__isBigInt(num)) {
         return new Sk.builtin.int_(JSBI.numberIfSafe(num));
+    } else if (typeof num === "string" && num.match(isInteger)) {
+        return new Sk.builtin.int_(num);
     } else {
-        num = Math.trunc(parseInt(num, 10));
+        throw new TypeError("bad type passed to toPyInt() got " + num);
     }
-    return Math.abs(num) < Number.MAX_SAFE_INTEGER ? new Sk.builtin.int_(num) : new Sk.builtin.int_(JSBI.BigInt(num));
 }
 
 function toPyDict(obj, hooks) {
