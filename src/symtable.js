@@ -387,7 +387,7 @@ SymbolTable.prototype.visitParams = function (args, toplevel) {
     var i;
     for (i = 0; i < args.length; ++i) {
         arg = args[i];
-        if (arg.constructor === Sk.astnodes.arg) {
+        if (arg.constructor._name === "arg") {
             // TODO arguments are more complicated in Python 3...
             this.addDef(arg.arg, DEF_PARAM, arg.lineno);
         }
@@ -452,7 +452,7 @@ SymbolTable.prototype.newTmpname = function (lineno) {
 SymbolTable.prototype.addDef = function (name, flag, lineno) {
     var fromGlobal;
     var val;
-    var mangled = Sk.mangleName(this.curClass, name).v;
+    var mangled = Sk.mangleName(this.curClass, name).toString();
     mangled = Sk.fixReserved(mangled);
     val = this.cur.symFlags[mangled];
     if (val !== undefined) {
@@ -480,8 +480,8 @@ SymbolTable.prototype.addDef = function (name, flag, lineno) {
 
 SymbolTable.prototype.visitSlice = function (s) {
     var i;
-    switch (s.constructor) {
-        case Sk.astnodes.Slice:
+    switch (s.constructor._name) {
+        case "Slice":
             if (s.lower) {
                 this.visitExpr(s.lower);
             }
@@ -492,15 +492,15 @@ SymbolTable.prototype.visitSlice = function (s) {
                 this.visitExpr(s.step);
             }
             break;
-        case Sk.astnodes.ExtSlice:
+        case "ExtSlice":
             for (i = 0; i < s.dims.length; ++i) {
                 this.visitSlice(s.dims[i]);
             }
             break;
-        case Sk.astnodes.Index:
+        case "Index":
             this.visitExpr(s.value);
             break;
-        case Sk.astnodes.Ellipsis:
+        case "Ellipsis":
             break;
     }
 };
@@ -513,8 +513,8 @@ SymbolTable.prototype.visitStmt = function (s) {
     var tmp;
     var e_name;
     Sk.asserts.assert(s !== undefined, "visitStmt called with undefined");
-    switch (s.constructor) {
-        case Sk.astnodes.FunctionDef:
+    switch (s.constructor._name) {
+        case "FunctionDef":
             this.addDef(s.name, DEF_LOCAL, s.lineno);
             if (s.args.defaults) {
                 this.SEQExpr(s.args.defaults);
@@ -528,7 +528,7 @@ SymbolTable.prototype.visitStmt = function (s) {
             this.SEQStmt(s.body);
             this.exitBlock();
             break;
-        case Sk.astnodes.ClassDef:
+        case "ClassDef":
             this.addDef(s.name, DEF_LOCAL, s.lineno);
             this.SEQExpr(s.bases);
             if (s.decorator_list) {
@@ -540,23 +540,23 @@ SymbolTable.prototype.visitStmt = function (s) {
             this.SEQStmt(s.body);
             this.exitBlock();
             break;
-        case Sk.astnodes.Return:
+        case "Return":
             if (s.value) {
                 this.visitExpr(s.value);
                 this.cur.returnsValue = true;
             }
             break;
-        case Sk.astnodes.Delete:
+        case "Delete":
             this.SEQExpr(s.targets);
             break;
-        case Sk.astnodes.Assign:
+        case "Assign":
             this.SEQExpr(s.targets);
             this.visitExpr(s.value);
             break;
-        case Sk.astnodes.AnnAssign:
-            if (s.target.constructor == Sk.astnodes.Name) {
+        case "AnnAssign":
+            if (s.target.constructor._name == "Name") {
                 e_name = s.target;
-                name = Sk.mangleName(this.curClass, e_name.id).v;
+                name = Sk.mangleName(this.curClass, e_name.id).toString();
                 name = Sk.fixReserved(name);
                 cur = this.cur.symFlags[name];
                 if ((cur & (DEF_GLOBAL | DEF_NONLOCAL) )
@@ -577,17 +577,17 @@ SymbolTable.prototype.visitStmt = function (s) {
                 this.visitExpr(s.value);
             }
             break;
-        case Sk.astnodes.AugAssign:
+        case "AugAssign":
             this.visitExpr(s.target);
             this.visitExpr(s.value);
             break;
-        case Sk.astnodes.Print:
+        case "Print":
             if (s.dest) {
                 this.visitExpr(s.dest);
             }
             this.SEQExpr(s.values);
             break;
-        case Sk.astnodes.For:
+        case "For":
             this.visitExpr(s.target);
             this.visitExpr(s.iter);
             this.SEQStmt(s.body);
@@ -595,21 +595,21 @@ SymbolTable.prototype.visitStmt = function (s) {
                 this.SEQStmt(s.orelse);
             }
             break;
-        case Sk.astnodes.While:
+        case "While":
             this.visitExpr(s.test);
             this.SEQStmt(s.body);
             if (s.orelse) {
                 this.SEQStmt(s.orelse);
             }
             break;
-        case Sk.astnodes.If:
+        case "If":
             this.visitExpr(s.test);
             this.SEQStmt(s.body);
             if (s.orelse) {
                 this.SEQStmt(s.orelse);
             }
             break;
-        case Sk.astnodes.Raise:
+        case "Raise":
             if (s.exc) {
                 this.visitExpr(s.exc);
                 // Our hacked AST supports both Python 2 (inst, tback)
@@ -625,20 +625,21 @@ SymbolTable.prototype.visitStmt = function (s) {
                 }
             }
             break;
-        case Sk.astnodes.Assert:
+        case "Assert":
             this.visitExpr(s.test);
             if (s.msg) {
                 this.visitExpr(s.msg);
             }
             break;
-        case Sk.astnodes.Import:
-        case Sk.astnodes.ImportFrom:
+        case "Import":
+        case "ImportFrom":
             this.visitAlias(s.names, s.lineno);
             break;
-        case Sk.astnodes.Global:
+        case "Global":
             nameslen = s.names.length;
+            console.log(s.names);
             for (i = 0; i < nameslen; ++i) {
-                name = Sk.mangleName(this.curClass, s.names[i]).v;
+                name = Sk.mangleName(this.curClass, s.names[i]).toString();
                 name = Sk.fixReserved(name);
                 cur = this.cur.symFlags[name];
                 if (cur & (DEF_LOCAL | USE)) {
@@ -652,21 +653,21 @@ SymbolTable.prototype.visitStmt = function (s) {
                 this.addDef(new Sk.builtin.str(name), DEF_GLOBAL, s.lineno);
             }
             break;
-        case Sk.astnodes.Expr:
+        case "Expr":
             this.visitExpr(s.value);
             break;
-        case Sk.astnodes.Pass:
-        case Sk.astnodes.Break:
-        case Sk.astnodes.Continue:
-        case Sk.astnodes.Debugger:
+        case "Pass":
+        case "Break":
+        case "Continue":
+        case "Debugger":
             // nothing
             break;
-        case Sk.astnodes.With:
+        case "With":
             VISIT_SEQ(this.visit_withitem.bind(this), s.items);
             VISIT_SEQ(this.visitStmt.bind(this), s.body);
             break;
 
-        case Sk.astnodes.Try:
+        case "Try":
             this.SEQStmt(s.body);
             this.visitExcepthandlers(s.handlers)
             this.SEQStmt(s.orelse);
@@ -674,7 +675,7 @@ SymbolTable.prototype.visitStmt = function (s) {
             break;
 
         default:
-            Sk.asserts.fail("Unhandled type " + s.constructor.name + " in visitStmt");
+            Sk.asserts.fail("Unhandled type " + s.constructor._name + " in visitStmt");
     }
 };
 
@@ -698,18 +699,18 @@ SymbolTable.prototype.visitExpr = function (e) {
     var i;
     Sk.asserts.assert(e !== undefined, "visitExpr called with undefined");
     // console.log("  e: ", e.constructor.name);
-    switch (e.constructor) {
-        case Sk.astnodes.BoolOp:
+    switch (e.constructor._name) {
+        case "BoolOp":
             this.SEQExpr(e.values);
             break;
-        case Sk.astnodes.BinOp:
+        case "BinOp":
             this.visitExpr(e.left);
             this.visitExpr(e.right);
             break;
-        case Sk.astnodes.UnaryOp:
+        case "UnaryOp":
             this.visitExpr(e.operand);
             break;
-        case Sk.astnodes.Lambda:
+        case "Lambda":
             this.addDef(new Sk.builtin.str("lambda"), DEF_LOCAL, e.lineno);
             if (e.args.defaults) {
                 this.SEQExpr(e.args.defaults);
@@ -719,29 +720,29 @@ SymbolTable.prototype.visitExpr = function (e) {
             this.visitExpr(e.body);
             this.exitBlock();
             break;
-        case Sk.astnodes.IfExp:
+        case "IfExp":
             this.visitExpr(e.test);
             this.visitExpr(e.body);
             this.visitExpr(e.orelse);
             break;
-        case Sk.astnodes.Dict:
+        case "Dict":
             this.SEQExpr(e.keys);
             this.SEQExpr(e.values);
             break;
-        case Sk.astnodes.DictComp:
-        case Sk.astnodes.SetComp:
+        case "DictComp":
+        case "SetComp":
             this.visitComprehension(e.generators, 0);
             break;
-        case Sk.astnodes.ListComp:
+        case "ListComp":
             this.newTmpname(e.lineno);
             this.visitExpr(e.elt);
             this.visitComprehension(e.generators, 0);
             break;
-        case Sk.astnodes.GeneratorExp:
+        case "GeneratorExp":
             this.visitGenexp(e);
             break;
-        case Sk.astnodes.YieldFrom:
-        case Sk.astnodes.Yield:
+        case "YieldFrom":
+        case "Yield":
             if (e.value) {
                 this.visitExpr(e.value);
             }
@@ -750,15 +751,15 @@ SymbolTable.prototype.visitExpr = function (e) {
                 throw new Sk.builtin.SyntaxError("'return' with argument inside generator", this.filename);
             }
             break;
-        case Sk.astnodes.Compare:
+        case "Compare":
             this.visitExpr(e.left);
             this.SEQExpr(e.comparators);
             break;
-        case Sk.astnodes.Call:
+        case "Call":
             this.visitExpr(e.func);
             if (e.args) {
                 for (let a of e.args) {
-                    if (a.constructor === Sk.astnodes.Starred) {
+                    if (a.constructor === "Starred") {
                         this.visitExpr(a.value);
                     } else {
                         this.visitExpr(a);
@@ -771,45 +772,46 @@ SymbolTable.prototype.visitExpr = function (e) {
                 }
             }
             break;
-        case Sk.astnodes.Num:
-        case Sk.astnodes.Str:
-        case Sk.astnodes.Bytes:
+        case "Num":
+        case "Str":
+        case "Bytes":
+        case "Constant":
             break;
-        case Sk.astnodes.JoinedStr:
+        case "JoinedStr":
             for (let s of e.values) {
                 this.visitExpr(s);
             }
             break;
-        case Sk.astnodes.FormattedValue:
+        case "FormattedValue":
             this.visitExpr(e.value);
             if (e.format_spec) {
                 this.visitExpr(e.format_spec);
             }
             break;
-        case Sk.astnodes.Attribute:
+        case "Attribute":
             this.visitExpr(e.value);
             break;
-        case Sk.astnodes.Subscript:
+        case "Subscript":
             this.visitExpr(e.value);
             this.visitSlice(e.slice);
             break;
-        case Sk.astnodes.Name:
-            this.addDef(e.id, e.ctx === Sk.astnodes.Load ? USE : DEF_LOCAL, e.lineno);
+        case "Name":
+            this.addDef(e.id, e.ctx === "Load" ? USE : DEF_LOCAL, e.lineno);
             break;
-        case Sk.astnodes.NameConstant:
+        case "NameConstant":
             break;
-        case Sk.astnodes.List:
-        case Sk.astnodes.Tuple:
-        case Sk.astnodes.Set:
+        case "List":
+        case "Tuple":
+        case "Set":
             this.SEQExpr(e.elts);
             break;
-        case Sk.astnodes.Starred:
+        case "Starred":
             this.visitExpr(e.value);
             break;
-        case Sk.astnodes.Ellipsis:
+        case "Ellipsis":
             break;
         default:
-            Sk.asserts.fail("Unhandled type " + e.constructor.name + " in visitExpr");
+            Sk.asserts.fail("Unhandled type " + e.constructor._name + " in visitExpr");
     }
 };
 
@@ -837,7 +839,7 @@ SymbolTable.prototype.visitAlias = function (names, lineno) {
     var i;
     for (i = 0; i < names.length; ++i) {
         a = names[i];
-        name = a.asname === null ? a.name.v : a.asname.v;
+        name = a.asname === null ? a.name.toString() : a.asname.toString();
         storename = name;
         dot = name.indexOf(".");
         if (dot !== -1) {
