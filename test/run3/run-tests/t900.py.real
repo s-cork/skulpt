@@ -1,0 +1,19 @@
+defaultdict(None, {})
+defaultdict(None, {})
+defaultdict(None, {})
+defaultdict(None, {1: 2})
+defaultdict(<class 'list'>, {1: 2})
+2
+[]
+[5]
+defaultdict(<class 'list'>, {1: 2, 2: [5]})
+<class 'list'>
+[5]
+defaultdict(<function abc at 0x100de30d0>, {})
+6
+defaultdict(<function abc at 0x100de30d0>, {4: 14})
+
+
+
+{1: 2, 4: 6}
+6

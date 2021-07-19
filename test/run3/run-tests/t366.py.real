@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t366.py", line 5, in <module>
+    a = f(1) + 3
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'

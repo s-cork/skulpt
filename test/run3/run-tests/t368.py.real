@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t368.py", line 1, in <module>
+    for i in 2:
+TypeError: 'int' object is not iterable

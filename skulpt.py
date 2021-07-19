@@ -53,7 +53,7 @@ def regenasttests(togen="{0}/run/*.py".format(TEST_DIR)):
         if crlfprog:
             os.system("python {0} {1}".format(crlfprog, transname))
 
-def regenruntests(togen="{0}/run/*.py".format(TEST_DIR)):
+def regenruntests(togen="{0}/run3/run-tests/*.py".format(TEST_DIR)):
     """regenerate the test data by running the tests on real python"""
     for f in glob.glob(togen):
         os.system("python {0} > {1}.real 2>&1".format(f, f))
@@ -63,6 +63,7 @@ def regenruntests(togen="{0}/run/*.py".format(TEST_DIR)):
         if crlfprog:
             os.system("python %s %s.real" % (crlfprog, f))
     for f in glob.glob("{0}/interactive/*.py".format(TEST_DIR)):
+        from subprocess import Popen, PIPE
         p = Popen("python -i > %s.real 2>%s" % (f, nul), shell=True, stdin=PIPE)
         p.communicate(open(f).read() + "\004")
         forcename = f + ".real.force"
@@ -73,7 +74,7 @@ def regenruntests(togen="{0}/run/*.py".format(TEST_DIR)):
 
 def symtabdump(fn):
     if not os.path.exists(fn):
-        print "%s doesn't exist" % fn
+        # print "%s doesn't exist" % fn
         raise SystemExit()
     text = open(fn).read()
     mod = symtable.symtable(text, os.path.split(fn)[1], "exec")
@@ -210,7 +211,7 @@ def main():
             togen = "{0}/run/".format(TEST_DIR) + sys.argv[2]
         else:
             togen = "{0}/run/*.py".format(TEST_DIR)
-        print "generating tests for ", togen
+        # print "generating tests for ", togen
         regensymtabtests(togen)
         regenasttests(togen)
         regenruntests(togen)
@@ -223,7 +224,7 @@ def main():
     elif cmd == "regenruntests":
         regenruntests()
     else:
-        print usageString(os.path.basename(sys.argv[0]))
+        # print usageString(os.path.basename(sys.argv[0]))
         sys.exit(2)
 
 if __name__ == "__main__":

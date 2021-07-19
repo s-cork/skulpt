@@ -1,0 +1,14 @@
+1
+100
+1.5
+[]
+[1, 2, 3, 4]
+()
+(1, 2, 3, 4)
+{}
+{1: 2, 3: 4}
+''
+'hello world'
+<object object at 0x1030544e0>
+<__main__.A object at 0x10371beb0>
+custom repr

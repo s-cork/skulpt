@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t373.py", line 1, in <module>
+    print(int(10, 2))
+TypeError: int() can't convert non-string with explicit base

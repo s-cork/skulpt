@@ -1,0 +1,19 @@
+3
+3
+3
+-3
+-3
+11
+19
+------
+3
+13
+------
+11
+11
+------
+13
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t271.py", line 16, in <module>
+    print((int("013", 0)))
+ValueError: invalid literal for int() with base 0: '013'

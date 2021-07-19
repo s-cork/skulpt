@@ -1,0 +1,12 @@
+[0, 1, 2, 3, 4, 5, 6, 7, 8]
+[8, 7, 6, 5, 4, 3, 2, 1, 0]
+
+01234
+01
+01234
+4
+8
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t391.py", line 13, in <module>
+    l[None] = 4
+TypeError: list indices must be integers or slices, not NoneType

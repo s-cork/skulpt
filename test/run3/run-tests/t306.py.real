@@ -1,0 +1,18 @@
+{2, 3, 4}
+{4, 5, 6}
+{1, 2, 3, 4, 5}
+# pair unions
+True
+True
+True
+True
+True
+True
+# triple unions
+{1, 2, 3, 4, 5, 6}
+True
+True
+True
+True
+True
+True

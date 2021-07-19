@@ -1,0 +1,37 @@
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:1: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(0 is None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:2: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(0.0 is None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:3: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(0 is None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:4: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(None is 0)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:5: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(None is 0.0)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:6: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(None is 0)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:9: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(0 is not None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:10: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(0.0 is not None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:11: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(0 is not None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:12: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(None is not 0)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:13: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(None is not 0.0)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t511.py:14: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(None is not 0)
+False
+False
+False
+False
+False
+False
+
+True
+True
+True
+True
+True
+True

@@ -1,0 +1,20 @@
+True
+True
+True
+True
+True
+True
+True
+True
+True
+True
+True
+True
+True
+True
+True
+True
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t434.py", line 32, in <module>
+    l.sort(lambda x, y: y - x)
+TypeError: sort() takes no positional arguments

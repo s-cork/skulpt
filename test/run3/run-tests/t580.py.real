@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t580.py", line 3, in <module>
+    while lst[i] != 0:
+IndexError: list index out of range

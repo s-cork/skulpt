@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t385.py", line 1, in <module>
+    print(3 >> -3)
+ValueError: negative shift count

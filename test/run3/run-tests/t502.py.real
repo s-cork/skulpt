@@ -1,0 +1,14 @@
+1
+slice(0, 2, None)
+slice(None, 2, None)
+slice(None, 2, None)
+slice(1, None, None)
+slice(None, None, None)
+slice(None, None, None)
+slice(None, None, -1)
+(0, slice(1, 2, None))
+(slice(0, 2, None), slice(2, 30, 1))
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t502.py", line 27, in <module>
+    assert slice(2) < slice(0, 2)
+TypeError: '<' not supported between instances of 'NoneType' and 'int'

@@ -1,0 +1,9 @@
+46
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t386.py", line 4, in <module>
+    print(random.randint(-40, -70))
+  File "/opt/homebrew/Cellar/python@3.9/3.9.5/Frameworks/Python.framework/Versions/3.9/lib/python3.9/random.py", line 339, in randint
+    return self.randrange(a, b+1)
+  File "/opt/homebrew/Cellar/python@3.9/3.9.5/Frameworks/Python.framework/Versions/3.9/lib/python3.9/random.py", line 317, in randrange
+    raise ValueError("empty range for randrange() (%d, %d, %d)" % (istart, istop, width))
+ValueError: empty range for randrange() (-40, -69, -29)

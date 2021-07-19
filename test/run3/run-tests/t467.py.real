@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t467.py", line 1, in <module>
+    if true:
+NameError: name 'true' is not defined

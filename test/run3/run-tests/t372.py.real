@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t372.py", line 1, in <module>
+    print(int("22", 2))
+ValueError: invalid literal for int() with base 2: '22'

@@ -1,0 +1,5 @@
+3
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t351.py", line 5, in <module>
+    f(3)()
+TypeError: 'NoneType' object is not callable

@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t356.py", line 1, in <module>
+    d = {{1: 2}: 3}
+TypeError: unhashable type: 'dict'

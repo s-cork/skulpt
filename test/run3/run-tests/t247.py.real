@@ -1,0 +1,6 @@
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t247.py:1: SyntaxWarning: str indices must be integers or slices, not float; perhaps you missed a comma?
+  print(("abc"[1.5]))
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t247.py", line 1, in <module>
+    print(("abc"[1.5]))
+TypeError: string indices must be integers

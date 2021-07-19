@@ -1,0 +1,10 @@
+
+compare None and None
+True False
+True False
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t497.py", line 10, in <module>
+    helper(None, None)
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t497.py", line 6, in helper
+    print(x < y, x <= y)
+TypeError: '<' not supported between instances of 'NoneType' and 'NoneType'

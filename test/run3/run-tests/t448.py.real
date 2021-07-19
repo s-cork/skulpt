@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t448.py", line 1, in <module>
+    print(range())
+TypeError: range expected at least 1 argument, got 0

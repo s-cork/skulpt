@@ -1,0 +1,16 @@
+0
+6
+0
+6
+-1
+-1
+2
+-1
+6
+6
+-1
+-1
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t389.py", line 15, in <module>
+    print(s.rindex("ac", 5))
+ValueError: substring not found

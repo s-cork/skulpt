@@ -1,0 +1,5 @@
+
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t394.py", line 4, in <module>
+    print(s["hi":[0, 4]])
+TypeError: slice indices must be integers or None or have an __index__ method

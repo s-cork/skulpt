@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t450.py", line 1, in <module>
+    print(list(range(1, 10, 0.5)))
+TypeError: 'float' object cannot be interpreted as an integer

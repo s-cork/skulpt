@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t449.py", line 1, in <module>
+    print(list(range("2", 4)))
+TypeError: 'str' object cannot be interpreted as an integer

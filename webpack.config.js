@@ -11,7 +11,7 @@ const CompressionWebpackPlugin = require('compression-webpack-plugin');
 
 const git = new GitRevisionPlugin({branch: true});
 
-const styleexcludes = /(node_modules)|(support)|(gen)|(tokenize.js)|(symtable.js)|(compile.js)|(ast.js)|(internalpython.js)/;
+const styleexcludes = /(node_modules)|(support)|(gen)|(tokenize.js)|(symtable.js)|(compile.js)|(ast.js)|(internalpython.js)|(_parser.js)/;
 
 if (!shell.which('git')) {
     console.log(chalk.red("WARNING: Cannot find git!  Unsure if working directory is clean."));
@@ -42,7 +42,7 @@ module.exports = (env, argv) => {
                                    'invalidCasts', 'missingProperties',
                                    'nonStandardJsDocs', 'strictModuleDepCheck', 'undefinedVars',
                                    'unknownDefines', 'visibility'],
-                    jscomp_off: ['fileoverviewTags', 'deprecated', 'uselessCode', 'suspiciousCode', 'checkTypes',],
+                    jscomp_off: ['deprecated', 'uselessCode', 'suspiciousCode', 'checkTypes',],
                     languageOut: languageOut || 'ECMASCRIPT_2015',
                     externs: 'support/externs/sk.js',
                     rewritePolyfills: true,

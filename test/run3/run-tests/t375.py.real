@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t375.py", line 2, in <module>
+    a = l.pop()
+IndexError: pop from empty list

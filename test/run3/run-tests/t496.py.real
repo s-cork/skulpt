@@ -1,0 +1,60 @@
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:26: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(None is 3)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:27: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(3 is None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:28: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(None is not 3)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:29: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(3 is not None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:32: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(3 is None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:33: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(None is 3)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:34: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(3 is not None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:35: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(None is not 3)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:46: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(3 is None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:47: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  print(None is 3)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:48: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(3 is not None)
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py:49: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  print(None is not 3)
+None
+None
+<class 'NoneType'>
+True
+['hello']
+None
+
+in/not in with a list
+False
+True
+True
+False
+
+in/not in with a dict
+False
+True
+True
+False
+
+is/is not
+True
+False
+False
+False
+True
+True
+
+boolean comparisons with int
+False
+False
+True
+True
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t496.py", line 36, in <module>
+    print(3 > None)
+TypeError: '>' not supported between instances of 'int' and 'NoneType'

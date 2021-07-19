@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t392.py", line 13, in <module>
+    my_ship.thrust()
+TypeError: 'bool' object is not callable

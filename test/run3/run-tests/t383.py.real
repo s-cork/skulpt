@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t383.py", line 3, in <module>
+    print(math.sin("3"))
+TypeError: must be real number, not str

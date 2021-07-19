@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t097.py", line 3, in <module>
+    print(({x: "OK"}[x]))
+TypeError: unhashable type: 'list'

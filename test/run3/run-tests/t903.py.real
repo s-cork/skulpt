@@ -1,0 +1,10 @@
+TypeError("'int' object is not iterable")
+TypeError('elements() takes 1 positional argument but 2 were given')
+TypeError('most_common() takes from 1 to 2 positional arguments but 3 were given')
+TypeError("'>=' not supported between instances of 'str' and 'int'")
+[]
+[('l', 2), ('h', 1), ('e', 1), ('o', 1)]
+TypeError('update() takes from 1 to 2 positional arguments but 3 were given')
+TypeError("'int' object is not iterable")
+TypeError('subtract() takes from 1 to 2 positional arguments but 3 were given')
+TypeError("'float' object is not iterable")

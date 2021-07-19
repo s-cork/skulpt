@@ -1,0 +1,6 @@
+/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t384.py:7: SyntaxWarning: 'NoneType' object is not subscriptable; perhaps you missed a comma?
+  None[4]
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t384.py", line 7, in <module>
+    None[4]
+TypeError: 'NoneType' object is not subscriptable

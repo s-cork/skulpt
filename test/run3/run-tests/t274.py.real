@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t274.py", line 9, in <module>
+    stuff = getattr(x, methodName)
+AttributeError: 'X' object has no attribute 'wee'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t274.py", line 11, in <module>
+    raise ValueError("no such method in %s: %s" % (x.__class__, methodName))
+ValueError: no such method in <class '__main__.X'>: wee

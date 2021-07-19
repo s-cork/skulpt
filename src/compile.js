@@ -624,7 +624,7 @@ Compiler.prototype.ccompare = function (e) {
 
     for (i = 0; i < n; ++i) {
         rhs = this.vexpr(e.comparators[i]);
-        out("$ret = Sk.builtin.bool(Sk.misceval.richCompareBool(", cur, ",", rhs, ",'", e.ops[i].prototype._astname, "', true));");
+        out("$ret = Sk.builtin.bool(Sk.misceval.richCompareBool(", cur, ",", rhs, ",'", e.ops[i].constructor._name, "', true));");
         this._checkSuspension(e);
         out(fres, "=$ret;");
         this._jumpfalse("$ret", done);
@@ -877,9 +877,9 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
         case "BoolOp":
             return this.cboolop(e);
         case "BinOp":
-            return this._gr("binop", "Sk.abstr.numberBinOp(", this.vexpr(e.left), ",", this.vexpr(e.right), ",'", e.op.prototype._astname, "')");
+            return this._gr("binop", "Sk.abstr.numberBinOp(", this.vexpr(e.left), ",", this.vexpr(e.right), ",'", e.op.constructor._name, "')");
         case "UnaryOp":
-            return this._gr("unaryop", "Sk.abstr.numberUnaryOp(", this.vexpr(e.operand), ",'", e.op.prototype._astname, "')");
+            return this._gr("unaryop", "Sk.abstr.numberUnaryOp(", this.vexpr(e.operand), ",'", e.op.constructor._name, "')");
         case "Lambda":
             return this.clambda(e);
         case "IfExp":
@@ -980,6 +980,32 @@ Compiler.prototype.vexpr = function (e, data, augvar, augsubs) {
             }
             break;
         case "Subscript":
+            `compiler_subscript(struct compiler *c, expr_ty e)
+            {
+                expr_context_ty ctx = e->v.Subscript.ctx;
+                int op = 0;
+            
+                if (ctx == Load) {
+                    if (!check_subscripter(c, e->v.Subscript.value)) {
+                        return 0;
+                    }
+                    if (!check_index(c, e->v.Subscript.value, e->v.Subscript.slice)) {
+                        return 0;
+                    }
+                }
+            
+                switch (ctx) {
+                    case Load:    op = BINARY_SUBSCR; break;
+                    case Store:   op = STORE_SUBSCR; break;
+                    case Del:     op = DELETE_SUBSCR; break;
+                }
+                assert(op);
+                VISIT(c, expr, e->v.Subscript.value);
+                VISIT(c, expr, e->v.Subscript.slice);
+                ADDOP(c, op);
+                return 1;
+            }
+            `
             switch (e.ctx.constructor._name) {
                 case "AugLoad":
                     out("$ret = Sk.abstr.objectGetItem(",augvar,",",augsubs,", true);");
@@ -1106,7 +1132,7 @@ Compiler.prototype.caugassign = function (s) {
             auge = new "Attribute"(e.value, e.attr, "AugLoad", e.lineno, e.col_offset);
             aug = this.vexpr(auge, undefined, to);
             val = this.vexpr(s.value);
-            res = this._gr("inplbinopattr", "Sk.abstr.numberInplaceBinOp(", aug, ",", val, ",'", s.op.prototype._astname, "')");
+            res = this._gr("inplbinopattr", "Sk.abstr.numberInplaceBinOp(", aug, ",", val, ",'", s.op.constructor._name, "')");
             auge.ctx = "AugStore";
             return this.vexpr(auge, res, to);
         case "Subscript":
@@ -1116,13 +1142,13 @@ Compiler.prototype.caugassign = function (s) {
             auge = new "Subscript"(e.value, augsub, "AugLoad", e.lineno, e.col_offset);
             aug = this.vexpr(auge, undefined, to, augsub);
             val = this.vexpr(s.value);
-            res = this._gr("inplbinopsubscr", "Sk.abstr.numberInplaceBinOp(", aug, ",", val, ",'", s.op.prototype._astname, "')");
+            res = this._gr("inplbinopsubscr", "Sk.abstr.numberInplaceBinOp(", aug, ",", val, ",'", s.op.constructor._name, "')");
             auge.ctx = "AugStore";
             return this.vexpr(auge, res, to, augsub);
         case "Name":
             to = this.nameop(e.id, "Load");
             val = this.vexpr(s.value);
-            res = this._gr("inplbinop", "Sk.abstr.numberInplaceBinOp(", to, ",", val, ",'", s.op.prototype._astname, "')");
+            res = this._gr("inplbinop", "Sk.abstr.numberInplaceBinOp(", to, ",", val, ",'", s.op.constructor._name, "')");
             return this.nameop(e.id, "Store", res);
         default:
             Sk.asserts.fail("unhandled case in augassign");
@@ -1133,7 +1159,7 @@ Compiler.prototype.caugassign = function (s) {
  * optimize some constant exprs. returns 0 if always false, 1 if always true or -1 otherwise.
  */
 Compiler.prototype.exprConstant = function (e) {
-    switch (e.value.constructor._name) {
+    switch (e.value && e.value.constructor._name) {
         case "float":
         case "int":
             return Sk.misceval.isTrue(e.n) ? 1 : 0;

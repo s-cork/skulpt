@@ -386,22 +386,24 @@ function testsMain()
     }
     if (doTestRun) {
 	starttime = Date.now();
-        for (i = 0; i <= 1000; ++i)
-        {
-            (function(i) {
-                promise = promise.then(function(p) {
-                    return testRun(sprintf("test/run/t%02d", i), undefined, testInDebugMode);
-                });
-            })(i);
-        }
-        promise = promise.then(function() {
-	    endtime = Date.now();
+    for (i = 0; i <= 1000; ++i) {
+        (function (i) {
+            promise = promise.then(function (p) {
+                return testRun(sprintf("test/run3/run-tests/t%03d", i), undefined, testInDebugMode);
+            });
+        })(i);
+    }
+    promise = promise.then(
+        function () {
+            endtime = Date.now();
             console.log(sprintf("run: %d/%d (+%d disabled)", runpass, runpass + runfail, rundisabled));
-	    elapsed = (endtime - starttime) / 1000;
-	    console.log("Total run time for all tests: " + elapsed.toString() + "s");
-        }, function(e) {
-            console.log("Internal error: "+e);
-        });
+            elapsed = (endtime - starttime) / 1000;
+            console.log("Total run time for all tests: " + elapsed.toString() + "s");
+        },
+        function (e) {
+            console.log("Internal error: " + e);
+        }
+    );
     }
     if (Sk.inBrowser)
     {

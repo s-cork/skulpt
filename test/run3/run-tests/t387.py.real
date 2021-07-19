@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/scork/Desktop/Projects/skulpt/test/run3/run-tests/t387.py", line 1, in <module>
+    print(list(range(4, 9, 0)))
+ValueError: range() arg 3 must not be zero
