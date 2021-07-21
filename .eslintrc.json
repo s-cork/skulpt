@@ -17,6 +17,7 @@
         "quotes": ["error", "double", {"avoidEscape": true}]
     },
     "parserOptions": {
-        "ecmaVersion": 2019
+        "ecmaVersion": 2019,
+        "sourceType": "module"
     }
 }
