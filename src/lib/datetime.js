@@ -41,6 +41,21 @@ function $builtinmodule() {
     const secs_in_day = new pyInt(24 * 3600);
     const _243600 = new pyFloat(24 * 3600);
 
+
+    // anvil fixes for copy and deepcopy
+    const __copy__ = {
+            $meth() {
+                return this.tp$getattr(new pyStr("replace")).tp$call([]);
+            },
+            $flags: {NoArgs: true},
+    }
+    const __deepcopy__ = {
+        $meth(_memo) {
+            return this.tp$getattr(new pyStr("replace")).tp$call([]);
+        },
+        $flags: {OneArg: true},
+    }
+
     // some helper functions not part of datetime.py
 
     function pyDivMod(a, b) {
@@ -1078,9 +1093,11 @@ function $builtinmodule() {
                     $textsig: null,
                     $doc: "Return date with new specified fields.",
                 },
+                __copy__: __copy__, // anvil only - fix this in skulpt at some point
+                __deepcopy__: __deepcopy__,
                 // __reduce__: {
                 //     $meth: __reduce__,
-                //     $flags: {},
+                //     $lags: {},
                 //     $textsig: null,
                 //     $doc: "__reduce__() -> (cls, state)",
                 // },
@@ -1429,6 +1446,8 @@ function $builtinmodule() {
                     $textsig: null,
                     $doc: "Return time with new specified fields.",
                 },
+                __copy__: __copy__, // anvil only - fix this in skulpt at some point
+                __deepcopy__: __deepcopy__,
                 // __reduce_ex__: {
                 //     $meth: __reduce_ex__,
                 //     $flags: {},
@@ -1890,6 +1909,8 @@ function $builtinmodule() {
                     $textsig: null,
                     $doc: "tz -> convert to local time in new timezone tz\n",
                 },
+                __copy__: __copy__, // anvil only - fix this in skulpt at some point
+                __deepcopy__: __deepcopy__,
                 // __reduce_ex__: {
                 //     $meth: __reduce_ex__,
                 //     $flags: {},
