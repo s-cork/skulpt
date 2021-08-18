@@ -110,8 +110,8 @@ async function processDirectories(dirs, exts, ret, options) {
     }
 };
 
-const fastFilePaths = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.js"]);
-const medFilePaths = new Set([
+const group0Paths = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.js"]);
+const group1Paths = new Set([
     "src/lib/math.js",
     "src/lib/itertools.js",
     "src/lib/functools.js",
@@ -122,27 +122,33 @@ const medFilePaths = new Set([
     "src/lib/string.js",
     "src/lib/re.js",
 ]);
+const group2Paths = new Set(["src/lib/_strptime.js"]);
 
 function loadSkulptFastSlow(ret, name, outfile) {
     const retFiles = ret.files;
     const fastFiles = {};
-    const medFiles = {};
+    const group1 = {};
+    const group2 = {};
     const slowFiles = {};
     for (let filename in retFiles) {
-        if (fastFilePaths.has(filename)) {
+        if (group0Paths.has(filename)) {
             fastFiles[filename] = retFiles[filename];
-        } else if (medFilePaths.has(filename)) {
-            medFiles[filename] = retFiles[filename];
+        } else if (group1Paths.has(filename)) {
+            group1[filename] = retFiles[filename];
             fastFiles[filename] = 1;
+        } else if (group2Paths.has(filename)) {
+            group2[filename] = retFiles[filename];
+            fastFiles[filename] = 2;
         } else {
             slowFiles[filename] = retFiles[filename];
-            fastFiles[filename] = 2;
+            fastFiles[filename] = 3;
         }
     }
     const contents = "Sk." + name + "={files: " + JSON.stringify(fastFiles, null, 2) + "}";
     fs.writeFileSync(outfile, contents, "utf8");
-    fs.writeFileSync("dist/skulpt-stdlib-1.json", JSON.stringify(medFiles, null, 2), "utf8");
-    fs.writeFileSync("dist/skulpt-stdlib-2.json", JSON.stringify(slowFiles, null, 2), "utf8");
+    fs.writeFileSync("dist/skulpt-stdlib-1.json", JSON.stringify(group1, null, 2), "utf8");
+    fs.writeFileSync("dist/skulpt-stdlib-2.json", JSON.stringify(group2, null, 2), "utf8");
+    fs.writeFileSync("dist/skulpt-stdlib-3.json", JSON.stringify(slowFiles, null, 2), "utf8");
 }
 
 async function buildJsonFile(name, dirs, exts, outfile, options) {
