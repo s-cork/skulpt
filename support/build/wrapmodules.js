@@ -64,7 +64,6 @@ async function processDirectories(dirs, exts, ret, options) {
                                     "visibility",
                                 ],
                                 jscomp_off: [
-                                    "fileoverviewTags",
                                     "deprecated",
                                     "uselessCode",
                                     "suspiciousCode",
