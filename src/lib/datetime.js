@@ -1677,6 +1677,7 @@ function $builtinmodule() {
                         kws,
                         [null, null, int0, int0, int0, int0, pyNone, int0]
                     );
+                    let asBytes;
                     if (
                         year instanceof pyBytes &&
                         (asBytes = year.valueOf()).length === 10 &&
