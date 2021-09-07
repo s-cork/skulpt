@@ -432,8 +432,8 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         tp$hash() {
             return Sk.builtin.object.prototype.tp$hash.call(this.js$wrapped);
         },
-        tp$getattr(pyName) {
-            return this.$lookup(pyName) || Sk.generic.getAttr.call(this, pyName);
+        tp$getattr(pyName, canSuspend) {
+            return this.$lookup(pyName, canSuspend) || Sk.generic.getAttr.call(this, pyName);
         },
         tp$setattr(pyName, value) {
             const jsName = pyName.toString();
@@ -467,9 +467,9 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
             return new Sk.builtin.str("<" + this.tp$name + " " + object + ">");
         },
         tp$as_sequence_or_mapping: true,
-        mp$subscript(pyItem) {
+        mp$subscript(pyItem, canSuspend) {
             // todo should we account for -1 i.e. array like subscripts
-            const ret = this.$lookup(pyItem);
+            const ret = this.$lookup(pyItem, canSuspend);
             if (ret === undefined) {
                 throw new Sk.builtin.LookupError(pyItem);
             }
@@ -544,7 +544,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         },
         get: {
             $meth(pyName, _default) {
-                return this.$lookup(pyName) || _default || Sk.builtin.none.none$;
+                return this.$lookup(pyName, true) || _default || Sk.builtin.none.none$;
             },
             $flags: { MinArgs: 1, MaxArgs: 2 },
         },
@@ -594,10 +594,16 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 (res) => toPy(res, pyHooks)
             );
         },
-        $lookup(pyName) {
+        $lookup(pyName, canSuspend) {
             const jsName = pyName.toString();
             const attr = this.js$wrapped[jsName];
             if (attr !== undefined) {
+                if (canSuspend && attr instanceof Promise) {
+                    return Sk.misceval.chain(
+                        () => Sk.misceval.promiseToSuspension(attr),
+                        (res) => toPy(res, pyHooks)
+                    );
+                }
                 // here we override the funcHook to pass the bound object
                 return toPy(attr, boundHook(this.js$wrapped, jsName));
             } else if (jsName in this.js$wrapped) {
