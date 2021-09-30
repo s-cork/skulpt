@@ -1355,6 +1355,9 @@ function strBytesRemainder(rhs) {
         }
     };
     ret = this.$jsstr().replace(regex, replFunc);
+    if (rhs instanceof Sk.builtin.tuple && index < rhs.sq$length()) {
+        throw new Sk.builtin.TypeError("not all arguments converted during string formatting");
+    }
     return new strBytesConstructor(ret);
 };
 
@@ -1391,7 +1394,7 @@ var str_iter_ = Sk.abstr.buildIteratorClass("str_iterator", {
     methods: {
         __length_hint__: Sk.generic.iterLengthHintWithArrayMethodDef,
     },
-    flags: { sk$acceptable_as_base_class: false },
+    flags: { sk$unacceptableBase: true },
 });
 
 var reservedWords_ = {
