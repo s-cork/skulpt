@@ -1248,9 +1248,9 @@ Compiler.prototype.endExcept = function () {
     this.popExceptionHandlerBlock();
 };
 
-Compiler.prototype.setupFinally = function (eb) {
-    out("$exc.push(", eb, ");");
-    return this.pushExceptionHandlerBlock(eb, true);
+Compiler.prototype.setupFinally = function (finallyBody, excHandler) {
+    out("$exc.push(", excHandler , ");");
+    return this.pushExceptionHandlerBlock(finallyBody, true);
 };
 
 Compiler.prototype.endFinally = function () {
@@ -1677,7 +1677,7 @@ Compiler.prototype.ctry = function (s) {
         finalExceptionToReRaise = this._gr("finally_reraise", "undefined");
 
         this.u.tempsToSave.push(finalExceptionToReRaise);
-        thisFinally = this.setupFinally(finalBody);
+        thisFinally = this.setupFinally(finalBody, finalExceptionHandler);
     }
 
     // Create a block for each except clause
@@ -1749,7 +1749,6 @@ Compiler.prototype.ctry = function (s) {
         this._jump(finalBody);
 
         this.setBlock(finalBody);
-        this.popExceptionHandlerBlock();
         this.vseqstmt(s.finalbody);
         // If finalbody executes normally, AND we have an exception
         // to re-raise, we raise it.
@@ -1786,7 +1785,7 @@ Compiler.prototype.cwith = function (s, itemIdx) {
     value = this._gr("value", "$ret");
 
     // try:
-    thisFinallyBlock = this.setupFinally(tidyUp);
+    thisFinallyBlock = this.setupFinally(tidyUp, tidyUp);
     this.setupExcept(exceptionHandler);
 
     //    VAR = value
