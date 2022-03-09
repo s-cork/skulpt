@@ -173,7 +173,7 @@ async function main() {
         }
 
         const production = process.argv.includes("prod");
-        const langMatch = process.env.npm_config_argv.match(/env\.languageOut=(?<lang>\w+)/);
+        const langMatch = process.env.npm_lifecycle_script.match(/languageOut=(?<lang>\w+)/);
         const languageOut = (langMatch && langMatch.groups.lang) || "ECMASCRIPT_2015";
         console.log(languageOut);
  
