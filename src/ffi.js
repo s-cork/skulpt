@@ -372,26 +372,30 @@ const jsHooks = {
         const _cached = _proxied.get(obj);
         if (_cached) {
             return _cached;
-        } else if (obj.tp$call) {
-            const wrapped = (...args) => {
-                const ret = Sk.misceval.chain(obj.tp$call(args.map((x) => toPy(x, pyHooks))), (res) =>
-                    toJs(res, jsHooks)
-                );
-                if (ret instanceof Sk.misceval.Suspension) {
-                    // better to return a promise here then hope the javascript library will handle a suspension
-                    return Sk.misceval.asyncToPromise(() => ret);
-                }
-                return ret;
-            };
-            wrapped.v = obj;
-            wrapped.unwrap = () => obj;
-            wrapped.$isPyWrapped = true;
-            _proxied.set(obj, wrapped);
-            return wrapped;
         }
-        const ret = { v: obj, $isPyWrapped: true, unwrap: () => obj };
-        _proxied.set(obj, ret);
-        return ret;
+        const pyWrapped = { v: obj, $isPyWrapped: true, unwrap: () => obj };
+        if (obj.tp$call === undefined) {
+            return _proxied.set(obj, pyWrapped);
+        }
+        const pyWrappedCallable = (...args) => {
+            args = args.map((x) => toPy(x, pyHooks));
+            const ret = Sk.misceval.tryCatch(
+                () => Sk.misceval.chain(obj.tp$call(args), (res) => toJs(res, jsHooks)),
+                (e) => {
+                    if (Sk.uncaughtException) {
+                        Sk.uncaughtException(e);
+                    } else {
+                        throw e;
+                    }
+                }
+            );
+            if (ret instanceof Sk.misceval.Suspension) {
+                // better to return a promise here then hope the javascript library will handle a suspension
+                return Sk.misceval.asyncToPromise(() => ret);
+            }
+            return ret;
+        };
+        return _proxied.set(obj, Object.assign(pyWrappedCallable, pyWrapped));
     },
 };
 // we customize the dictHook and the funcHook here - we want to keep object literals as proxied objects when remapping to Py
