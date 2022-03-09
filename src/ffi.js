@@ -375,7 +375,8 @@ const jsHooks = {
         }
         const pyWrapped = { v: obj, $isPyWrapped: true, unwrap: () => obj };
         if (obj.tp$call === undefined) {
-            return _proxied.set(obj, pyWrapped);
+            _proxied.set(obj, pyWrapped);
+            return pyWrapped;
         }
         const pyWrappedCallable = (...args) => {
             args = args.map((x) => toPy(x, pyHooks));
@@ -395,7 +396,8 @@ const jsHooks = {
             }
             return ret;
         };
-        return _proxied.set(obj, Object.assign(pyWrappedCallable, pyWrapped));
+        _proxied.set(obj, Object.assign(pyWrappedCallable, pyWrapped));
+        return pyWrappedCallable;
     },
 };
 // we customize the dictHook and the funcHook here - we want to keep object literals as proxied objects when remapping to Py
