@@ -30,6 +30,9 @@ Sk.ffi = {
     proxy,
 };
 
+const OBJECT_PROTO = Object.prototype;
+const FUNC_PROTO = Function.prototype;
+
 /**
  * maps from Javascript Object/Array/string to Python dict/list/str.
  *
@@ -70,7 +73,7 @@ function toPy(obj, hooks) {
         return new Sk.builtin.list(obj.map((x) => toPy(x, hooks)));
     } else if (type === "object") {
         const constructor = obj.constructor; // it's possible that a library deleted the constructor
-        if (constructor === Object && Object.getPrototypeOf(obj) === Object.prototype || constructor === undefined /* Object.create(null) */) {
+        if (constructor === Object && Object.getPrototypeOf(obj) === OBJECT_PROTO || constructor === undefined /* Object.create(null) */) {
             return hooks.dictHook ? hooks.dictHook(obj) : toPyDict(obj, hooks);
         } else if (constructor === Uint8Array) {
             return new Sk.builtin.bytes(obj);
@@ -456,7 +459,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 }
                 const boundRepr = Sk.misceval.objectRepr(proxy(this.$bound));
                 return new Sk.builtin.str("<bound " + this.tp$name + " '" + this.$name + "' of " + boundRepr + ">");
-            } else if (this.js$proto === Object.prototype) {
+            } else if (this.js$proto === OBJECT_PROTO) {
                 if (this.in$repr) {
                     return new Sk.builtin.str("{...}");
                 }
@@ -496,7 +499,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
         tp$as_number: true,
         nb$bool() {
             // we could just check .constructor but some libraries delete it!
-            if (this.js$proto === Object.prototype) {
+            if (this.js$proto === OBJECT_PROTO) {
                 return Object.keys(this.js$wrapped).length > 0;
             } else if (this.sq$length) {
                 return this.sq$length() > 0;
@@ -623,12 +626,15 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
             $dir: {
                 configurable: true,
                 get() {
-                    const dir = new Set();
+                    const dir = [];
                     // loop over enumerable properties
-                    for (let prop in this.js$wrapped) {
-                        dir.add(prop);
+                    let obj = this.js$wrapped;
+
+                    while (obj != null && obj !== OBJECT_PROTO && obj !== FUNC_PROTO) {
+                        dir.push(...Object.getOwnPropertyNames(obj));
+                        obj = Object.getPrototypeOf(obj);
                     }
-                    return dir;
+                    return new Set(dir);
                 },
             },
             tp$iter: {
@@ -723,7 +729,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                         // if the function object has a prototype with more than just constructor, intention is to be used as a constructor
                         return (this.is$type = true);
                     }
-                    return (this.is$type = Object.getPrototypeOf(proto) !== Object.prototype);
+                    return (this.is$type = Object.getPrototypeOf(proto) !== OBJECT_PROTO);
                     // we could be a subclass with only constructor on the prototype
                     // if our prototype's __proto__ is Object.prototype then we are the most base function
                     // the most likely option is that `this` should be whatever `this.$bound` is, rather than using new
@@ -742,7 +748,7 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
 
 const is_constructor = /^class|^function[a-zA-Z\d\(\)\{\s]+\[native code\]\s+\}$/;
 
-const getFunctionBody = Function.prototype.toString;
+const getFunctionBody = FUNC_PROTO.toString;
 const noNewNeeded = new Set([Number, String, Symbol, Boolean]);
 // Some js builtins that shouldn't be called with new
 // these are unlikely to be proxied by the user but you never know
