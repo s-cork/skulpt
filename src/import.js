@@ -274,6 +274,7 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
                 module["$d"]["__file__"] = new Sk.builtin.str(co.filename);
             }
             try {
+                module.$initializing = true;
                 return modscope(module["$d"]);
             } catch (e) {
                 try {
@@ -281,6 +282,8 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
                     Sk.abstr.objectDelItem(Sk.sysmodules, new Sk.builtin.str(modname));
                 } catch {}
                 throw e;
+            } finally {
+                module.$initializing = false;
             }
         }, function (modlocs) {
             var i;
