@@ -10,7 +10,7 @@ Sk.builtin.list = Sk.abstr.buildNativeClass("list", {
         if (L === undefined) {
             L = [];
         } else if (!Array.isArray(L)) {
-            L = Sk.misceval.arrayFromIterable(L); 
+            L = Sk.misceval.arrayFromIterable(L);
             // internal calls to constructor can't suspend - avoid using this;
         }
         Sk.asserts.assert(this instanceof Sk.builtin.list, "bad call to list, use 'new' with an Array of python objects");
@@ -125,7 +125,7 @@ Sk.builtin.list = Sk.abstr.buildNativeClass("list", {
             } else if (n * len > Number.MAX_SAFE_INTEGER) {
                 throw new Sk.builtin.OverflowError();
             }
-            
+
             for (let i = 1; i < n; i++) {
                 for (let j = 0; j < len; j++) {
                     this.v.push(this.v[j]);
@@ -283,6 +283,7 @@ Sk.builtin.list = Sk.abstr.buildNativeClass("list", {
             $doc: "Reverse *IN PLACE*.",
         },
     },
+    classmethods: Sk.generic.classGetItem,
     proto: /** @lends {Sk.builtin.list.prototype}*/ {
         sk$asarray() {
             return this.v.slice(0);
@@ -496,7 +497,7 @@ var list_iter_ = Sk.abstr.buildIteratorClass("list_iterator", {
     methods: {
         __length_hint__: Sk.generic.iterLengthHintWithArrayMethodDef,
     },
-    flags: { sk$acceptable_as_base_class: false },
+    flags: { sk$unacceptableBase: true },
 });
 
 /**
@@ -521,5 +522,5 @@ var reverselist_iter_ = Sk.abstr.buildIteratorClass("list_reverseiterator", {
     methods: {
         __length_hint__: Sk.generic.iterReverseLengthHintMethodDef,
     },
-    flags: { sk$acceptable_as_base_class: false },
+    flags: { sk$unacceptableBase: true },
 });

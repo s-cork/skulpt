@@ -255,7 +255,7 @@ Sk.builtin.max = function max(args, kwargs) {
     if (!nargs) {
         throw new Sk.builtin.TypeError("max expected 1 argument, got 0");
     }
-    const [$default, key] = Sk.abstr.copyKeywordsToNamedArgs("min", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
+    const [$default, key] = Sk.abstr.copyKeywordsToNamedArgs("max", ["default", "key"], [], kwargs, [null, Sk.builtin.none.none$]);
 
     // if args is not a single iterable then default should not be included as a kwarg
     if (nargs > 1 && $default !== null) {
@@ -301,7 +301,7 @@ Sk.builtin.max = function max(args, kwargs) {
         () => {
             if (highest === undefined) {
                 if ($default === null) {
-                    throw new Sk.builtin.ValueError("min() arg is an empty sequence");
+                    throw new Sk.builtin.ValueError("max() arg is an empty sequence");
                 } else {
                     highest = $default;
                 }
@@ -447,7 +447,7 @@ Sk.builtin.abs = function abs(x) {
     if (x.nb$abs) {
         return x.nb$abs();
     }
-    throw new TypeError("bad operand type for abs(): '" + Sk.abstr.typeName(x) + "'");
+    throw new Sk.builtin.TypeError("bad operand type for abs(): '" + Sk.abstr.typeName(x) + "'");
 };
 
 // fabs belongs in the math module but has been a Skulpt builtin since 41665a97d (2012).
@@ -491,6 +491,7 @@ Sk.builtin.chr = function chr(x) {
 };
 
 Sk.builtin.unichr = function unichr(x) {
+    Sk.builtin.pyCheckArgsLen("unichr", arguments.length, 1, 1);
     if (!Sk.builtin.checkInt(x)) {
         throw new Sk.builtin.TypeError("an integer is required");
     }
@@ -510,16 +511,18 @@ Sk.builtin.unichr = function unichr(x) {
  * This is a helper function and we already know that x is an int or has an nb$index slot
  */
 Sk.builtin.int2str_ = function helper_(x, radix, prefix) {
-    let v;
-    if (x.constructor === Sk.builtin.int_ || x instanceof Sk.builtin.int_) {
-        v = x.v; // we don't use asnum$ because it returns a str rather than a bigint.
+    let v = x.nb$index();
+    let isNegative = false;
+    if (typeof v === "number") {
+        isNegative = v < 0;
+        v = isNegative ? -v : v;
     } else {
-        x = x.nb$index();
-        v = x.v;
+        isNegative = JSBI.lessThan(v, JSBI.__ZERO);
+        v = isNegative ? JSBI.unaryMinus(v) : v;
     }
     let str = v.toString(radix);
-    if (x.nb$isnegative()) {
-        str = "-" + prefix + str.slice(1);
+    if (isNegative) {
+        str = "-" + prefix + str;
     } else {
         str = prefix + str;
     }
@@ -738,8 +741,103 @@ Sk.builtin.jsmillis = function jsmillis() {
     return now.valueOf();
 };
 
-Sk.builtin.eval_ = function eval_() {
-    throw new Sk.builtin.NotImplementedError("eval is not yet implemented");
+const pyCode = Sk.abstr.buildNativeClass("code", {
+    constructor: function code(filename, compiled) {
+        this.compiled = compiled;
+        this.code = compiled.code;
+        this.filename = filename;
+    },
+    slots: {
+        tp$new(args, kwargs) {
+            throw new Sk.builtin.NotImplementedError("cannot construct a code object in skulpt");
+        },
+        $r() {
+            return new Sk.builtin.str("<code object <module>, file " + this.filename + ">");
+        },
+    },
+});
+
+Sk.builtin.compile = function (source, filename, mode, flags, dont_inherit, optimize) {
+    Sk.builtin.pyCheckType("source", "str", Sk.builtin.checkString(source));
+    Sk.builtin.pyCheckType("filename", "str", Sk.builtin.checkString(filename));
+    Sk.builtin.pyCheckType("mode", "str", Sk.builtin.checkString(mode));
+    source = source.$jsstr();
+    filename = filename.$jsstr();
+    mode = mode.$jsstr();
+    return Sk.misceval.chain(Sk.compile(source, filename, mode, true), (co) => new pyCode(filename, co));
+};
+
+/**
+ *
+ * @param {*} code
+ * @param {Object|undefined} globals
+ * @param {Object|undefined} locals
+ *
+ * Internally call with javascript objects for globals and locals
+ */
+Sk.builtin.exec = function (code, globals, locals) {
+    let filename = globals && globals.__file__;
+    if (filename !== undefined && Sk.builtin.checkString(filename)) {
+        filename = filename.toString();
+    } else {
+        filename = "<string>";
+    }
+    if (Sk.builtin.checkString(code)) {
+        code = Sk.compile(code.$jsstr(), filename, "exec", true);
+    } else if (typeof code === "string") {
+        code = Sk.compile(code, filename, "exec", true);
+    } else if (!(code instanceof pyCode)) {
+        throw new Sk.builtin.TypeError("exec() arg 1 must be a string, bytes or code object");
+    }
+    Sk.asserts.assert(
+        globals === undefined || globals.constructor === Object,
+        "internal calls to exec should be called with a javascript object for globals"
+    );
+    Sk.asserts.assert(
+        locals === undefined || locals.constructor === Object,
+        "internal calls to exec should be called with a javascript object for locals"
+    );
+    /**@todo shouldn't have to do this - Sk.globals loses scope*/
+    const tmp = Sk.globals;
+    /** 
+     * @todo this is not correct outside of __main__ i.e. exec doesn't work inside modules using the module scope
+     * This is because globals don't work outside of __main__
+    */
+    globals = globals || tmp;
+    return Sk.misceval.chain(
+        code,
+        (co) => Sk.global["eval"](co.code)(globals, locals),
+        (new_locals) => {
+            Sk.globals = tmp;
+            // we return new_locals internally for eval
+            return new_locals;
+        }
+    );
+};
+
+
+Sk.builtin.eval = function (source, globals, locals) {
+    if (Sk.builtin.checkString(source)) {
+        source = source.$jsstr();
+    } else if (Sk.builtin.checkBytes(source)) {
+        throw new Sk.builtin.NotImplementedError("bytes for eval is not yet implemented in skulpt");
+    }
+    if (typeof source === "string") {
+        source = source.trim();
+        const parse = Sk.parse("?", source);
+        const ast = Sk.astFromParse(parse.cst, "?", parse.flags);
+        if (ast.body.length > 1 || !(ast.body[0] instanceof Sk.astnodes.Expr)) {
+            throw new Sk.builtin.SyntaxError("invalid syntax");
+        }
+        source = "__final_res__ = " + source;
+    } else if (!(source instanceof pyCode)) {
+        throw new Sk.builtin.TypeError("eval() arg 1 must be a string, bytes or code object");
+    }
+    return Sk.misceval.chain(Sk.builtin.exec(source, globals, locals), (new_locals) => {
+        const res = new_locals.__final_res__ || Sk.builtin.none.none$;
+        delete new_locals.__final_res__;
+        return res;
+    });
 };
 
 Sk.builtin.map = function map(fun, seq) {
@@ -993,10 +1091,6 @@ Sk.builtin.divmod = function divmod(a, b) {
  * built-in types: Format Specification Mini-Language.
  */
 Sk.builtin.format = function format(value, format_spec) {
-    if (format_spec === undefined) {
-        format_spec = Sk.builtin.str.$emptystr;
-    }
-
     return Sk.abstr.objectFormat(value, format_spec);
 };
 
@@ -1052,18 +1146,30 @@ Sk.builtin.memoryview = function memoryview() {
 };
 
 Sk.builtin.next_ = function next_(iter, default_) {
-    var nxt;
     if (!iter.tp$iternext) {
         throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(iter) + "' object is not an iterator");
     }
-    nxt = iter.tp$iternext();
-    if (nxt === undefined) {
-        if (default_) {
-            return default_;
+    return Sk.misceval.chain(iter.tp$iternext(true), (nxt) => {
+        if (nxt === undefined) {
+            if (default_) {
+                return default_;
+            }
+            const v = iter.gi$ret;
+            // gi$ret is the original value that was thrown by the StopIteration
+            // (or returned by a generator)
+            // We've now lost the original StopIteration
+            // We make the assumption that it was probably called like
+            // raise StopIteration # or  StopIteration()
+            // rather than
+            // raise StopIteration(None)
+            if (v !== undefined && v !== Sk.builtin.none.none$) {
+                throw new Sk.builtin.StopIteration(v);
+            } else {
+                throw new Sk.builtin.StopIteration();
+            }
         }
-        throw new Sk.builtin.StopIteration();
-    }
-    return nxt;
+        return nxt;
+    });
 };
 
 Sk.builtin.reload = function reload() {

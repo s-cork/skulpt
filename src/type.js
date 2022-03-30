@@ -109,20 +109,19 @@ function tp$new(args, kwargs) {
         throw new Sk.builtin.TypeError("type() takes 1 or 3 arguments");
     }
 
-    let $name, bases, dict;
-    $name = args[0];
-    bases = args[1];
-    dict = args[2];
+    const name = args[0];
+    let bases = args[1];
+    const dict = args[2];
     // first check that we only have 3 args and they're of the correct type
     // argument dict must be of type dict
     if (dict.tp$name !== "dict") {
         throw new Sk.builtin.TypeError("type() argument 3 must be dict, not " + Sk.abstr.typeName(dict));
     }
     // checks if name must be string
-    if (!Sk.builtin.checkString($name)) {
-        throw new Sk.builtin.TypeError("type() argument 1 must be str, not " + Sk.abstr.typeName($name));
+    if (!Sk.builtin.checkString(name)) {
+        throw new Sk.builtin.TypeError("type() argument 1 must be str, not " + Sk.abstr.typeName(name));
     }
-    $name = $name.$jsstr();
+    const $name = name.$jsstr();
     // argument bases must be of type tuple
     if (bases.tp$name !== "tuple") {
         throw new Sk.builtin.TypeError("type() argument 2 must be tuple, not " + Sk.abstr.typeName(bases));
@@ -133,34 +132,91 @@ function tp$new(args, kwargs) {
      * @type {!typeObject}
      */
     const klass = function () {
-        // klass is essentially a function that gives its instances a dict
-        // if we support slots then we might need to have two versions of this
-        this.$d = new Sk.builtin.dict();
+        // klass is essentially a function that gives its instances a dict and slots
+        if (this.sk$hasDict) {
+            this.$d = new Sk.builtin.dict();
+        }
+        // use an array for slots - slots may be added at any index;
+        this.$s = [];
     };
     setUpKlass($name, klass, bases, this.constructor);
+    const klassProto = klass.prototype;
 
     // set some defaults which can be overridden by the dict object
     if (Sk.globals) {
-        klass.prototype.__module__ = Sk.globals["__name__"];
+        klassProto.__module__ = Sk.globals["__name__"];
     }
-    klass.prototype.__doc__ = Sk.builtin.none.none$;
+    klassProto.__doc__ = Sk.builtin.none.none$;
 
-    // set __dict__ if not already on the prototype
-    /**@todo __slots__ */
-    if (klass.$typeLookup(Sk.builtin.str.$dict) === undefined) {
-        klass.prototype.__dict__ = new Sk.builtin.getset_descriptor(klass, subtype_dict_getset_description);
+    // __slots__
+    let slotNames = dict.quick$lookup(Sk.builtin.str.$slots);
+    let wantDict = slotNames === undefined;
+    let protoHasDict = klass.$typeLookup(Sk.builtin.str.$dict) !== undefined;
+    let slotSet;
+
+    if (slotNames !== undefined) {
+        slotSet = new Set();
+
+        if (Sk.builtin.checkString(slotNames)) {
+            slotNames = [slotNames];
+        } else {
+            slotNames = Sk.misceval.arrayFromIterable(slotNames);
+        }
+        
+        slotNames.forEach((slotName) => {
+            // check string and check slot is identifier
+            if (!Sk.builtin.checkString(slotName)) {
+                throw new Sk.builtin.TypeError("__slots__ items must be strings, not '" + Sk.abstr.typeName(slotName) + "'");
+            } else if (!slotName.$isIdentifier()) {
+                throw new Sk.builtin.TypeError("__slots__ must be identifiers");
+            }
+            if (slotName === Sk.builtin.str.$dict) {
+                if (protoHasDict) {
+                    throw new Sk.builtin.TypeError("__dict__ slot disallowed: we already got one");
+                }
+                wantDict = true;
+            } else {
+                slotSet.add(Sk.mangleName(name, slotName));
+            }
+        });
+        slotNames = [...slotSet].sort((a, b) => a.toString().localeCompare(b.toString()));
+        createSlots(slotNames, klass);
     }
+    klassProto.ht$slots = slotNames || null; // sorted Array or null
+    
+    if (wantDict && !protoHasDict) {
+        // we only add the __dict__ descriptor if we defined it in the __slots__
+        // or if we don't already have one on our prototype
+        klassProto.__dict__ = new Sk.builtin.getset_descriptor(klass, subtype_dict_getset_description);
+        protoHasDict = true;
+    }
+    // a flag added to every heaptype prototype for quick lookup in the klass constructor
+    klassProto.sk$hasDict = protoHasDict;
 
-    // copy properties from dict into klass.prototype
     dict.$items().forEach(([key, val]) => {
-        klass.prototype[key.$mangled] = val;
+        if (slotSet && slotSet.has(key)) {
+            throw new Sk.builtin.ValueError("'" + key.toString() + "' in __slots__ conflicts with class variable");
+        }
+        klassProto[key.$mangled] = val;
     });
+
+    /* Set ht_qualname to dict['__qualname__'] if available, else to
+    __name__.  The __qualname__ accessor will look for ht_qualname.
+    */
+    if (klassProto.hasOwnProperty("__qualname__")) {
+        const qualname = klassProto.__qualname__;
+        if (!Sk.builtin.checkString(qualname)) {
+            throw new Sk.builtin.TypeError("type __qualname__ must be a str, not '" + Sk.abstr.typeName(qualname) + "'");
+        }
+        klassProto.ht$qualname = qualname;
+    }
+
     // make __new__ a static method
-    if (klass.prototype.hasOwnProperty("__new__")) {
-        const newf = klass.prototype.__new__;
+    if (klassProto.hasOwnProperty("__new__")) {
+        const newf = klassProto.__new__;
         if (newf instanceof Sk.builtin.func) {
             // __new__ is an implied staticmethod
-            klass.prototype.__new__ = new Sk.builtin.staticmethod(newf);
+            klassProto.__new__ = new Sk.builtin.staticmethod(newf);
         }
     }
     klass.$allocateSlots();
@@ -321,11 +377,14 @@ function setUpKlass($name, klass, bases, meta) {
 
     Sk.abstr.setUpInheritance($name, klass, best_base, meta);
 
+    const pyName = new Sk.builtin.str($name);
     Object.defineProperties(klass_proto, {
         sk$prototypical: { value: true, writable: true },
         tp$bases: { value: bases, writable: true },
         tp$mro: { value: null, writable: true },
-        hp$type: { value: true, writable: true },
+        ht$type: { value: true, writable: true },
+        ht$name: { value: pyName, writable: true},
+        ht$qualname: { value: pyName, writable: true},
     });
     klass_proto.tp$mro = klass.$buildMRO();
 
@@ -342,7 +401,9 @@ function best_base_(bases) {
     }
     function solid_base(type) {
         // if we support slots we would need to change this function - for now it just checks for the builtin.
-        if (type.sk$klass === undefined) {
+        if (type.sk$solidBase) {
+            return type;
+        } else if (type.sk$solidSlotBase) {
             return type;
         }
         return solid_base(type.prototype.tp$base);
@@ -353,7 +414,7 @@ function best_base_(bases) {
         base_i = bases[i];
         if (!Sk.builtin.checkClass(base_i)) {
             throw new Sk.builtin.TypeError("bases must be 'type' objects");
-        } else if (base_i.sk$acceptable_as_base_class === false) {
+        } else if (base_i.sk$unacceptableBase) {
             throw new Sk.builtin.TypeError("type '" + base_i.prototype.tp$name + "' is not an acceptable base type");
         }
         candidate = solid_base(base_i); // basically the builtin I think
@@ -370,6 +431,32 @@ function best_base_(bases) {
         }
     }
     return base;
+}
+
+function createSlots(slotNames, klass) {
+    const klassProto = klass.prototype;
+    const nextSlotIdx = klassProto.sk$nslots || 0;
+    klassProto.sk$nslots = nextSlotIdx + slotNames.length;
+    if (slotNames.length) {
+        klass.sk$solidSlotBase = true;
+    }
+
+    slotNames.forEach((slotName, i) => {
+        i += nextSlotIdx;
+        const mangled = slotName.$mangled;
+        klassProto[mangled] = new Sk.builtin.getset_descriptor(klass, {
+            $get() {
+                const ret = this.$s[i];
+                if (ret === undefined) {
+                    throw new Sk.builtin.AttributeError(slotName);
+                }
+                return ret;
+            },
+            $set(v) {
+                this.$s[i] = v;
+            },
+        });
+    });
 }
 
 function $mroMerge(seqs) {
@@ -574,7 +661,15 @@ Sk.builtin.type.prototype.tp$getsets = {
     },
     __name__: {
         $get() {
-            return new Sk.builtin.str(this.prototype.tp$name);
+            let name = this.prototype.ht$name;
+            if (name !== undefined) {
+                return new Sk.builtin.str(name);
+            }
+            name = this.prototype.tp$name;
+            if (name.includes(".")) {
+                name = name.slice(name.lastIndexOf(".") + 1);
+            }
+            return new Sk.builtin.str(name);
         },
         $set(value) {
             check_special_type_attr(this, value, Sk.builtin.str.$name);
@@ -583,14 +678,34 @@ Sk.builtin.type.prototype.tp$getsets = {
                     "can only assign string to " + this.prototype.tp$name + ".__name__, not '" + Sk.abstr.typeName(value) + "'"
                 );
             }
+            this.prototype.ht$name = value;
             this.prototype.tp$name = value.$jsstr();
         },
     },
+    __qualname__: {
+        $get() {
+            // todo
+            return this.prototype.ht$qualname || Sk.abstr.lookupSpecial(this, Sk.builtin.str.$name);
+        },
+        $set(value) {
+            check_special_type_attr(this, value, Sk.builtin.str.$name);
+            if (!Sk.builtin.checkString(value)) {
+                throw new Sk.builtin.TypeError(
+                    "can only assign string to " + this.prototype.tp$name + ".__qualname__, not '" + Sk.abstr.typeName(value) + "'"
+                );
+            }
+            this.prototype.ht$qualname = value;
+        }
+    },
     __module__: {
         $get() {
-            let mod = this.prototype.__module__;
+            const typeproto = this.prototype;
+            const mod = typeproto.__module__;
             if (mod && !(mod.ob$type === Sk.builtin.getset_descriptor)) {
                 return mod;
+            }
+            if (typeproto.tp$name.includes(".")) {
+                return new Sk.builtin.str(typeproto.tp$name.slice(0, typeproto.tp$name.lastIndexOf(".")));
             }
             return new Sk.builtin.str("builtins");
         },
@@ -660,7 +775,11 @@ const subtype_dict_getset_description = {
         if (dict_descr !== undefined) {
             return dict_descr.tp$descr_set(this, value);
         }
-        return Sk.generic.getSetDict.$set.call(this, value);
+        if (value === undefined) {
+            this.$d = new Sk.builtin.dict([]);
+        } else {
+            return Sk.generic.getSetDict.$set.call(this, value);
+        }
     },
     $doc: "dictionary for instance variables (if defined)",
     $name: "__dict__",

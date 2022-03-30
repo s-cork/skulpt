@@ -134,6 +134,7 @@ Sk.builtin.mappingproxy = Sk.abstr.buildNativeClass("mappingproxy", {
             $doc: "D.copy() -> a shallow copy of D",
         },
     },
+    classmethods: Sk.generic.classGetItem,
     proto: {
         str$get: new Sk.builtin.str("get"),
         str$copy: new Sk.builtin.str("copy"),
@@ -145,7 +146,7 @@ Sk.builtin.mappingproxy = Sk.abstr.buildNativeClass("mappingproxy", {
         },
     },
     flags: {
-        sk$acceptable_as_base_class: false,
+        sk$unacceptableBase: true,
     },
 });
 

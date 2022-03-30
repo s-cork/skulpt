@@ -61,7 +61,7 @@ Sk.builtin.bytes = Sk.abstr.buildNativeClass("bytes", {
         } else if (typeof source === "number") {
             this.v = new Uint8Array(source);
         } else {
-            throw new Sk.builtin.TypeError("bad argument to bytes constructor");
+            throw new TypeError(`bad internal argument to bytes constructor (got '${typeof source}': ${source})`);
         }
     },
     slots: /**@lends {Sk.builtin.bytes.prototype} */ {
@@ -116,7 +116,7 @@ Sk.builtin.bytes = Sk.abstr.buildNativeClass("bytes", {
                 });
                 return Sk.misceval.chain(r, () => new Sk.builtin.bytes(source));
             }
-            throw new Sk.builtin.TypeError("cannot convert '" + Sk.abstr.typeName(source) + "' object into bytes");
+            throw new Sk.builtin.TypeError("cannot convert '" + Sk.abstr.typeName(pySource) + "' object into bytes");
         },
         $r() {
             let num;
@@ -327,7 +327,10 @@ Sk.builtin.bytes = Sk.abstr.buildNativeClass("bytes", {
             const ret = [];
             this.v.forEach((x) => {ret.push(new Sk.builtin.int_(x));});
             return ret;
-        }
+        },
+        valueOf() {
+            return this.v;
+        },
     },
     flags: {
         str$encode: strEncode,
@@ -1281,7 +1284,7 @@ var bytes_iter_ = Sk.abstr.buildIteratorClass("bytes_iterator", {
     methods: {
         __length_hint__: Sk.generic.iterLengthHintWithArrayMethodDef,
     },
-    flags: { sk$acceptable_as_base_class: false },
+    flags: { sk$unacceptableBase: true },
 });
 
 Sk.exportSymbol("Sk.builtin.bytes", Sk.builtin.bytes);

@@ -56,7 +56,19 @@ Sk.exportSymbol("Sk.misceval.Suspension", Sk.misceval.Suspension);
 Sk.misceval.retryOptionalSuspensionOrThrow = function (susp, message) {
     while (susp instanceof Sk.misceval.Suspension) {
         if (!susp.optional) {
-            throw new Sk.builtin.SuspensionError(message || "Cannot call a function that blocks or suspends here");
+            const err = new Sk.builtin.SuspensionError(message || "Cannot call a function that blocks or suspends here");
+            let prev_susp = susp;
+            const tb = [];
+            while (prev_susp != null) {
+                if (prev_susp.$lineno) {
+                    // compile code added attributes so fill the traceback
+                    tb.push({ filename: prev_susp.$filename, lineno: prev_susp.$lineno, colno: prev_susp.$colno });
+                }
+                prev_susp = prev_susp.child;
+            }
+            tb.reverse();
+            err.traceback.push(...tb);
+            throw err;
         }
         susp = susp.resume();
     }
@@ -246,7 +258,7 @@ Sk.misceval.iterator = Sk.abstr.buildIteratorClass("iterator", {
     iternext: function (canSuspend) { /* keep slot __next__ happy */
         return this.tp$iternext(canSuspend);
     },
-    flags: { sk$acceptable_as_base_class: false },
+    flags: { sk$unacceptableBase: true },
 });
 
 /**
@@ -449,15 +461,16 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
 
     shortcut = op2shortcut[op];
     // similar rules apply as with binops - prioritize the reflected ops of subtypes
+    // but different to binop - even if the swapped op is the same as the parent still call it
     if (w_is_subclass) {
         swapped_shortcut = op2shortcut[Sk.misceval.swappedOp_[op]];
-        if (w[swapped_shortcut] !== v[swapped_shortcut] && (ret = w[swapped_shortcut](v)) !== Sk.builtin.NotImplemented.NotImplemented$) {
+        if ((ret = w[swapped_shortcut](v)) !== Sk.builtin.NotImplemented.NotImplemented$) {
             return Sk.misceval.isTrue(ret);
         }
     }
     if ((ret = v[shortcut](w)) !== Sk.builtin.NotImplemented.NotImplemented$) {
         return Sk.misceval.isTrue(ret); 
-        // techincally this is not correct along with the compile code 
+    // techincally this is not correct along with the compile code see #1252
         // richcompare slots could return any pyObject ToDo - would require changing compile code
     }
 
@@ -1187,7 +1200,7 @@ Sk.misceval.arrayFromIterable = function (iterable, canSuspend) {
     if (iterable === undefined) {
         return [];
     }
-    if (iterable.hp$type === undefined && iterable.sk$asarray !== undefined) {
+    if (iterable.ht$type === undefined && iterable.sk$asarray !== undefined) {
         // use sk$asarray only if we're a builtin
         return iterable.sk$asarray();
     }

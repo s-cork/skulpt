@@ -34,7 +34,7 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
 
         this.$name = (code.co_name && code.co_name.v) || code.name || "<native JS>";
         this.$d = Sk.builtin.dict ? new Sk.builtin.dict() : undefined;
-        this.$doc = code.$doc;
+        this.$doc = code.co_docstring || Sk.builtin.none.none$;
         this.$module = (Sk.globals && Sk.globals["__name__"]) || Sk.builtin.none.none$;
         this.$qualname = (code.co_qualname && code.co_qualname.v) || this.$name;
 
@@ -45,6 +45,7 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
             }
         }
         this.func_closure = closure;
+        this.func_annotations = null;
         this.$memoiseFlags();
         this.memoised = code.co_fastcall || null;
         if (code.co_fastcall) {
@@ -120,6 +121,25 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
             },
         },
         __dict__: Sk.generic.getSetDict,
+        __annotations__: {
+            $get() {
+                if (this.func_annotations === null) {
+                    this.func_annotations = new Sk.builtin.dict([]);
+                } else if (Array.isArray(this.func_annotations)) {
+                    this.func_annotations = Sk.abstr.keywordArrayToPyDict(this.func_annotations);
+                }
+                return this.func_annotations;
+            },
+            $set(v) {
+                if (v === undefined || Sk.builtin.checkNone(v)) {
+                    this.func_annotations = new Sk.builtin.dict([]);
+                } else if (v instanceof Sk.builtin.dict) {
+                    this.func_annotations = v;
+                } else {
+                    throw new Sk.builtin.TypeError("__annotations__ must be set to a dict object");
+                }
+            }
+        },
         __defaults__: {
             $get() {
                 return new Sk.builtin.tuple(this.$defaults);
@@ -127,9 +147,23 @@ Sk.builtin.func = Sk.abstr.buildNativeClass("function", {
         },
         __doc__: {
             $get() {
-                return new Sk.builtin.str(this.$doc);
+                return this.$doc;
+            },
+            $set(v) {
+                // The value the user is setting __doc__ to can be any Python
+                // object.  If we receive 'undefined' then the user is deleting
+                // __doc__, which is allowed and results in __doc__ being None.
+                this.$doc = v || Sk.builtin.none.none$;
             },
         },
+        __module__: {
+            $get() {
+                return this.$module;
+            },
+            $set(v) {
+                this.$module = v || Sk.builtin.none.none$;
+            }
+        }
     },
     proto: {
         $memoiseFlags() {
@@ -243,7 +277,14 @@ function $resolveArgs(posargs, kw) {
             }
         }
         if (missing.length != 0 && (this.co_argcount || this.co_varnames)) {
-            throw new Sk.builtin.TypeError(this.$name + "() missing " + missing.length + " required argument" + (missing.length==1?"":"s") + (missingUnnamed ? "" : (": " + missing.join(", "))));
+            throw new Sk.builtin.TypeError(
+                this.$name +
+                    "() missing " +
+                    missing.length +
+                    " required argument" +
+                    (missing.length == 1 ? "" : "s") +
+                    (missingUnnamed ? "" : ": " + missing.map((x) => "'" + x + "'").join(", "))
+            );
         }
         for (; i < co_argcount; i++) {
             if (args[i] === undefined) {

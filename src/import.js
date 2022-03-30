@@ -212,8 +212,6 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
                 return undefined;
             }
 
-            // Now we know this module exists, we can add it to the cache
-            Sk.sysmodules.mp$ass_subscript(new Sk.builtin.str(modname), module);
 
             module.$js = co.code; // todo; only in DEBUG?
             finalcode = co.code;
@@ -252,26 +250,71 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
             }
             // }
 
-            finalcode += "\n" + co.funcname + ";";
+            if (co.funcname !== "$compiledmod") {
+                // make sure eval returns the function - already done in Sk.compile
+                // so only necessary with $builtinmodule type modules
+                finalcode += "\n" + co.funcname + ";";
+            }
+
+            const pyModName = new Sk.builtin.str(modname);
+            const pyAttrName = new Sk.builtin.str(name);
+
+            // Now we know this module exists, we can add it to the cache
+            Sk.sysmodules.mp$ass_subscript(pyModName, module);
+            if (relativeToPackage) {
+                relativeToPackage.tp$setattr(pyAttrName, module);
+            }
 
             modscope = Sk.global["eval"](finalcode);
+            module.init$dict(pyModName, Sk.builtin.none.none$);
 
-            module["$d"] = {
-                "__name__": new Sk.builtin.str(modname),
-                "__doc__": Sk.builtin.none.none$,
-                "__package__": co.packagePath ? new Sk.builtin.str(modname) :
-                parentModName ? new Sk.builtin.str(absolutePackagePrefix + parentModName) :
-                relativePackageName ? relativePackageName : Sk.builtin.none.none$
-            };
+            module["$d"].__package__ = co.packagePath
+                ? pyModName
+                : parentModName
+                    ? new Sk.builtin.str(absolutePackagePrefix + parentModName)
+                    : relativePackageName
+                        ? relativePackageName
+                        : Sk.builtin.none.none$;
+
             if (co.packagePath) {
                 module["$d"]["__path__"] = new Sk.builtin.tuple([new Sk.builtin.str(co.packagePath)]);
             }
+            if (co.filename && co.funcname !== "$builtinmodule") {
+                module["$d"]["__file__"] = new Sk.builtin.str(co.filename);
+            }
+            const packageInitializing = relativeToPackage && relativeToPackage.$initializing;
+            const setInitializing = (v) => {
+                module.$initializing = v;
+                if (relativeToPackage && !packageInitializing) {
+                    relativeToPackage.$initializing = v;
+                }
+            };
 
-            return modscope(module["$d"]);
-
+            setInitializing(true);
+            // our module might suspend so we need to wrap it in a suspendable try catch
+            // we can only setInitializing to false once the suspensions have completed
+            return Sk.misceval.tryCatch(
+                () =>
+                    Sk.misceval.chain(modscope(module["$d"]), (rv) => {
+                        setInitializing(false);
+                        return rv;
+                    }),
+                (e) => {
+                    try {
+                        // don't cache a module if it raised an exception on load
+                        Sk.abstr.objectDelItem(Sk.sysmodules, pyModName);
+                    } catch {}
+                    if (relativeToPackage) {
+                        try {
+                            relativeToPackage.tp$setattr(pyAttrName, undefined);
+                        } catch {}
+                    }
+                    setInitializing(false);
+                    throw e;
+                }
+            );
         }, function (modlocs) {
             var i;
-
             if (modlocs === undefined) {
                 if (returnUndefinedOnTopLevelNotFound && !topLevelModuleToReturn) {
                     return undefined;
@@ -310,9 +353,6 @@ Sk.importModuleInternal_ = function (name, dumpJS, modname, suppliedPyBody, rela
                 return topLevelModuleToReturn;
             }
 
-            if (relativeToPackage) {
-                relativeToPackage.tp$setattr(new Sk.builtin.str(name), module);
-            }
 
             //print("name", name, "modname", modname, "returning leaf");
             // otherwise we return the actual module that we just imported
@@ -452,29 +492,26 @@ Sk.builtin.__import__ = function (name, globals, locals, fromlist, level) {
         } else {
             // try to load from-names as modules from the file system
             // if they are not present on the module itself
-            var i;
-            var fromName;
-            var leafModule;
-            var importChain;
+            const chainedImports = [null];
 
-            leafModule = Sk.sysmodules.mp$subscript(
+            const leafModule = Sk.sysmodules.mp$subscript(
                 new Sk.builtin.str((relativeToPackageName || "") +
                     ((relativeToPackageName && name) ? "." : "") +
                     name));
 
-            for (i = 0; i < fromlist.length; i++) {
-                fromName = fromlist[i];
+            for (let i = 0; i < fromlist.length; i++) {
+                const fromName = fromlist[i];
 
                 // "ret" is the module we're importing from
                 // Only import from file system if we have not found the fromName in the current module
-                if (fromName != "*" && leafModule.tp$getattr(new Sk.builtin.str(fromName)) === undefined) {
-                    importChain = Sk.misceval.chain(importChain,
-                                                    Sk.importModuleInternal_.bind(null, fromName, undefined, undefined, undefined, leafModule, true, true)
+                if (fromName !== "*" && leafModule.tp$getattr(new Sk.builtin.str(fromName)) === undefined) {
+                    chainedImports.push(() =>
+                        Sk.importModuleInternal_(fromName, undefined, undefined, undefined, leafModule, true, true)
                     );
                 }
             }
 
-            return Sk.misceval.chain(importChain, function() {
+            return Sk.misceval.chain(...chainedImports, function() {
                 // if there's a fromlist we want to return the leaf module
                 // (ret), not the toplevel namespace
                 Sk.asserts.assert(leafModule);

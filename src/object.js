@@ -67,8 +67,7 @@ Sk.builtin.object = Sk.abstr.buildNativeClass("object", {
                     res = this === other || Sk.builtin.NotImplemented.NotImplemented$;
                     break;
                 case "NotEq":
-                    // use tp$richcompare here... because CPython does. ob$eq breaks some tests for NotEq subclasses
-                    res = this.tp$richcompare(other, "Eq");
+                    res = this.ob$eq(other, "Eq");
                     if (res !== Sk.builtin.NotImplemented.NotImplemented$) {
                         res = !Sk.misceval.isTrue(res);
                     }
@@ -96,16 +95,12 @@ Sk.builtin.object = Sk.abstr.buildNativeClass("object", {
 
                 if (
                     !(oldto.$isSubType(Sk.builtin.module) && newto.$isSubType(Sk.builtin.module)) &&
-                    (oldto.sk$klass === undefined || newto.sk$klass === undefined)
+                    (oldto.prototype.ht$type === undefined || newto.prototype.ht$type === undefined)
                 ) {
                     throw new Sk.builtin.TypeError(" __class__ assignment only supported for heap types or ModuleType subclasses");
-                } else if (value.prototype.sk$builtinBase !== this.sk$builtinBase) {
-                    throw new Sk.builtin.TypeError(
-                        "__class__ assignment: '" + Sk.abstr.typeName(this) + "' object layout differs from '" + value.prototype.tp$name + "'"
-                    );
                 }
+                checkCompatibleForAssignment(oldto, newto);
                 Object.setPrototypeOf(this, value.prototype);
-                return;
             },
             $doc: "the object's class",
         },
@@ -135,18 +130,10 @@ Sk.builtin.object = Sk.abstr.buildNativeClass("object", {
         },
         __format__: {
             $meth(format_spec) {
-                let formatstr;
                 if (!Sk.builtin.checkString(format_spec)) {
-                    if (Sk.__future__.exceptions) {
-                        throw new Sk.builtin.TypeError("format() argument 2 must be str, not " + Sk.abstr.typeName(format_spec));
-                    } else {
-                        throw new Sk.builtin.TypeError("format expects arg 2 to be string or unicode, not " + Sk.abstr.typeName(format_spec));
-                    }
-                } else {
-                    formatstr = Sk.ffi.remapToJs(format_spec);
-                    if (formatstr !== "") {
-                        throw new Sk.builtin.NotImplementedError("format spec is not yet implemented");
-                    }
+                    throw new Sk.builtin.TypeError("__format__() argument must be str, not " + Sk.abstr.typeName(format_spec));
+                } else if (format_spec !== Sk.builtin.str.$empty) {
+                    throw new Sk.builtin.TypeError(`unsupported format string passed to ${Sk.abstr.typeName(this)}.__format__`);
                 }
                 return this.tp$str();
             },
@@ -156,11 +143,11 @@ Sk.builtin.object = Sk.abstr.buildNativeClass("object", {
     },
     proto: /**@lends {Sk.builtin.object.prototype}*/ {
         valueOf: Object.prototype.valueOf,
-        toString: function() {
+        toString() {
             return this.tp$str().v;
         },
         hasOwnProperty: Object.prototype.hasOwnProperty,
-        hp$type: undefined,
+        ht$type: undefined,
         // private method used for error messages
         sk$attrError() {
             return "'" + this.tp$name + "' object";
@@ -203,3 +190,59 @@ Sk.builtin.object = Sk.abstr.buildNativeClass("object", {
     Sk.abstr.setUpBuiltinMro(Sk.builtin.type);
 })();
 
+function compatibleWithTpBase(child) {
+    const childProto = child.prototype;
+    const parent = childProto.tp$base;
+    if (parent == null) {
+        return false;
+    }
+    const parentProto = parent.prototype;
+    if (parent.sk$solidSlotBase || child.sk$solidSlotBase) {
+        return false;
+    } else if (parentProto.sk$hasDict !== childProto.sk$hasDict) {
+        return false;
+    } else if (parent.sk$solidBase && parent !== Sk.builtin.module) {
+        return false;
+    }
+    return true;
+}
+
+function sameSlotsAdded(a, b) {
+    const aProto = a.prototype;
+    const bProto = b.prototype;
+    const aSlots = aProto.ht$slots;
+    const bSlots = bProto.ht$slots;
+    if (aProto.sk$hasDict !== bProto.sk$hasDict) {
+        return false;
+    }
+    if (aSlots === bSlots) {
+        return true;
+    } else if (aSlots && bSlots) {
+        return aSlots.length === bSlots.length && aSlots.every((s, i) => s === bSlots[i]);
+    }
+    return (aSlots && (aSlots.length || null)) === (bSlots && (bSlots.length || null));
+}
+
+function checkCompatibleForAssignment(newto, oldto) {
+    let newbase = newto;
+    let oldbase = oldto;
+
+    while (compatibleWithTpBase(newbase)) {
+        newbase = newbase.prototype.tp$base;
+    }
+    while (compatibleWithTpBase(oldbase)) {
+        oldbase = oldbase.prototype.tp$base;
+    }
+    if (
+        newbase !== oldbase &&
+        (newbase.prototype.tp$base !== oldbase.prototype.tp$base || !sameSlotsAdded(newbase, oldbase))
+    ) {
+        throw new Sk.builtin.TypeError(
+            "__class__ assignment: '" +
+                oldto.prototype.tp$name +
+                "' object layout differs from '" +
+                newto.prototype.tp$name +
+                "'"
+        );
+    }
+}

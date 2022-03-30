@@ -686,6 +686,32 @@ class string_functions(unittest.TestCase):
         self.assertEqual(True, s.count('l', -2, None))
         self.assertEqual(True, s.count('h', None, -2))
         self.assertEqual(False, s.count('x', None, None))
-        
+
+
+    def test_isidentifier(self):
+        self.assertTrue("a".isidentifier())
+        self.assertTrue("Z".isidentifier())
+        self.assertTrue("_".isidentifier())
+        self.assertTrue("b0".isidentifier())
+        self.assertTrue("bc".isidentifier())
+        self.assertTrue("b_".isidentifier())
+        self.assertTrue("µ".isidentifier())
+        self.assertTrue("𝔘𝔫𝔦𝔠𝔬𝔡𝔢".isidentifier())
+
+        self.assertFalse(" ".isidentifier())
+        self.assertFalse("[".isidentifier())
+        self.assertFalse("©".isidentifier())
+        self.assertFalse("0".isidentifier())
+
+        # the following should parse
+        µ = 1
+        µ1 = 1
+        রংর = 2 # Skulpt bug #637
+
+        self.assertEqual(µ, 1)
+        self.assertEqual(µ1, 1)
+        self.assertEqual(রংর, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

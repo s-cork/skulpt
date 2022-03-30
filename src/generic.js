@@ -274,7 +274,7 @@ Sk.generic.getSetDict = {
     },
     $set(value) {
         if (value === undefined) {
-            this.$d = new Sk.builtin.dict();
+            throw new Sk.builtin.TypeError("cannot delete __dict__");
         } else if (value instanceof Sk.builtin.dict) {
             this.$d = value;
         } else {
@@ -341,4 +341,14 @@ Sk.generic.seqCompare = function (other, op) {
 
     // or, compare the differing element using the proper operator
     return Sk.misceval.richCompareBool(v[i], w[i], op);
+};
+
+
+Sk.generic.classGetItem = {
+    __class_getitem__: {
+        $meth(args) {
+            return new Sk.builtin.GenericAlias(this, args);
+        },
+        $flags: { OneArg: true },
+    },
 };

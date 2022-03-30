@@ -287,6 +287,9 @@ Sk.builtin.str = Sk.abstr.buildNativeClass("str", {
             }
             throw new Sk.builtin.TypeError("a str instance is required not '" + Sk.abstr.typeName(tgt) + "'");
         },
+        $isIdentifier() {
+            return Sk.token.isIdentifier(this.v);
+        },
     },
     methods: /**@lends {Sk.builtin.str.prototype} */ {
         encode: {
@@ -742,13 +745,15 @@ Sk.builtin.str = Sk.abstr.buildNativeClass("str", {
             $doc:
                 "Return True if the string is an alpha-numeric string, False otherwise.\n\nA string is alpha-numeric if all characters in the string are alpha-numeric and\nthere is at least one character in the string.",
         },
-        // isidentifier: {
-        //     $meth: methods.isidentifier,
-        //     $flags: {},
-        //     $textsig: "($self, /)",
-        //     $doc:
-        //         'Return True if the string is a valid Python identifier, False otherwise.\n\nUse keyword.iskeyword() to test for reserved identifiers such as "def" and\n"class".',
-        // },
+        isidentifier: {
+            $meth: function isidentifier() {
+                return this.$isIdentifier() ? Sk.builtin.bool.true$ : Sk.builtin.bool.false$;
+            },
+            $flags: { NoArgs: true },
+            $textsig: "($self, /)",
+            $doc:
+                'Return True if the string is a valid Python identifier, False otherwise.\n\nUse keyword.iskeyword() to test for reserved identifiers such as "def" and\n"class".',
+        },
         // isprintable: {
         //     $meth: methods.isprintable,
         //     $flags: {},
@@ -1347,6 +1352,9 @@ function strBytesRemainder(rhs) {
         }
     };
     ret = this.$jsstr().replace(regex, replFunc);
+    if (rhs instanceof Sk.builtin.tuple && index < rhs.sq$length()) {
+        throw new Sk.builtin.TypeError("not all arguments converted during string formatting");
+    }
     return new strBytesConstructor(ret);
 };
 
@@ -1383,7 +1391,7 @@ var str_iter_ = Sk.abstr.buildIteratorClass("str_iterator", {
     methods: {
         __length_hint__: Sk.generic.iterLengthHintWithArrayMethodDef,
     },
-    flags: { sk$acceptable_as_base_class: false },
+    flags: { sk$unacceptableBase: true },
 });
 
 var reservedWords_ = {

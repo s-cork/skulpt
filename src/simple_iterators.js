@@ -41,7 +41,7 @@ Sk.builtin.callable_iter_ = Sk.abstr.buildIteratorClass("callable_iterator", {
             }
         }
     },
-    flags: { sk$acceptable_as_base_class: false },
+    flags: { sk$unacceptableBase: true },
 });
 
 
@@ -66,6 +66,7 @@ Sk.builtin.seq_iter_ = Sk.abstr.buildIteratorClass("iterator", {
             },
             (e) => {
                 if (e instanceof Sk.builtin.IndexError || e instanceof Sk.builtin.StopIteration) {
+                    this.gi$ret = e.$value || Sk.builtin.none.none$;
                     return undefined;
                 } else {
                     throw e;
@@ -89,7 +90,7 @@ Sk.builtin.seq_iter_ = Sk.abstr.buildIteratorClass("iterator", {
             },
         },
     },
-    flags: { sk$acceptable_as_base_class: false },
+    flags: { sk$unacceptableBase: true },
 });
 
 
