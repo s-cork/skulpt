@@ -383,7 +383,7 @@ const jsHooks = {
         }
         const pyWrappedCallable = (...args) => {
             args = args.map((x) => toPy(x, pyHooks));
-            const ret = Sk.misceval.tryCatch(
+            let ret = Sk.misceval.tryCatch(
                 () => Sk.misceval.chain(obj.tp$call(args), (res) => toJs(res, jsHooks)),
                 (e) => {
                     if (Sk.uncaughtException) {
@@ -393,9 +393,12 @@ const jsHooks = {
                     }
                 }
             );
-            if (ret instanceof Sk.misceval.Suspension) {
+            while (ret instanceof Sk.misceval.Suspension) {
                 // better to return a promise here then hope the javascript library will handle a suspension
-                return Sk.misceval.asyncToPromise(() => ret);
+                if (!ret.optional) {
+                    return Sk.misceval.asyncToPromise(() => ret);
+                }
+                ret = ret.resume();
             }
             return ret;
         };
