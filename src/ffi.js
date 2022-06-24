@@ -70,7 +70,7 @@ function toPy(obj, hooks) {
         // might be type === "bigint" if bigint native or an array like object for older browsers
         return new Sk.builtin.int_(JSBI.numberIfSafe(obj));
     } else if (Array.isArray(obj)) {
-        return new Sk.builtin.list(obj.map((x) => toPy(x, hooks)));
+        return hooks.arrayHook ? hooks.arrayHook(obj) : new Sk.builtin.list(obj.map((x) => toPy(x, hooks)));
     } else if (type === "object") {
         const constructor = obj.constructor; // it's possible that a library deleted the constructor
         if (constructor === Object && Object.getPrototypeOf(obj) === OBJECT_PROTO || constructor === undefined /* Object.create(null) */) {
@@ -363,14 +363,43 @@ function proxy(obj, flags) {
     return ret;
 }
 
-const pyHooks = { dictHook: (obj) => proxy(obj), unhandledHook: (obj) => String(obj) };
+const arrayHook = (obj) => {
+    return new Sk.builtin.list(new Proxy(obj, {
+        get(t, attr) {
+            const n = Number(attr);
+            if (!isNaN(n)) {
+                return toPy(t[attr], pyHooks);
+            }
+            if (attr === "$isProxy") {
+                return true;
+            }
+            if (attr === "$unwrap") {
+                return t;
+            }
+            return t[attr];
+        },
+        set(t, attr, v) {
+            t[attr] = toJs(v, jsHooks);
+            return true;
+        }
+    }));
+};
+
+const pyHooks = { dictHook: (obj) => proxy(obj), unhandledHook: (obj) => String(obj), arrayHook  };
 // unhandled is likely only Symbols and get a string rather than undefined
 const boundHook = (bound, name) => ({
     dictHook: (obj) => proxy(obj),
     funcHook: (obj) => proxy(obj, { bound, name }),
     unhandledHook: (obj) => String(obj),
+    arrayHook,
 });
 const jsHooks = {
+    arrayHook(val, _obj) {
+        if (val.$isProxy) {
+            return val.$unwrap;
+        }
+        return val.map((x) => toJs(x, jsHooks));
+    },
     unhandledHook: (obj) => {
         const _cached = _proxied.get(obj);
         if (_cached) {
