@@ -943,13 +943,9 @@ function mkJust(isRight, isCenter) {
         if (mylen >= len) {
             return new Sk.builtin.str(this.v);
         } else if (isCenter) {
-            newstr = fillchar.repeat(Math.floor((len - mylen) / 2));
-            newstr = newstr + this.v + newstr;
-
-            if ((len - mylen) % 2) {
-                newstr += fillchar;
-            }
-
+            const marg = len - mylen;
+            const left = Math.floor(marg / 2) + (marg & len & 1);
+            newstr = fillchar.repeat(left) + this.v + fillchar.repeat(marg - left);
             return new Sk.builtin.str(newstr);
         } else {
             newstr = fillchar.repeat(len - mylen);

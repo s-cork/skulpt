@@ -656,8 +656,15 @@ Compiler.prototype.ccompare = function (e) {
 
     for (i = 0; i < n; ++i) {
         rhs = this.vexpr(e.comparators[i]);
-        out("$ret = Sk.misceval.richCompareBool(", cur, ",", rhs, ",'", e.ops[i].prototype._astname, "', true);");
-        this._checkSuspension(e);
+        const op = e.ops[i];
+        if (op === Sk.astnodes.Is) {
+            out("$ret = ", cur, "===", rhs, ";");
+        } else if (op === Sk.astnodes.IsNot) {
+            out("$ret = ", cur, "!==", rhs, ";");
+        } else{
+            out("$ret = Sk.misceval.richCompareBool(", cur, ",", rhs, ",'", op.prototype._astname, "', true);");
+            this._checkSuspension(e);
+        }
         out(fres, "=Sk.builtin.bool($ret);");
         this._jumpfalse("$ret", done);
         cur = rhs;
@@ -2563,7 +2570,7 @@ Compiler.prototype.cclass = function (s) {
 
     // apply decorators
 
-    for (let decorator of decos) {
+    for (let decorator of decos.reverse()) {
         out("$ret = Sk.misceval.callsimOrSuspendArray(", decorator, ", [$ret]);");
         this._checkSuspension();
     }

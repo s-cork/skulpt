@@ -71,7 +71,7 @@ Sk.builtin.bool = Sk.abstr.buildNativeClass("bool", {
         str$False: new Sk.builtin.str("False"),
         str$True: new Sk.builtin.str("True"),
         valueOf() {
-            return Boolean(this.v);
+            return !!this.v;
         },
     },
 });
