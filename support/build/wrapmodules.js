@@ -121,6 +121,7 @@ const group1Paths = new Set([
     "src/lib/keyword.js",
     "src/lib/string.js",
     "src/lib/re.js",
+    "src/lib/uuid.js",
 ]);
 const group2Paths = new Set(["src/lib/_strptime.js", "src/lib/calendar.js"]);
 
