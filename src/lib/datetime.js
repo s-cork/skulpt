@@ -61,7 +61,6 @@ function $builtinmodule() {
     const secs_in_day = new pyInt(24 * 3600);
     const _243600 = new pyFloat(24 * 3600);
 
-
     let _strptime_datetime = null; // see datetime.stprtime
 
     // some helper functions not part of datetime.py

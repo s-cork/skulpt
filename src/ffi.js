@@ -7,7 +7,6 @@ Sk.ffi = {
     remapToJs: toJs,
     toPy,
     toJs,
-    toJSON,
 
     isTrue,
 
@@ -155,7 +154,9 @@ function toJs(obj, hooks) {
     const type = typeof val;
     hooks = hooks || {};
 
-    if (type === "string" || type === "boolean") {
+    if (type === "string") {
+        return hooks.stringHook ? hooks.stringHook(val) : val;
+    } else if (type === "boolean") {
         return val;
     } else if (type === "number") {
         return hooks.numberHook ? hooks.numberHook(val, obj) : val;
@@ -196,51 +197,7 @@ function toJs(obj, hooks) {
     Sk.asserts.fail("unhandled type " + type);
 }
 
-/**
- *
- * @param {*} obj
- * @param {*} hooks
- *
- * toJSON will return a jsonable object
- * expects only python objects
- * handles simple python objects - None, str, int, float, bool, list, tuple, dict
- *
- * keys of dictionaries are only allowed to be - None, str, int, float, bool
- *
- * the following hooks are available
- *
- * hooks.dictHook - override the default dict to object literal bevaiour
- * hooks.unhandledHook(obj) - by default this function throws an error in the unhandled case
- * hooks.bigintHook(bigint, pyObj) - by default bigints will fail - can also catch this case in unhandledHook
- * hooks.numberhook(num, pyObj) - can hoandle constans like NaN or difference between ints and floats
- * hooks.arrayHook(arr, pyObj)
- */
-function toJSON(obj, hooks) {
-    hooks = hooks || {};
-    const fail = (obj) => {
-        throw new TypeError("unhandled remap " + Sk.abstr.typeName(obj));
-    };
-    hooks.unhandledHook = hooks.unhandledHook || fail;
-    hooks.funcHook = hooks.objectHook = (val, obj) => hooks.unhandledHook(obj);
-    hooks.bigintHook = hooks.bigintHook || hooks.unhandledHook;
-    if (!hooks.dictHook) {
-        hooks.dictHook = (d) => {
-            const ret = {};
-            d.$items().forEach(([k, v]) => {
-                k = k.valueOf();
-                const type = typeof k;
-                if (type === "string" || type === "number" || type === "boolean" || k === null) {
-                    ret[k] = toJs(v, hooks);
-                } else {
-                    throw TypeError("unhandled key in conversion from dictionary - can only handle str, int, float, None, bool");
-                }
-            });
-            return ret;
-        };
-    }
-    return toJs(obj, hooks);
-}
-
+/** @returns a bool based on whether it is python truthy or not. Can also hand js values */
 function isTrue(obj) {
     // basically the logic for Sk.misceval.isTrue - here for convenience
     return obj != null && obj.nb$bool ? obj.nb$bool() : obj.sq$length ? obj.sq$length() !== 0 : Boolean(obj);
@@ -319,12 +276,16 @@ function toPyTuple(obj, hooks) {
 function toPyInt(num) {
     if (typeof num === "number") {
         num = Math.trunc(num);
+        return Math.abs(num) < Number.MAX_SAFE_INTEGER
+            ? new Sk.builtin.int_(num)
+            : new Sk.builtin.int_(JSBI.BigInt(num));
     } else if (JSBI.__isBigInt(num)) {
         return new Sk.builtin.int_(JSBI.numberIfSafe(num));
+    } else if (typeof num === "string" && num.match(isInteger)) {
+        return new Sk.builtin.int_(num);
     } else {
-        num = Math.trunc(parseInt(num, 10));
+        throw new TypeError("bad type passed to toPyInt() got " + num);
     }
-    return Math.abs(num) < Number.MAX_SAFE_INTEGER ? new Sk.builtin.int_(num) : new Sk.builtin.int_(JSBI.BigInt(num));
 }
 
 function toPyDict(obj, hooks) {
@@ -514,8 +475,8 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
     methods: {
         __dir__: {
             $meth() {
-                const object_dir = Sk.misceval.callsimArray(Sk.builtin.object.prototype.__dir__, [this]).valueOf();
-                return new Sk.builtin.list(object_dir.concat(Array.from(this.$dir, (x) => new Sk.builtin.str(x))));
+                const proxy_dir = Sk.misceval.callsimArray(Sk.builtin.type.prototype.__dir__, [JsProxy]).valueOf();
+                return new Sk.builtin.list(proxy_dir.concat(Array.from(this.$dir, (x) => new Sk.builtin.str(x))));
             },
             $flags: { NoArgs: true },
         },
@@ -630,7 +591,8 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                 configurable: true,
                 get() {
                     const dir = [];
-                    // loop over enumerable properties
+                    // just looping over enumerable properties can hide a lot of properties
+                    // especially in es6 classes
                     let obj = this.js$wrapped;
 
                     while (obj != null && obj !== OBJECT_PROTO && obj !== FUNC_PROTO) {
@@ -647,6 +609,12 @@ const JsProxy = Sk.abstr.buildNativeClass("Proxy", {
                     if (this.js$wrapped[Symbol.iterator] !== undefined) {
                         return (this.tp$iter = () => {
                             return proxy(this.js$wrapped[Symbol.iterator]());
+                        });
+                    } else {
+                        return (this.tp$iter = () => {
+                            // we could set it to undefined but because we have a __getitem__
+                            // python tries to use seq_iter which will result in a 0 LookupError, which is confusing
+                            throw new Sk.builtin.TypeError(Sk.misceval.objectRepr(this) + " is not iterable");
                         });
                     }
                 },

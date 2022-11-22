@@ -1334,8 +1334,8 @@ Sk.abstr.buildNativeClass = function (typename, options) {
     });
 
 
-    if (typeobject.prototype.hasOwnProperty("tp$iter")) {
-        typeobject.prototype[Symbol.iterator] = function () {
+    if (type_proto.hasOwnProperty("tp$iter")) {
+        type_proto[Symbol.iterator] = function () {
             return this.tp$iter()[Symbol.iterator]();
         };
     }
@@ -1401,11 +1401,9 @@ Sk.abstr.buildIteratorClass = function (typename, iterator) {
     ret.prototype[Symbol.iterator] = function () {
         return  {
             next: () => {
-                const nxt = this.tp$iternext();
-                if (nxt === undefined) {
-                    return {done: true};
-                }
-                return {value: nxt, done: false};
+                const value = this.tp$iternext();
+                const done = value === undefined;
+                return {value, done};
             }
         };
     };
@@ -1414,12 +1412,12 @@ Sk.abstr.buildIteratorClass = function (typename, iterator) {
 
 Sk.abstr.built$iterators = [];
 
-Sk.abstr.setUpModuleMethods = function (module_name, _module, method_defs) {
+Sk.abstr.setUpModuleMethods = function (module_name, mod, method_defs) {
     Object.entries(method_defs).forEach(([method_name, method_def]) => {
         method_def.$name = method_def.$name || method_name; // operator e.g. some methods share method_defs
-        _module[method_name] = new Sk.builtin.sk_method(method_def, null, module_name);
+        mod[method_name] = new Sk.builtin.sk_method(method_def, null, module_name);
     });
-    return _module;
+    return mod;
 };
 
 /**
