@@ -123,7 +123,7 @@ const group1Paths = new Set([
     "src/lib/re.js",
     "src/lib/uuid.js",
 ]);
-const group2Paths = new Set(["src/lib/_strptime.js", "src/lib/calendar.js"]);
+const group2Paths = new Set(["src/lib/_strptime.js", "src/lib/calendar.js", "src/lib/fractions.js"]);
 
 function loadSkulptFastSlow(ret, name, outfile) {
     const retFiles = ret.files;
