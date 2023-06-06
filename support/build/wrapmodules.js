@@ -110,7 +110,7 @@ async function processDirectories(dirs, exts, ret, options) {
     }
 };
 
-const group0Paths = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.js"]);
+const group0Paths = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.js", "src/lib/json.js"]);
 const group1Paths = new Set([
     "src/lib/math.js",
     "src/lib/itertools.js",
