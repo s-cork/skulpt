@@ -508,7 +508,7 @@ Sk.builtin.unichr = function unichr(x) {
 };
 
 /**
- * This is a helper function and we already know that x is an int or has an nb$index slot
+ * This is foo a helper function and we already know that x is an int or has an nb$index slot
  */
 Sk.builtin.int2str_ = function helper_(x, radix, prefix) {
     let v = Sk.misceval.asIndexOrThrow(x);
