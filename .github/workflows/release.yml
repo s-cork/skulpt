@@ -45,6 +45,6 @@ jobs:
           version: node .github/changeset-version.js
           publish: npx changeset publish
         env:
-          GITHUB_TOKEN: ${{ foo }}
-          NPM_TOKEN: ${{ bar }}
+          GITHUB_TOKEN: "foo"
+          NPM_TOKEN: "bar"
           NODE_ENV: "production"
