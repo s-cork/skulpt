@@ -32,6 +32,8 @@ jobs:
 
       - name: Build the package
         run: npm run build
+        env:
+          NODE_OPTIONS: "--openssl-legacy-provider"
 
       - name: Create Version PR or Publish to NPM
         id: changesets
