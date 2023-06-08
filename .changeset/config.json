@@ -1,10 +1,10 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@2.3.0/schema.json",
-  "changelog": "@changesets/cli/changelog",
+  "changelog": ["@changesets/cli/changelog", { "repo": "s-cork/skulpt" }],
   "commit": false,
   "fixed": [],
   "linked": [],
-  "access": "restricted",
+  "access": "public",
   "baseBranch": "test-release",
   "updateInternalDependencies": "patch",
   "ignore": [],
