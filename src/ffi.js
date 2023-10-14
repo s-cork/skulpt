@@ -80,12 +80,6 @@ function toPy(obj, hooks) {
             return new Sk.builtin.bytes(obj);
         } else if (constructor === Set) {
             return toPySet(obj, hooks);
-        } else if (constructor === Map) {
-            const ret = new Sk.builtin.dict();
-            obj.forEach((val, key) => {
-                ret.mp$ass_subscript(toPy(key, hooks), toPy(val, hooks));
-            });
-            return ret;
         } else if (constructor === Sk.misceval.Suspension) {
             return obj;
         } else {
