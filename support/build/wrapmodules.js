@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 const { compiler: Compiler } = require("google-closure-compiler");
 
 /**
@@ -24,12 +24,12 @@ const excludeFileName = "libexcludes.json";
 let js_bytes = 0;
 
 async function processDirectories(dirs, exts, ret, options) {
-    const {production, languageOut, excludes, recursive} = options;
+    const { production, languageOut, excludes, recursive } = options;
     for (let dir of dirs) {
         let files = fs.readdirSync(dir);
 
         for (let file of files) {
-            let fullname = dir + '/' + file;
+            let fullname = dir + "/" + file;
 
             if (!excludes.includes(fullname)) {
                 let stat = fs.statSync(fullname);
@@ -39,14 +39,14 @@ async function processDirectories(dirs, exts, ret, options) {
                 } else if (stat.isFile()) {
                     let ext = path.extname(file);
                     if (exts.includes(ext)) {
-                        if (production && (ext === ".js")) {
+                        if (production && ext === ".js") {
                             console.log(`Compiling ${fullname}...`);
 
                             // STANDARD
                             opts = {
-                              language_in: 'ECMASCRIPT_NEXT',
-                              language_out: languageOut,
-                              source_map_include_content: true,
+                                language_in: "ECMASCRIPT_NEXT",
+                                language_out: languageOut,
+                                source_map_include_content: true,
                             };
 
                             Object.assign(opts, {
@@ -63,12 +63,7 @@ async function processDirectories(dirs, exts, ret, options) {
                                     "unknownDefines",
                                     "visibility",
                                 ],
-                                jscomp_off: [
-                                    "deprecated",
-                                    "uselessCode",
-                                    "suspiciousCode",
-                                    "checkTypes",
-                                ],
+                                jscomp_off: ["deprecated", "uselessCode", "suspiciousCode", "checkTypes"],
                                 languageOut,
                                 externs: "support/externs/sk.js",
 
@@ -94,12 +89,11 @@ async function processDirectories(dirs, exts, ret, options) {
                                     }
                                 });
                             });
-                            const kb = Math.round(Buffer.byteLength(contents, "utf8")/1000);
+                            const kb = Math.round(Buffer.byteLength(contents, "utf8") / 1000);
                             console.log(`${kb} kb`);
                             js_bytes += kb;
 
                             ret.files[fullname] = contents;
-
                         } else {
                             ret.files[fullname] = fs.readFileSync(fullname, "utf8");
                         }
@@ -108,20 +102,22 @@ async function processDirectories(dirs, exts, ret, options) {
             }
         }
     }
-};
+}
 
 const group0Paths = new Set(["src/builtin/sys.js", "src/lib/time.js", "src/lib/datetime.js", "src/lib/json.js"]);
 const group1Paths = new Set([
     "src/lib/math.js",
     "src/lib/itertools.js",
     "src/lib/functools.js",
-    "src/lib/random.js",
+    "src/lib/_random.js",
     "src/lib/collections.js",
     "src/lib/operator.js",
     "src/lib/keyword.js",
     "src/lib/string.js",
     "src/lib/re.js",
     "src/lib/uuid.js",
+    "src/lib/bisect.py",
+    "src/lib/random.py",
 ]);
 const group2Paths = new Set(["src/lib/_strptime.js", "src/lib/calendar.js", "src/lib/fractions.js"]);
 
@@ -154,16 +150,15 @@ function loadSkulptFastSlow(ret, name, outfile) {
 
 async function buildJsonFile(name, dirs, exts, outfile, options) {
     options = options || {};
-    const ret = {files: {}};
+    const ret = { files: {} };
 
     await processDirectories(dirs, exts, ret, options);
 
     if (outfile.startsWith("dist") && options.production) {
-        loadSkulptFastSlow(ret, name, outfile)
+        loadSkulptFastSlow(ret, name, outfile);
     } else {
-        fs.writeFileSync(outfile , "Sk." + name + "=" + JSON.stringify(ret, null, 2), "utf8"); 
+        fs.writeFileSync(outfile, "Sk." + name + "=" + JSON.stringify(ret, null, 2), "utf8");
     }
-  
 }
 
 async function main() {
@@ -177,49 +172,46 @@ async function main() {
         const langMatch = process.env.npm_lifecycle_script.match(/languageOut=(?<lang>\w+)/);
         const languageOut = (langMatch && langMatch.groups.lang) || "ECMASCRIPT_2015";
         console.log(languageOut);
- 
 
         const opts = {
             recursive: true,
             excludes: excludes,
             production,
-            languageOut
-       };
+            languageOut,
+        };
 
         await buildJsonFile("builtinFiles", ["src/builtin", "src/lib"], [".js", ".py"], "dist/skulpt-stdlib.js", opts);
         let stat = fs.statSync("dist/skulpt-stdlib.js");
-        
+
         if (production) {
             updateConstructorNames();
-            console.log(`\nstd-lib size: ${Math.round(stat.size/1000)} kb`);
+            console.log(`\nstd-lib size: ${Math.round(stat.size / 1000)} kb`);
             stat = fs.statSync("dist/skulpt-stdlib-1.json");
-            console.log(`\ngroup-1 size: ${Math.round(stat.size/1000)} kb`);
+            console.log(`\ngroup-1 size: ${Math.round(stat.size / 1000)} kb`);
             stat = fs.statSync("dist/skulpt-stdlib-2.json");
-            console.log(`\ngroup-2 size: ${Math.round(stat.size/1000)} kb`);
+            console.log(`\ngroup-2 size: ${Math.round(stat.size / 1000)} kb`);
         }
     } else if (process.argv.includes("unit2")) {
         if (!fs.existsSync("support/tmp")) {
-        fs.mkdirSync("support/tmp");
+            fs.mkdirSync("support/tmp");
         }
         buildJsonFile("unit2", ["test/unit"], [".py"], "support/tmp/unit2.js", { recursive: true });
     } else if (process.argv.includes("unit3")) {
         if (!fs.existsSync("support/tmp")) {
-        fs.mkdirSync("support/tmp");
+            fs.mkdirSync("support/tmp");
         }
         buildJsonFile("unit3", ["test/unit3"], [".py"], "support/tmp/unit3.js");
     }
-
 }
 
-main().catch(e => {
+main().catch((e) => {
     console.error(e);
 });
 
-
 /**
- * 
+ *
  * \.([\w]+)=Sk\.abstr\.build(Native|Iterator)Class\("([\w]+)",\{constructor:function\(
- * 
+ *
  * .$1=Sk.abstr.build$2Class("$3",{constructor:function $1(
  */
 
@@ -236,7 +228,9 @@ function updateConstructorNames() {
             );
 
             fs.writeFile(minFile, result, "utf8", function (err) {
-                if (err) return console.log(err);
+                if (err) {
+                    return console.log(err);
+                }
             });
         });
     } catch (e) {
