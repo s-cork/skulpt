@@ -446,7 +446,7 @@ const unhandledPythonObject = (obj) => {
             // if we're debugging then we want the debug handler to be called
             // it's a compromise between making a debugger pause inside a python function
             // and giving the javascript caller a Promise as the return value
-            // We will only be here if a debugger returns true from it's breakpoints function
+            // We will only be here if a debugger returns true from its breakpoints function
             if (ret.data && ret.data.type === DEBUG_SUSP_HANDLER && DEBUG_SUSP_HANDLER in Sk.misceval.defaultHandlers) {
                 return Sk.misceval.asyncToPromise(() => ret);
             }
