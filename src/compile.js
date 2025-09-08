@@ -1729,7 +1729,7 @@ Compiler.prototype.cwith = function (s, itemIdx) {
 
     //    VAR = value
     if (s.items[itemIdx].optional_vars) {
-        this.nameop(s.items[itemIdx].optional_vars.id, Sk.astnodes.Store, value);
+        this.vexpr(s.items[itemIdx].optional_vars, value);
     }
 
     //    (try body)

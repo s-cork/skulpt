@@ -37,6 +37,19 @@ class TestGenericStringIO(unittest.TestCase):
         sys.stdin = sys.__stdin__
         self.assertEqual(res, "test input")
 
+        #multi-line
+        sys.stdin = StringIO.StringIO("test input\nsecond line")
+        res1 = raw_input()
+        res2 = raw_input()
+        sys.stdin = sys.__stdin__
+        self.assertEqual(res1, "test input")
+        self.assertEqual(res2, "second line")
+
+    def test_is_context_manager(self):
+        with StringIO.StringIO("test contents\nsecond line") as f:
+            self.assertEqual(f.read(), "test contents\nsecond line")
+        self.assertTrue(f.closed)
+
     def test_reads(self):
         eq = self.assertEqual
         self.assertRaises(TypeError, self._fp.seek)

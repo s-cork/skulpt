@@ -112,6 +112,17 @@ class TestBugs(unittest.TestCase):
         self.assertEqual(A.foo(), 42)
         # shouldn't fail
 
+    def test_with_statement(self):
+        class W:
+            def __enter__(self):
+                return "a", "b"
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                pass
+
+        with W() as (x, y):
+            self.assertEqual(x, "a")
+            self.assertEqual(y, "b")
+
 
 if __name__ == "__main__":
     unittest.main()
