@@ -2,6 +2,64 @@ const fs = require("fs");
 const path = require("path");
 const { compiler: Compiler } = require("google-closure-compiler");
 
+const cacheDir = path.join("support", ".wrapmodules");
+
+function ensureCacheDir() {
+    if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+    }
+}
+
+function getCachePath(fullname) {
+    const relativePath = path.relative(".", fullname);
+    const safeName = relativePath.replace(/[\\/]/g, "__");
+    return path.join(cacheDir, `${safeName}.json`);
+}
+
+function readCache(fullname, ext, stat, options) {
+    ensureCacheDir();
+    const cachePath = getCachePath(fullname);
+    if (!fs.existsSync(cachePath)) {
+        return null;
+    }
+
+    try {
+        const data = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+        const kind = options.production && ext === ".js" ? "compiled" : "raw";
+        if (data.kind !== kind) {
+            return null;
+        }
+        if (data.mtimeMs !== stat.mtimeMs || data.size !== stat.size) {
+            return null;
+        }
+        if (kind === "compiled" && data.languageOut !== options.languageOut) {
+            return null;
+        }
+
+        return data.contents;
+    } catch {
+        return null;
+    }
+}
+
+function writeCache(fullname, ext, stat, options, contents) {
+    ensureCacheDir();
+    const cachePath = getCachePath(fullname);
+    const kind = options.production && ext === ".js" ? "compiled" : "raw";
+    const data = {
+        contents,
+        kind,
+        mtimeMs: stat.mtimeMs,
+        size: stat.size,
+    };
+
+    if (kind === "compiled") {
+        data.languageOut = options.languageOut;
+    }
+
+    fs.writeFileSync(cachePath, JSON.stringify(data), "utf8");
+}
+
 /**
  * If this optional file exists in the top level directory, it will be
  * used to exclude libraries from the standard library file.
@@ -24,13 +82,13 @@ const excludeFileName = "libexcludes.json";
 let js_bytes = 0;
 
 async function processDirectories(dirs, exts, ret, options) {
-    const { production, languageOut, excludes, recursive } = options;
+    const { production = false, languageOut, excludes = [], recursive = false } = options;
+    const cacheOptions = { production, languageOut };
     for (let dir of dirs) {
         let files = fs.readdirSync(dir);
 
         for (let file of files) {
             let fullname = dir + "/" + file;
-
             if (!excludes.includes(fullname)) {
                 let stat = fs.statSync(fullname);
 
@@ -39,6 +97,17 @@ async function processDirectories(dirs, exts, ret, options) {
                 } else if (stat.isFile()) {
                     let ext = path.extname(file);
                     if (exts.includes(ext)) {
+                        const cached = readCache(fullname, ext, stat, cacheOptions);
+                        if (cached !== null) {
+                            const kb = Math.round(Buffer.byteLength(cached, "utf8") / 1000);
+                            console.log(`[wrapmodules] using cache for ${path.relative(".", fullname)} (${kb} kb)`);
+                            ret.files[fullname] = cached;
+                            if (production && ext === ".js") {
+                                js_bytes += kb;
+                            }
+                            continue;
+                        }
+
                         if (production && ext === ".js") {
                             console.log(`Compiling ${fullname}...`);
 
@@ -94,8 +163,11 @@ async function processDirectories(dirs, exts, ret, options) {
                             js_bytes += kb;
 
                             ret.files[fullname] = contents;
+                            writeCache(fullname, ext, stat, cacheOptions, contents);
                         } else {
-                            ret.files[fullname] = fs.readFileSync(fullname, "utf8");
+                            const contents = fs.readFileSync(fullname, "utf8");
+                            ret.files[fullname] = contents;
+                            writeCache(fullname, ext, stat, cacheOptions, contents);
                         }
                     }
                 }

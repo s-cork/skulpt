@@ -1,4 +1,5 @@
 support/tmp/
+support/.wrapmodules/
 doc/static/skulpt-stdlib.js
 doc/static/skulpt.min.js
 doc/static/debugger/debugger.js
@@ -21,3 +22,4 @@ src/internalpython.js
 /tmp.js
 Pipfile
 *~
+.serena
