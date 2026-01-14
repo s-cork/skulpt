@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { compiler: Compiler } = require("google-closure-compiler");
 
-const cacheDir = path.join("support", ".wrapmodules");
+const cacheDir = path.join("support", "tmp", ".wrapmodules");
 
 function ensureCacheDir() {
     if (!fs.existsSync(cacheDir)) {
