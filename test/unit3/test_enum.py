@@ -99,6 +99,46 @@ class TestEnumBasics(unittest.TestCase):
         self.assertEqual(str(Color.RED), "Color.RED")
         self.assertEqual(repr(Color.RED), "<Color.RED: 1>")
 
+    def test_member_reassignment_is_blocked(self):
+        class Color(Enum):
+            RED = 1
+
+        with self.assertRaisesRegex(AttributeError, "cannot reassign member"):
+            Color.RED = 2
+
+    def test_member_deletion_is_blocked(self):
+        class Color(Enum):
+            RED = 1
+
+        with self.assertRaisesRegex(AttributeError, "cannot delete member"):
+            del Color.RED
+
+    def test_missing_hook(self):
+        class Color(Enum):
+            RED = 1
+            BLUE = 2
+
+            @classmethod
+            def _missing_(cls, value):
+                if value == "red":
+                    return cls.RED
+                return None
+
+        self.assertIs(Color("red"), Color.RED)
+        with self.assertRaises(ValueError):
+            Color("unknown")
+
+    def test_missing_hook_invalid_return(self):
+        class Color(Enum):
+            RED = 1
+
+            @classmethod
+            def _missing_(cls, value):
+                return "bad"
+
+        with self.assertRaisesRegex(TypeError, "returned"):
+            Color(2)
+
 
 class TestEnumFunctionalApi(unittest.TestCase):
     def test_functional_string_names(self):

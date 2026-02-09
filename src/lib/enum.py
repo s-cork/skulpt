@@ -124,6 +124,17 @@ class EnumMeta(type):
             for member in cls:
                 if member.value == value:
                     return member
+            missing = getattr(cls, "_missing_", None)
+            if missing is not None:
+                result = missing(value)
+                if result is None:
+                    raise ValueError("%r is not a valid %s" % (value, cls.__name__))
+                if isinstance(result, cls):
+                    return result
+                raise TypeError(
+                    "error in %s._missing_: returned %r instead of None or a valid member"
+                    % (cls.__name__, result)
+                )
             raise ValueError("%r is not a valid %s" % (value, cls.__name__))
 
     def __iter__(cls):
@@ -135,6 +146,18 @@ class EnumMeta(type):
 
     def __getitem__(cls, name):
         return cls._member_map_[name]
+
+    def __setattr__(cls, name, value):
+        member_map = getattr(cls, "_member_map_", None)
+        if member_map and name in member_map:
+            raise AttributeError("cannot reassign member %r" % (name,))
+        return type.__setattr__(cls, name, value)
+
+    def __delattr__(cls, name):
+        member_map = getattr(cls, "_member_map_", None)
+        if member_map and name in member_map:
+            raise AttributeError("cannot delete member %r" % (name,))
+        return type.__delattr__(cls, name)
 
     @property
     def __members__(cls):
@@ -175,6 +198,10 @@ EnumType = EnumMeta
 
 
 class Enum(metaclass=EnumMeta):
+    @classmethod
+    def _missing_(cls, value):
+        return None
+
     @property
     def name(self):
         return self._name_
