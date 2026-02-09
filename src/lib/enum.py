@@ -65,15 +65,14 @@ class EnumMeta(type):
         member_names = []
         member_map = {}
         value2member_map = {}
-        next_auto = 1
+        last_values = []
 
         for name, raw_value in _iter_member_items(classdict):
             value = raw_value
             if isinstance(value, auto):
-                value = next_auto
-                next_auto += 1
-            elif isinstance(value, int) and value >= next_auto:
-                next_auto = value + 1
+                gen = getattr(cls, "_generate_next_value_")
+                value = gen(name, 1, len(member_names), list(last_values))
+            last_values.append(value)
 
             try:
                 member = value2member_map[value]
@@ -198,6 +197,12 @@ EnumType = EnumMeta
 
 
 class Enum(metaclass=EnumMeta):
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values):
+        if last_values and isinstance(last_values[-1], int):
+            return last_values[-1] + 1
+        return start + count
+
     @classmethod
     def _missing_(cls, value):
         return None

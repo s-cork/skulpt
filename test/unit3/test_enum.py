@@ -69,6 +69,30 @@ class TestEnumBasics(unittest.TestCase):
         self.assertEqual(Number.TWO.value, 2)
         self.assertEqual(Number.THREE.value, 3)
 
+    def test_auto_after_explicit_value(self):
+        class Number(Enum):
+            ONE = 5
+            TWO = auto()
+            THREE = auto()
+
+        self.assertEqual(Number.ONE.value, 5)
+        self.assertEqual(Number.TWO.value, 6)
+        self.assertEqual(Number.THREE.value, 7)
+
+    def test_generate_next_value_override(self):
+        class Number(Enum):
+            @staticmethod
+            def _generate_next_value_(name, start, count, last_values):
+                return count * 10
+
+            ONE = auto()
+            TWO = auto()
+            THREE = auto()
+
+        self.assertEqual(Number.ONE.value, 0)
+        self.assertEqual(Number.TWO.value, 10)
+        self.assertEqual(Number.THREE.value, 20)
+
     def test_unique(self):
         @unique
         class Number(Enum):
