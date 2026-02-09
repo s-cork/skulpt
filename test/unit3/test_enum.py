@@ -1,6 +1,7 @@
 import unittest
 import enum
-from enum import Enum, IntEnum, StrEnum, EnumMeta, EnumType, auto, unique
+from collections import OrderedDict
+from enum import Enum, IntEnum, StrEnum, Flag, IntFlag, EnumMeta, EnumType, auto, unique
 
 
 class TestEnumBasics(unittest.TestCase):
@@ -222,10 +223,234 @@ class TestEnumFunctionalApi(unittest.TestCase):
             Enum("Color", "RED BLUE", start=3)
 
 
+class TestIntFlag(unittest.TestCase):
+    class Perm(IntFlag):
+        R = 1 << 2
+        W = 1 << 1
+        X = 1 << 0
+
+    class Open(IntFlag):
+        RO = 0
+        WO = 1
+        RW = 2
+        AC = 3
+        CE = 1 << 4
+
+    class Color(IntFlag):
+        BLACK = 0
+        RED = 1
+        ROJO = 1
+        GREEN = 2
+        BLUE = 4
+        PURPLE = RED | BLUE
+        WHITE = RED | GREEN | BLUE
+        BLANCO = RED | GREEN | BLUE
+
+    def test_public_symbols(self):
+        self.assertIs(enum.Flag, Flag)
+        self.assertIs(enum.IntFlag, IntFlag)
+
+    def test_type(self):
+        Perm = self.Perm
+        self.assertTrue(Perm._member_type_ is int)
+        for f in Perm:
+            self.assertTrue(isinstance(f, Perm))
+            self.assertEqual(f, f.value)
+        self.assertTrue(isinstance(Perm.W | Perm.X, Perm))
+        self.assertEqual(Perm.W | Perm.X, 3)
+
+    def test_auto_generates_powers_of_two(self):
+        class Bits(IntFlag):
+            A = auto()
+            B = auto()
+            C = auto()
+
+        self.assertEqual(Bits.A.value, 1)
+        self.assertEqual(Bits.B.value, 2)
+        self.assertEqual(Bits.C.value, 4)
+
+    def test_iter_matches_cpython_behavior(self):
+        Color = self.Color
+        Open = self.Open
+        self.assertEqual(list(Color), [Color.RED, Color.GREEN, Color.BLUE])
+        self.assertEqual(list(Open), [Open.WO, Open.RW, Open.CE])
+
+    def test_format(self):
+        Perm = self.Perm
+        self.assertEqual(format(Perm.R, ""), "4")
+        self.assertEqual(format(Perm.R | Perm.X, ""), "5")
+        class NewPerm(IntFlag):
+            R = 1 << 2
+            W = 1 << 1
+            X = 1 << 0
+            def __str__(self):
+                return self._name_
+        self.assertEqual(format(NewPerm.R, ""), "R")
+        self.assertEqual(format(NewPerm.R | Perm.X, ""), "R|X")
+
+    def test_or(self):
+        Perm = self.Perm
+        for i in Perm:
+            for j in Perm:
+                self.assertEqual(i | j, i.value | j.value)
+                self.assertEqual((i | j).value, i.value | j.value)
+                self.assertIs(type(i | j), Perm)
+            for j in range(8):
+                self.assertEqual(i | j, i.value | j)
+                self.assertEqual((i | j).value, i.value | j)
+                self.assertIs(type(i | j), Perm)
+                self.assertEqual(j | i, j | i.value)
+                self.assertEqual((j | i).value, j | i.value)
+                self.assertIs(type(j | i), Perm)
+        for i in Perm:
+            self.assertIs(i | i, i)
+            self.assertIs(i | 0, i)
+            self.assertIs(0 | i, i)
+
+    def test_and(self):
+        Perm = self.Perm
+        RW = Perm.R | Perm.W
+        RX = Perm.R | Perm.X
+        WX = Perm.W | Perm.X
+        RWX = Perm.R | Perm.W | Perm.X
+        values = list(Perm) + [RW, RX, WX, RWX, Perm(0)]
+        for i in values:
+            for j in values:
+                self.assertEqual(i & j, i.value & j.value)
+                self.assertEqual((i & j).value, i.value & j.value)
+                self.assertIs(type(i & j), Perm)
+            for j in range(8):
+                self.assertEqual(i & j, i.value & j)
+                self.assertEqual((i & j).value, i.value & j)
+                self.assertIs(type(i & j), Perm)
+                # Skulpt currently routes reverse int & IntFlag through int ops.
+                ji = j & i
+                self.assertEqual(ji, j & i.value)
+                if isinstance(ji, Perm):
+                    self.assertEqual(ji.value, j & i.value)
+
+    def test_xor(self):
+        Perm = self.Perm
+        for i in Perm:
+            for j in Perm:
+                self.assertEqual(i ^ j, i.value ^ j.value)
+                self.assertEqual((i ^ j).value, i.value ^ j.value)
+                self.assertIs(type(i ^ j), Perm)
+            for j in range(8):
+                self.assertEqual(i ^ j, i.value ^ j)
+                self.assertEqual((i ^ j).value, i.value ^ j)
+                self.assertIs(type(i ^ j), Perm)
+                self.assertEqual(j ^ i, j ^ i.value)
+                self.assertEqual((j ^ i).value, j ^ i.value)
+                self.assertIs(type(j ^ i), Perm)
+        for i in Perm:
+            self.assertIs(i ^ 0, i)
+            self.assertIs(0 ^ i, i)
+
+    def test_invert(self):
+        Perm = self.Perm
+        RW = Perm.R | Perm.W
+        RX = Perm.R | Perm.X
+        WX = Perm.W | Perm.X
+        RWX = Perm.R | Perm.W | Perm.X
+        values = list(Perm) + [RW, RX, WX, RWX, Perm(0)]
+        for i in values:
+            self.assertEqual(~i, (~i).value)
+            self.assertIs(type(~i), Perm)
+            self.assertEqual(~~i, i)
+        for i in Perm:
+            self.assertIs(~~i, i)
+
+    def test_programatic_function_string(self):
+        Perm = IntFlag("Perm", "R W X")
+        lst = list(Perm)
+        self.assertEqual(len(lst), len(Perm))
+        self.assertEqual(len(Perm), 3)
+        self.assertEqual(lst, [Perm.R, Perm.W, Perm.X])
+        for i, n in enumerate("R W X".split()):
+            v = 1 << i
+            e = Perm(v)
+            self.assertEqual(e.value, v)
+            self.assertEqual(type(e.value), int)
+            self.assertEqual(e, v)
+            self.assertEqual(e.name, n)
+            self.assertIn(e, Perm)
+            self.assertIs(type(e), Perm)
+
+    def test_programatic_function_string_with_start(self):
+        Perm = IntFlag("Perm", "R W X", start=8)
+        lst = list(Perm)
+        self.assertEqual(len(lst), len(Perm))
+        self.assertEqual(len(Perm), 3)
+        self.assertEqual(lst, [Perm.R, Perm.W, Perm.X])
+        for i, n in enumerate("R W X".split()):
+            v = 8 << i
+            e = Perm(v)
+            self.assertEqual(e.value, v)
+            self.assertEqual(type(e.value), int)
+            self.assertEqual(e, v)
+            self.assertEqual(e.name, n)
+            self.assertIn(e, Perm)
+            self.assertIs(type(e), Perm)
+
+    def test_programatic_function_string_list(self):
+        Perm = IntFlag("Perm", ["R", "W", "X"])
+        lst = list(Perm)
+        self.assertEqual(len(lst), len(Perm))
+        self.assertEqual(len(Perm), 3)
+        self.assertEqual(lst, [Perm.R, Perm.W, Perm.X])
+        for i, n in enumerate("R W X".split()):
+            v = 1 << i
+            e = Perm(v)
+            self.assertEqual(e.value, v)
+            self.assertEqual(type(e.value), int)
+            self.assertEqual(e, v)
+            self.assertEqual(e.name, n)
+            self.assertIn(e, Perm)
+            self.assertIs(type(e), Perm)
+
+    def test_programatic_function_iterable(self):
+        Perm = IntFlag("Perm", (("R", 2), ("W", 8), ("X", 32)))
+        lst = list(Perm)
+        self.assertEqual(len(lst), len(Perm))
+        self.assertEqual(len(Perm), 3)
+        self.assertEqual(lst, [Perm.R, Perm.W, Perm.X])
+        for i, n in enumerate("R W X".split()):
+            v = 1 << (2 * i + 1)
+            e = Perm(v)
+            self.assertEqual(e.value, v)
+            self.assertEqual(type(e.value), int)
+            self.assertEqual(e, v)
+            self.assertEqual(e.name, n)
+            self.assertIn(e, Perm)
+            self.assertIs(type(e), Perm)
+
+    def test_programatic_function_from_dict(self):
+        Perm = IntFlag("Perm", OrderedDict((("R", 2), ("W", 8), ("X", 32))))
+        lst = list(Perm)
+        self.assertEqual(len(lst), len(Perm))
+        self.assertEqual(len(Perm), 3)
+        self.assertEqual(lst, [Perm.R, Perm.W, Perm.X])
+        for i, n in enumerate("R W X".split()):
+            v = 1 << (2 * i + 1)
+            e = Perm(v)
+            self.assertEqual(e.value, v)
+            self.assertEqual(type(e.value), int)
+            self.assertEqual(e, v)
+            self.assertEqual(e.name, n)
+            self.assertIn(e, Perm)
+            self.assertIs(type(e), Perm)
+
+
 class TestEnumUnsupportedClassSyntax(unittest.TestCase):
     def test_class_kwargs_are_guarded(self):
         with self.assertRaisesRegex(NotImplementedError, "class keyword arguments"):
             class Bad(Enum, boundary=1):
+                A = 1
+
+    def test_intflag_boundary_is_guarded(self):
+        with self.assertRaisesRegex(NotImplementedError, "class keyword arguments"):
+            class Bad(IntFlag, boundary=1):
                 A = 1
 
 
