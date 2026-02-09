@@ -1,6 +1,6 @@
 import unittest
 import enum
-from enum import Enum, IntEnum, EnumMeta, EnumType, auto, unique
+from enum import Enum, IntEnum, StrEnum, EnumMeta, EnumType, auto, unique
 
 
 class TestEnumBasics(unittest.TestCase):
@@ -8,6 +8,7 @@ class TestEnumBasics(unittest.TestCase):
         self.assertIs(EnumMeta, EnumType)
         self.assertIs(enum.Enum, Enum)
         self.assertIs(enum.IntEnum, IntEnum)
+        self.assertIs(enum.StrEnum, StrEnum)
         self.assertIs(enum.auto, auto)
         self.assertIs(enum.unique, unique)
 
@@ -115,6 +116,30 @@ class TestEnumBasics(unittest.TestCase):
         self.assertTrue(isinstance(HTTP.OK, int))
         self.assertEqual(HTTP.OK + 1, 201)
         self.assertIs(HTTP(404), HTTP.NOT_FOUND)
+
+    def test_str_enum(self):
+        class Color(StrEnum):
+            RED = "red"
+            BLUE = "blue"
+
+        self.assertTrue(isinstance(Color.RED, str))
+        self.assertEqual(Color.RED.value, "red")
+        self.assertEqual(str(Color.RED), "red")
+        self.assertEqual(format(Color.RED, ""), "red")
+        self.assertIs(Color("red"), Color.RED)
+
+    def test_str_enum_auto_lowercases(self):
+        class Build(StrEnum):
+            DEBUG = auto()
+            RELEASE = auto()
+
+        self.assertEqual(Build.DEBUG.value, "debug")
+        self.assertEqual(Build.RELEASE.value, "release")
+
+    def test_str_enum_requires_str_values(self):
+        with self.assertRaisesRegex(TypeError, "not a string"):
+            class Bad(StrEnum):
+                A = 1
 
     def test_repr_str(self):
         class Color(Enum):

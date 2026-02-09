@@ -4,7 +4,7 @@ Minimal enum support for Skulpt.
 This module intentionally implements a focused subset of CPython's enum.
 """
 
-__all__ = ["EnumMeta", "EnumType", "Enum", "IntEnum", "auto", "unique"]
+__all__ = ["EnumMeta", "EnumType", "Enum", "IntEnum", "StrEnum", "auto", "unique"]
 
 
 def _unsupported(feature):
@@ -48,7 +48,7 @@ class EnumMeta(type):
         is_enum_subclass = any(isinstance(base, EnumMeta) for base in bases)
         if not is_enum_subclass:
             return cls
-        if clsname in ("Enum", "IntEnum"):
+        if clsname in ("Enum", "IntEnum", "StrEnum"):
             return cls
 
         member_type = object
@@ -237,6 +237,25 @@ class Enum(metaclass=EnumMeta):
 
 class IntEnum(int, Enum):
     pass
+
+
+class StrEnum(str, Enum):
+    def __new__(cls, value):
+        if not isinstance(value, str):
+            raise TypeError("%r is not a string" % (value,))
+        member = str.__new__(cls, value)
+        member._value_ = value
+        return member
+
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values):
+        return name.lower()
+
+    def __str__(self):
+        return str.__str__(self)
+
+    def __format__(self, spec):
+        return str.__format__(self, spec)
 
 
 def unique(enumeration):
